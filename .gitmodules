@@ -1,0 +1,3 @@
+[submodule "sparkmobile"]
+	path = sparkmobile
+	url = https://github.com/firoorg/sparkmobile
