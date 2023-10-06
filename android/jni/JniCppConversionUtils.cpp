@@ -1,0 +1,203 @@
+/*
+
+ *
+ */
+
+#include "JniCppConversionUtils.h"
+#include <optional>
+
+namespace jni
+{
+
+// ------------------- JNI to C++ conversion functions ---------------------------------------------
+
+std::string
+convert_string_from_jni( JNIEnv* env, jstring java_string )
+{
+    const char* jbuffer = env->GetStringUTFChars( java_string, nullptr );
+    auto nresult = std::string( jbuffer );
+    env->ReleaseStringUTFChars( java_string, jbuffer );
+    return nresult;
+}
+
+std::string
+convert_from_jni( JNIEnv* env, const JniReference<jobject>& jvalue, std::string* )
+{
+    if ( !jvalue )
+    {
+        auto exceptionClass = ::jni::find_class(env, "java/lang/NullPointerException");
+        env->ThrowNew(exceptionClass.get(), "");
+        return {};
+    }
+
+    return convert_string_from_jni( env, static_cast<jstring>( jvalue.get( ) ) );
+}
+
+std::string
+convert_from_jni( JNIEnv* env, const JniReference<jstring>& jvalue, std::string* )
+{
+    if ( !jvalue )
+    {
+        auto exceptionClass = ::jni::find_class(env, "java/lang/NullPointerException");
+        env->ThrowNew(exceptionClass.get(), "");
+        return {};
+    }
+
+    return convert_string_from_jni( env, jvalue.get( ) );
+}
+
+std::optional<std::string>
+convert_from_jni( JNIEnv* env, const JniReference<jobject>& jvalue, std::optional<std::string>* )
+{
+    return jvalue
+        ? std::optional<std::string>( convert_string_from_jni( env, static_cast<jstring>( jvalue.get( ) ) ) )
+        : std::optional<std::string>{};
+}
+
+std::optional<std::string>
+convert_from_jni( JNIEnv* env, const JniReference<jstring>& jvalue, std::optional<std::string>* )
+{
+    return jvalue
+        ? std::optional<std::string>( convert_string_from_jni( env, jvalue.get( ) ) )
+        : std::optional<std::string>{};
+}
+
+std::shared_ptr< std::vector< uint8_t > >
+convert_from_jni( JNIEnv* env, const JniReference<jbyteArray>& jvalue,
+                  std::shared_ptr< std::vector< uint8_t > >* )
+{
+    if ( !jvalue )
+    {
+        auto exceptionClass = ::jni::find_class(env, "java/lang/NullPointerException");
+        env->ThrowNew(exceptionClass.get(), "");
+        return {};
+    }
+
+    size_t size = static_cast< size_t >( env->GetArrayLength( jvalue.get() ) );
+    auto nresult = std::make_shared< std::vector< uint8_t > >( size );
+    jbyte* jbuffer = reinterpret_cast< jbyte* >( nresult->data( ) );
+    env->GetByteArrayRegion( jvalue.get(), 0, size, jbuffer );
+    return nresult;
+}
+
+std::optional< std::shared_ptr< std::vector< uint8_t > > >
+convert_from_jni( JNIEnv* env,
+                  const JniReference<jbyteArray>& jvalue,
+                  std::optional< std::shared_ptr< std::vector< uint8_t > > >* )
+{
+    return jvalue
+        ? std::optional< std::shared_ptr< std::vector< uint8_t > > >(
+            convert_from_jni( env, jvalue, (std::shared_ptr< std::vector< uint8_t > >*)nullptr ) )
+        : std::optional< std::shared_ptr< std::vector< uint8_t > > >{};
+}
+
+::Locale
+convert_from_jni(JNIEnv* env, const JniReference<jobject>& jvalue, ::Locale*) {
+    if (!jvalue) {
+        auto exceptionClass = ::jni::find_class(env, "java/lang/NullPointerException");
+        env->ThrowNew(exceptionClass.get(), "");
+        return ::Locale();
+    }
+
+    auto languageCode = call_java_method<jstring>(env, jvalue, "getLanguage", "()Ljava/lang/String;");
+    auto countryCode = call_java_method<jstring>(env, jvalue, "getCountry", "()Ljava/lang/String;");
+    auto scriptCode = call_java_method<jstring>(env, jvalue, "getScript", "()Ljava/lang/String;");
+    auto languageTag = call_java_method<jstring>(env, jvalue, "toLanguageTag", "()Ljava/lang/String;");
+
+    return ::Locale(
+        convert_from_jni(env, languageCode, (std::string*)nullptr),
+        convert_from_jni(env, countryCode, (std::string*)nullptr),
+        convert_from_jni(env, scriptCode, (std::string*)nullptr),
+        convert_from_jni(env, languageTag, (std::string*)nullptr)
+    );
+}
+
+std::optional<::Locale>
+convert_from_jni(JNIEnv* env, const JniReference<jobject>& jvalue,
+                 std::optional<::Locale>*)
+{
+    return jvalue
+        ? std::optional<::Locale>(
+            convert_from_jni(env, jvalue, (::Locale*)nullptr))
+        : std::optional<::Locale>{};
+}
+
+// -------------------- C++ to JNI conversion functions --------------------------------------------
+
+JniReference<jstring>
+convert_to_jni( JNIEnv* env, const std::string& nvalue )
+{
+    return make_local_ref(env, env->NewStringUTF( nvalue.c_str( ) ));
+}
+
+JniReference<jstring>
+convert_to_jni( JNIEnv* env, const std::optional<std::string>& nvalue )
+{
+    return nvalue
+        ? make_local_ref(env, env->NewStringUTF( nvalue->c_str( ) ))
+        : JniReference<jstring>{};
+}
+
+JniReference<jbyteArray>
+convert_to_jni( JNIEnv* env, const std::shared_ptr< std::vector< uint8_t > >& nvalue )
+{
+    if ( !nvalue )
+    {
+        return make_local_ref(env, env->NewByteArray(0));
+    }
+
+    jsize size = static_cast< jsize >( nvalue->size( ) );
+    auto jresult = make_local_ref(env, env->NewByteArray( size ));
+    const jbyte* jbuffer = reinterpret_cast< const jbyte* >( nvalue->data( ) );
+    env->SetByteArrayRegion( jresult.get(), 0, size, jbuffer );
+
+    return jresult;
+}
+
+JniReference< jbyteArray >
+convert_to_jni( JNIEnv* env, const std::optional< std::shared_ptr< std::vector< uint8_t > > >& nvalue )
+{
+    return nvalue ? convert_to_jni( env, *nvalue ) : JniReference< jbyteArray >{};
+}
+
+JniReference<jobject>
+convert_to_jni(JNIEnv* env, const ::Locale& nvalue) {
+    auto localeBuilderClass = find_class(env, "java/util/Locale$Builder");
+    auto builder = create_object(env, localeBuilderClass);
+    if (nvalue.language_tag) {
+        // BCP 47 language tag takes precedence if present.
+        call_java_method<jobject>(
+            env, builder, "setLanguageTag", "(Ljava/lang/String;)Ljava/util/Locale$Builder;",
+            convert_to_jni(env, nvalue.language_tag)
+        );
+        if (env->ExceptionOccurred()) return {};
+    } else {
+        // java.util.Locale has no constructor that takes "script" code,
+        // so Locale.Builder has to be used instead to create a Locale from ISO codes.
+        call_java_method<jobject>(
+            env, builder, "setLanguage", "(Ljava/lang/String;)Ljava/util/Locale$Builder;",
+            convert_to_jni(env, nvalue.language_code)
+        );
+        if (env->ExceptionOccurred()) return {};
+
+        call_java_method<jobject>(
+            env, builder, "setRegion", "(Ljava/lang/String;)Ljava/util/Locale$Builder;",
+            convert_to_jni(env, nvalue.country_code)
+        );
+        if (env->ExceptionOccurred()) return {};
+
+        call_java_method<jobject>(
+            env, builder, "setScript", "(Ljava/lang/String;)Ljava/util/Locale$Builder;",
+            convert_to_jni(env, nvalue.script_code)
+        );
+        if (env->ExceptionOccurred()) return {};
+    }
+    return call_java_method<jobject>(env, builder, "build", "()Ljava/util/Locale;");
+}
+
+JniReference<jobject>
+convert_to_jni(JNIEnv* env, const std::optional<::Locale>& nvalue) {
+    return nvalue ? convert_to_jni(env, *nvalue) : JniReference<jobject>{};
+}
+
+}
