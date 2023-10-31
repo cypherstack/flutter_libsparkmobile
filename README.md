@@ -13,3 +13,8 @@ Build:
 cd flutter_libsparkmobile/scripts/linux
 ./build_all.sh
 ```
+
+## Development
+If you need to test changes in sparkmobile itself, you may need to install Boost development libraries as in `sudo apt install libboost-all-dev`.
+
+Get vectors like `./test bin && ./bin/address_tests`.
