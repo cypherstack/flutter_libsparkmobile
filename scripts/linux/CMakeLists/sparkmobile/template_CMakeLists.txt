@@ -43,6 +43,8 @@ set_property(SOURCE src/spark.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
     src/util.cpp
+    src/utils.cpp
+    src/dart_interface.cpp
     PROPERTY COMPILE_FLAGS "-std=c++17" )
 
 add_library(sparkmobile SHARED
@@ -73,7 +75,9 @@ add_library(sparkmobile SHARED
     src/schnorr.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
-    src/util.cpp)
+    src/util.cpp
+    src/utils.cpp
+    src/dart_interface.cpp)
 
 target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1)
 

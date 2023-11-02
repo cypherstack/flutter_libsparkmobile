@@ -1,7 +1,7 @@
 #include "../include/spark.h"
-//#include "Utils.h"
-//#include <list>
+#include "Utils.h"
 #include <cstring>
+#include <iostream> // Just for printing.
 
 using namespace spark;
 
