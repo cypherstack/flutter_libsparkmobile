@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:ffi';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 
@@ -17,7 +19,26 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _flutterLibsparkmobilePlugin = FlutterLibsparkmobile();
+  final FlutterLibsparkmobile _flutterLibsparkmobilePlugin;
+
+  _MyAppState()
+      : _flutterLibsparkmobilePlugin = FlutterLibsparkmobile(_loadLibrary());
+
+  static DynamicLibrary _loadLibrary() {
+    if (Platform.isLinux) {
+      return DynamicLibrary.open('libsparkmobile.so');
+    } else if (Platform.isAndroid) {
+      // return DynamicLibrary.open('libsparkmobile.so');
+    } else if (Platform.isIOS) {
+      // return DynamicLibrary.open('libsparkmobile.dylib');
+    } else if (Platform.isMacOS) {
+      // return DynamicLibrary.open('libsparkmobile.dylib');
+    } else if (Platform.isWindows) {
+      // return DynamicLibrary.open('sparkmobile.dll');
+    }
+    // Optionally throw an error or handle other platforms
+    throw UnsupportedError('This platform is not supported');
+  }
 
   @override
   void initState() {
@@ -32,7 +53,8 @@ class _MyAppState extends State<MyApp> {
     // We also handle the message potentially returning null.
     try {
       platformVersion =
-          await _flutterLibsparkmobilePlugin.getPlatformVersion() ?? 'Unknown platform version';
+          await _flutterLibsparkmobilePlugin.getPlatformVersion() ??
+              'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -55,7 +77,23 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion\n'),
+              // A button that, when pressed, generates a new Spark spend key.
+              ElevatedButton(
+                onPressed: () async {
+                  final spendKey = await _flutterLibsparkmobilePlugin
+                      .generateSpendKey()
+                      .catchError((error) {
+                    print(error);
+                  });
+                  print(spendKey);
+                },
+                child: const Text('Generate spend key'),
+              ),
+            ],
+          ),
         ),
       ),
     );
