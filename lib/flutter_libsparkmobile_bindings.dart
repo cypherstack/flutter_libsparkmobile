@@ -31,4 +31,19 @@ class SparkMobileBindings {
           'generateSpendKey');
   late final _generateSpendKey =
       _generateSpendKeyPtr.asFunction<ffi.Pointer<ffi.Char> Function()>();
+
+  ffi.Pointer<ffi.Char> createSpendKey(
+    ffi.Pointer<ffi.Char> r,
+  ) {
+    return _createSpendKey(
+      r,
+    );
+  }
+
+  late final _createSpendKeyPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.Char>)>>('createSpendKey');
+  late final _createSpendKey = _createSpendKeyPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>();
 }

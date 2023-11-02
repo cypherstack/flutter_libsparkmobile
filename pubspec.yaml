@@ -96,3 +96,4 @@ ffigen:
   functions:
     include:
       - generateSpendKey
+      - createSpendKey

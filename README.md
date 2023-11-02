@@ -21,7 +21,7 @@ You must have the native library built for your platform before running the exam
 
 ## Development
 ### Bindings generation (`dart ffigen`)
-Bindings are generated using [ffigen](https://pub.dev/packages/ffigen).  All of the individual build scripts in your platform's `build_all.sh` script must be run up to and including `copyCMakeLists.sh` in order for the header referenced in `pubspec.yaml`'s `ffigen` section to exist.
+Bindings are generated using [ffigen](https://pub.dev/packages/ffigen).  All of the individual build scripts in your platform's `build_all.sh` script must be run up to and including `copyCMakeLists.sh` in order for the header referenced in `pubspec.yaml`'s `ffigen` section to exist.  Each function you want bound must be listed individually at the end of the `ffigen` section of `pubspec.yaml`.
 
 ### `sparkmobile` troubleshooting
 If you need to test changes in `sparkmobile` itself, you may need to install Boost development libraries as in `sudo apt install libboost-all-dev`.
