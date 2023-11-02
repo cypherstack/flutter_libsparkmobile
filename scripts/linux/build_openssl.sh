@@ -2,7 +2,6 @@
 
 set -e
 
-WORKDIR="$(pwd)/"build
 if [ -z "$IS_ARM" ]; then
   TYPES_OF_BUILD="x86_64"
 else
@@ -10,8 +9,11 @@ else
 fi
 THREADS=16
 
+WORKDIR="$(pwd)/"build
+CACHEDIR="$(pwd)/"cache
+
 OPENSSL_FILENAME=openssl-1.1.1k.tar.gz
-OPENSSL_FILE_PATH=$WORKDIR/$OPENSSL_FILENAME
+OPENSSL_FILE_PATH=CACHEDIR/$OPENSSL_FILENAME
 OPENSSL_SRC_DIR=$WORKDIR/openssl-1.1.1k
 OPENSSL_SHA256="892a0875b9872acd04a9fde79b1f943075d5ea162415de3047c327df33fbaee5"
 
@@ -19,17 +21,23 @@ ZLIB_DIR=$WORKDIR/zlib
 ZLIB_TAG=v1.2.11
 ZLIB_COMMIT_HASH="cacf7f1d4e3d44d871b605da3b647f07d718623f"
 
+# If a zlib dir exists, we assume that it's already been built.
+# TODO make a better zlib-validity check.
 if [ ! -d "$ZLIB_DIR" ] ; then
   git clone -b $ZLIB_TAG --depth 1 https://github.com/madler/zlib $ZLIB_DIR
+  cd $ZLIB_DIR
+  git reset --hard $ZLIB_COMMIT_HASH
+  ./configure --static
+  make
 fi
-cd $ZLIB_DIR
-git reset --hard $ZLIB_COMMIT_HASH
-./configure --static
-make
 
+# Download openssl if it doesn't exist.
 curl https://www.openssl.org/source/$OPENSSL_FILENAME -o $OPENSSL_FILE_PATH
+
+# Validate checksum.
 echo $OPENSSL_SHA256 $OPENSSL_FILE_PATH | sha256sum -c - || exit 1
 
+# Build openssl for each arch.
 for arch in $TYPES_OF_BUILD
 do
 	echo "Building $TYPES_OF_BUILD"
@@ -42,7 +50,8 @@ do
 	esac
 
 	cd $WORKDIR
-	rm -rf $OPENSSL_SRC_DIR
+	# Don't delete the openssl source dir.  We don't need clean builds every time.
+  #	rm -rf $OPENSSL_SRC_DIR
 	tar -xzf $OPENSSL_FILE_PATH -C $WORKDIR
 	cd $OPENSSL_SRC_DIR
 
