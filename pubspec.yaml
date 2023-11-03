@@ -97,3 +97,4 @@ ffigen:
     include:
       - generateSpendKey
       - createSpendKey
+      - createFullViewKey

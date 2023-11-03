@@ -77,7 +77,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _generateSpendKey() async {
-    final spendKey = await _flutterLibsparkmobilePlugin
+    String spendKey = await _flutterLibsparkmobilePlugin
         .generateSpendKey()
         .catchError((error) {
       if (kDebugMode) {
@@ -88,7 +88,25 @@ class _MyAppState extends State<MyApp> {
     // Update the TextInput with the generated key.
     spendKeyController.text = spendKey;
     if (kDebugMode) {
-      print(spendKey);
+      print('spendKey: $spendKey');
+    }
+
+    _createFullViewKey();
+  }
+
+  Future<void> _createFullViewKey() async {
+    String fullViewKey = await _flutterLibsparkmobilePlugin
+        .createFullViewKey(spendKeyController.text)
+        .catchError((error) {
+      if (kDebugMode) {
+        print(error);
+      }
+    });
+
+    // Update the TextInput with the generated key.
+    fullViewKeyController.text = fullViewKey;
+    if (kDebugMode) {
+      print('fullViewKey: $fullViewKey');
     }
   }
 
@@ -125,9 +143,22 @@ class _MyAppState extends State<MyApp> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                TextField(
-                  controller: fullViewKeyController,
-                  decoration: const InputDecoration(labelText: 'Full View Key'),
+                Row(
+                  children: [
+                    Expanded(
+                      // Wrap the TextField with an Expanded widget
+                      child: TextField(
+                        controller: fullViewKeyController,
+                        decoration:
+                            const InputDecoration(labelText: 'Full View Key'),
+                      ),
+                    ),
+                    // Button for generating a new Spark spend key.
+                    ElevatedButton(
+                      onPressed: _createFullViewKey,
+                      child: const Text('Derive full view key'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 TextField(

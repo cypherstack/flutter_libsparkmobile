@@ -1,5 +1,5 @@
 // https://github.com/firoorg/mobile/tree/main/react-native-lelantus/android/src/main/jniLibs
-#include "Utils.h"
+#include "utils.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
