@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart'; // For kDebugMode.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
@@ -20,6 +21,12 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   final FlutterLibsparkmobile _flutterLibsparkmobilePlugin;
+
+  // TextEditingControllers for example app inputs.
+  final spendKeyController = TextEditingController();
+  final fullViewKeyController = TextEditingController();
+  final incomingViewKeyController = TextEditingController();
+  final addressController = TextEditingController();
 
   _MyAppState()
       : _flutterLibsparkmobilePlugin = FlutterLibsparkmobile(_loadLibrary());
@@ -69,6 +76,22 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  Future<void> _generateSpendKey() async {
+    final spendKey = await _flutterLibsparkmobilePlugin
+        .generateSpendKey()
+        .catchError((error) {
+      if (kDebugMode) {
+        print(error);
+      }
+    });
+
+    // Update the TextInput with the generated key.
+    spendKeyController.text = spendKey;
+    if (kDebugMode) {
+      print(spendKey);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -77,22 +100,49 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Column(
-            children: [
-              Text('Running on: $_platformVersion\n'),
-              // A button that, when pressed, generates a new Spark spend key.
-              ElevatedButton(
-                onPressed: () async {
-                  final spendKey = await _flutterLibsparkmobilePlugin
-                      .generateSpendKey()
-                      .catchError((error) {
-                    print(error);
-                  });
-                  print(spendKey);
-                },
-                child: const Text('Generate spend key'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Running on: $_platformVersion\n'),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      // Wrap the TextField with an Expanded widget
+                      child: TextField(
+                        controller: spendKeyController,
+                        decoration:
+                            const InputDecoration(labelText: 'Spend Key (r)'),
+                      ),
+                    ),
+                    // Button for generating a new Spark spend key.
+                    ElevatedButton(
+                      onPressed: _generateSpendKey,
+                      child: const Text('Generate spend key'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: fullViewKeyController,
+                  decoration: const InputDecoration(labelText: 'Full View Key'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: incomingViewKeyController,
+                  decoration:
+                      const InputDecoration(labelText: 'Incoming View Key'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
