@@ -35,3 +35,5 @@ scripts/linux/CMakeLists/sparkmobile/CMakeLists.txt
 scripts/linux/CMakeLists/secp256k1/CMakeLists.txt
 
 scripts/linux/sparkmobile
+
+scripts/linux/cache/
