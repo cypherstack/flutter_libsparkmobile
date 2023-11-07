@@ -1,5 +1,5 @@
 #include "../include/spark.h"
-#include "Utils.h"
+#include "utils.h"
 #include <cstring>
 #include <iostream> // Just for printing.
 
