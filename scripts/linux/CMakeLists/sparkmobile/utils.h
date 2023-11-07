@@ -16,6 +16,4 @@ const char *bin2hex(const char *bytes, int size);
 
 const char *bin2hex(std::vector<unsigned char> bytes, int size);
 
-const char *generateSpendKey(); // TODO add param for params, eg default/test.
-
 #endif //ORG_FIRO_SPARK_UTILS_H
