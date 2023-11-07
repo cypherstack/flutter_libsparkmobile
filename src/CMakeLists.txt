@@ -14,7 +14,17 @@ SET(OPENSSL_LIBRARIES "ssl" "crypto")
 
 LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
-#add_subdirectory(flutter_libsparkmobile/secp256k1)
+# From flutter_liblelantus...
+#add_subdirectory(sparkmobile/secp256k1)
+
+# Attempt to build autotools project with cmake.
+#
+# See https://stackoverflow.com/questions/5971921/building-a-library-using-autotools-from-cmake
+#include(ExternalProject)
+#ExternalProject_Add(secp256k1
+#        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/secp256k1
+#        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/secp256k1/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/lib
+#        BUILD_COMMAND make)
 
 set_property(SOURCE sparkmobile/src/spark.cpp
         sparkmobile/bitcoin/amount.cpp
