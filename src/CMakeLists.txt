@@ -26,40 +26,6 @@ LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 #        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/secp256k1/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/lib
 #        BUILD_COMMAND make)
 
-set(secp256k1_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/secp256k1")
-
-pkg_check_modules(secp256k1 IMPORTED_TARGET libsecp256k1)
-
-if(NOT secp256k1_FOUND)
-    set(ENV{CC} ${CMAKE_C_COMPILER})
-    set(ENV{CXX} ${CMAKE_CXX_COMPILER})
-
-    # Configure
-    execute_process(
-            OUTPUT_QUIET
-            COMMAND ./autogen.sh --host=${CMAKE_SYSTEM_PROCESSOR} --enable-tools=yes --enable-bindings-cxx --prefix=${CMAKE_CURRENT_SOURCE_DIR}/sparkmobile/lib
-            WORKING_DIRECTORY ${secp256k1_SOURCE_DIR}
-    )
-
-    # Build
-    execute_process(
-            OUTPUT_QUIET
-            COMMAND make
-            WORKING_DIRECTORY ${secp256k1_SOURCE_DIR}
-    )
-
-    # Install
-    execute_process(
-            OUTPUT_QUIET
-            COMMAND make install
-            WORKING_DIRECTORY ${secp256k1_SOURCE_DIR}
-    )
-
-    # After installation, find the package again
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(secp256k1 REQUIRED IMPORTED_TARGET libsecp256k1)
-endif()
-
 set_property(SOURCE sparkmobile/src/spark.cpp
         sparkmobile/bitcoin/amount.cpp
         sparkmobile/bitcoin/arith_uint256.cpp
