@@ -1,6 +1,11 @@
 # `flutter_libsparkmobile`
 [SparkMobile](https://github.com/firoorg/sparkmobile) wrapped as a Flutter plugin for cross-platform mobile and desktop apps.  Intended to support Android, iOS, Linux, Mac, and Windows platforms.
 
+## Initialize `sparkmobile` submodule
+```sh
+git submodule update --init --recursive
+```
+
 ## Dependencies
 Install dependencies required to build:
 ```sh
@@ -20,7 +25,7 @@ See the [example](example) directory for a Flutter app that uses `flutter_libspa
 You must have the native library built for your platform before running the example app.  See the [Build](#build) section above.
 
 ## Development
-### Bindings generation (`dart ffigen`)
+### Bindings generation (`dart run ffigen`)
 Bindings are generated using [ffigen](https://pub.dev/packages/ffigen).  All of the individual build scripts in your platform's `build_all.sh` script must be run up to and including `copyCMakeLists.sh` in order for the header referenced in `pubspec.yaml`'s `ffigen` section to exist.
 
 ### `sparkmobile` troubleshooting
