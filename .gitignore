@@ -30,8 +30,8 @@ doc/api/
 
 lib/git_versions.dart
 
-scripts/linux/CMakeLists/sparkmobile/CMakeLists.txt
-
-scripts/linux/CMakeLists/secp256k1/CMakeLists.txt
-
-scripts/linux/sparkmobile
+# Ignore build artifacts.
+scripts/*/cache/
+scripts/*/sparkmobile
+scripts/*/CMakeLists/sparkmobile/CMakeLists.txt
+scripts/*/CMakeLists/secp256k1/CMakeLists.txt
