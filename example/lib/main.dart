@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart'; // For kDebugMode.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
@@ -76,37 +75,38 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  Future<void> _generateSpendKey() async {
-    String spendKey = await _flutterLibsparkmobilePlugin
-        .generateSpendKey()
-        .catchError((error) {
-      if (kDebugMode) {
-        print(error);
-      }
+  final _mnemonicController = TextEditingController();
+  final _keyDataController = TextEditingController();
+  final _indexController =
+      TextEditingController(text: '0'); // Default to index 0
+  final _diversifierController =
+      TextEditingController(text: '0'); // Default to diversifier 0
+  final _addressController = TextEditingController();
+
+  bool _isTestnet = true; // Default to testnet
+
+  // This dummy function is assumed to interact with the native code to generate keyData from the mnemonic.
+  Future<void> _generateKeyData() async {
+    // Simulate generating keyData from the mnemonic.
+    // You would call your native code here.
+    const keyData = '00000000000000000000000000000000';
+    setState(() {
+      _keyDataController.text = keyData;
     });
-
-    // Update the TextInput with the generated key.
-    spendKeyController.text = spendKey;
-    if (kDebugMode) {
-      print('spendKey: $spendKey');
-    }
-
-    _createFullViewKey();
   }
 
-  Future<void> _createFullViewKey() async {
-    String fullViewKey = await _flutterLibsparkmobilePlugin
-        .createFullViewKey(spendKeyController.text)
-        .catchError((error) {
-      if (kDebugMode) {
-        print(error);
-      }
-    });
+  Future<void> _getAddress() async {
+    try {
+      final keyData = _keyDataController.text;
+      final index = int.parse(_indexController.text);
+      final diversifier = int.parse(_diversifierController.text);
 
-    // Update the TextInput with the generated key.
-    fullViewKeyController.text = fullViewKey;
-    if (kDebugMode) {
-      print('fullViewKey: $fullViewKey');
+      String address = await _flutterLibsparkmobilePlugin.getAddress(
+          keyData, index, diversifier);
+      addressController.text = address;
+    } catch (e) {
+      // Handle the error, e.g., show an alert or a snackbar
+      print('Error getting address: $e');
     }
   }
 
@@ -115,65 +115,61 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Spark Mobile Example App'),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Running on: $_platformVersion\n'),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      // Wrap the TextField with an Expanded widget
-                      child: TextField(
-                        controller: spendKeyController,
-                        decoration:
-                            const InputDecoration(labelText: 'Spend Key (r)'),
-                      ),
-                    ),
-                    // Button for generating a new Spark spend key.
-                    ElevatedButton(
-                      onPressed: _generateSpendKey,
-                      child: const Text('Generate spend key'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      // Wrap the TextField with an Expanded widget
-                      child: TextField(
-                        controller: fullViewKeyController,
-                        decoration:
-                            const InputDecoration(labelText: 'Full View Key'),
-                      ),
-                    ),
-                    // Button for generating a new Spark spend key.
-                    ElevatedButton(
-                      onPressed: _createFullViewKey,
-                      child: const Text('Derive full view key'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: incomingViewKeyController,
-                  decoration:
-                      const InputDecoration(labelText: 'Incoming View Key'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: _mnemonicController,
+                decoration: const InputDecoration(
+                    labelText: 'Mnemonic Recovery Phrase'),
+              ),
+              ElevatedButton(
+                onPressed: _generateKeyData,
+                child: const Text('Generate Key Data'),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _keyDataController,
+                decoration: const InputDecoration(labelText: 'Key Data'),
+              ),
+              TextField(
+                controller: _indexController,
+                decoration: const InputDecoration(labelText: 'Index'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _diversifierController,
+                decoration: const InputDecoration(labelText: 'Diversifier'),
+                keyboardType: TextInputType.number,
+              ),
+              // Row(
+              //   children: [
+              //     Checkbox(
+              //       value: _isTestnet,
+              //       onChanged: (bool? newValue) {
+              //         setState(() {
+              //           _isTestnet = newValue ?? true;
+              //         });
+              //       },
+              //     ),
+              //     const Text('Testnet'),
+              //   ],
+              // ),
+              ElevatedButton(
+                onPressed: _getAddress,
+                child: const Text('Get Address'),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _addressController,
+                decoration: const InputDecoration(labelText: 'Spark Address'),
+                readOnly: true,
+              ),
+            ],
           ),
         ),
       ),

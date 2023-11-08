@@ -17,38 +17,23 @@ class FlutterLibsparkmobile {
 
   // SparkMobileBindings methods:
 
-  Future<String> generateSpendKey() {
-    Pointer<Char> key = _bindings.generateSpendKey();
-
-    // Cast the Pointer<Char> to a Dart String.
-    final keyString = key.cast<Utf8>().toDartString();
-
-    return Future.value(keyString);
-  }
-
-  Future<String> createSpendKey(String spendKeyR) {
+  Future<String> getAddress(String keyData, int index, int diversifier) {
     // Convert the Dart String to a Pointer<Char>.
-    final spendKeyRPointer = spendKeyR.toNativeUtf8().cast<Char>();
+    final keyDataPointer = keyData.toNativeUtf8().cast<Char>();
 
     // Call the native method.
-    Pointer<Char> key = _bindings.createSpendKey(spendKeyRPointer);
+    Pointer<Char> addressPointer =
+        _bindings.getAddress(keyDataPointer, index, diversifier);
 
     // Cast the Pointer<Char> to a Dart String.
-    final keyString = key.cast<Utf8>().toDartString();
+    final addressString = addressPointer.cast<Utf8>().toDartString();
 
-    return Future.value(keyString);
-  }
+    // It's a good idea to free the native string after use if the native method allocates memory.
+    malloc.free(addressPointer);
 
-  Future<String> createFullViewKey(String spendKeyR) {
-    // Convert the Dart String to a Pointer<Char>.
-    final spendKeyRPointer = spendKeyR.toNativeUtf8().cast<Char>();
+    // It's also important to free any pointers that were allocated to pass parameters.
+    malloc.free(keyDataPointer);
 
-    // Create the full view key.
-    Pointer<Char> key = _bindings.createFullViewKey(spendKeyRPointer);
-
-    // Cast the Pointer<Char> to a Dart String.
-    final keyString = key.cast<Utf8>().toDartString();
-
-    return Future.value(keyString);
+    return Future.value(addressString);
   }
 }
