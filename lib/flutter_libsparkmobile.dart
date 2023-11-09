@@ -20,8 +20,7 @@ class FlutterLibsparkmobile {
   Future<String> getAddress(
       List<int> keyData, int index, int diversifier) async {
     // Allocate space for the key data on the native heap.
-    final keyDataPointer =
-        malloc.allocate<Int>(keyData.length * sizeOf<Int32>());
+    final keyDataPointer = malloc.allocate<Int>(keyData.length);
 
     // Copy the key data into the allocated space.
     for (int i = 0; i < keyData.length; i++) {
