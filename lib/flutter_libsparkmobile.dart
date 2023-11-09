@@ -20,9 +20,13 @@ class FlutterLibsparkmobile {
   /// Derive an address from the keyData (mnemonic).
   Future<String> getAddress(
       List<int> keyData, int index, int diversifier) async {
-    final keyDataHex = keyData.toHexString();
+    // Validate that the keyData is 32 bytes.
+    if (keyData.length != 32) {
+      throw 'Key data must be 32 bytes.';
+    }
 
     // Allocate memory for the hex string on the native heap.
+    final keyDataHex = keyData.toHexString();
     final keyDataPointer = keyDataHex.toNativeUtf8().cast<Char>();
 
     // Call the native method with the pointer.
