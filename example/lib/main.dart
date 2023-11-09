@@ -88,6 +88,13 @@ class _MyAppState extends State<MyApp> {
       TextEditingController(text: '0'); // Default to diversifier 0.
   final addressController = TextEditingController();
 
+  // Define mnemonic strengths.
+  final List<int> mnemonicStrengths = [
+    128,
+    256
+  ]; // 128 bits for 12 words, 256 bits for 24 words.
+  int currentStrength = 256; // 24 words by default.
+
   _MyAppState()
       : _flutterLibsparkmobilePlugin = FlutterLibsparkmobile(_loadLibrary());
 
@@ -153,11 +160,34 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ElevatedButton(
-              //   onPressed: generateMnemonic,
-              //   child: const Text('Generate Mnemonic'),
-              // ),
-              // const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DropdownButton<int>(
+                    value: currentStrength,
+                    items: mnemonicStrengths.map((int value) {
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('${value == 128 ? 12 : 24} words'),
+                      );
+                    }).toList(),
+                    onChanged: (int? newValue) {
+                      setState(() {
+                        currentStrength = newValue!;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8), // Spacing between inputs
+                  ElevatedButton(
+                    onPressed: () => setState(() {
+                      mnemonicController.text =
+                          bip39.generateMnemonic(strength: currentStrength);
+                    }),
+                    child: const Text('Generate Mnemonic'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               TextField(
                 controller: mnemonicController,
                 decoration: const InputDecoration(
