@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
       }
 
       // Convert the hex string to a list of bytes and pad to 32 bytes if necessary
-      final List<int> keyData = _hexStringToBytes(keyDataHex);
+      final List<int> keyData = keyDataHex.toBytes();
 
       final index = int.parse(indexController.text);
       final diversifier = int.parse(diversifierController.text);
@@ -56,22 +56,6 @@ class _MyAppState extends State<MyApp> {
       // Handle the error, e.g., show an alert or a snackbar
       print('Error getting address: $e');
     }
-  }
-
-  /// Convert a string of hexadecimal digits into a list of bytes and pad it to be 32 bytes long if necessary.\
-  ///
-  /// TODO make extension.
-  List<int> _hexStringToBytes(String hexString) {
-    // Pad the string to 64 characters with zeros if it's shorter.
-    hexString = hexString.padLeft(64, '0');
-
-    List<int> bytes = [];
-    for (int i = 0; i < hexString.length; i += 2) {
-      var byteString = hexString.substring(i, i + 2);
-      var byteValue = int.parse(byteString, radix: 16);
-      bytes.add(byteValue);
-    }
-    return bytes;
   }
 
   String _platformVersion = 'Unknown';
@@ -221,5 +205,21 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+}
+
+/// Convert a hex string to a list of bytes, padded to 32 bytes if necessary.
+extension on String {
+  List<int> toBytes() {
+    // Pad the string to 64 characters with zeros if it's shorter.
+    String hexString = padLeft(64, '0');
+
+    List<int> bytes = [];
+    for (int i = 0; i < hexString.length; i += 2) {
+      var byteString = hexString.substring(i, i + 2);
+      var byteValue = int.parse(byteString, radix: 16);
+      bytes.add(byteValue);
+    }
+    return bytes;
   }
 }

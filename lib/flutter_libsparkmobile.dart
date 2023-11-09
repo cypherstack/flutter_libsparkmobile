@@ -20,7 +20,7 @@ class FlutterLibsparkmobile {
   /// Derive an address from the keyData (mnemonic).
   Future<String> getAddress(
       List<int> keyData, int index, int diversifier) async {
-    final keyDataHex = _toHexString(keyData);
+    final keyDataHex = keyData.toHexString();
 
     // Allocate memory for the hex string on the native heap.
     final keyDataPointer = keyDataHex.toNativeUtf8().cast<Char>();
@@ -38,13 +38,11 @@ class FlutterLibsparkmobile {
 
     return addressString;
   }
+}
 
-  // Utility methods:
-
-  /// Convert List<int> keyData to a hex string.
-  ///
-  /// TODO make extension.
-  String _toHexString(List<int> keyData) {
-    return keyData.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+/// Convert List<int> keyData to a hex string.
+extension on List<int> {
+  String toHexString() {
+    return map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 }
