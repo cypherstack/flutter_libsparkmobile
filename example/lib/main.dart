@@ -51,13 +51,13 @@ class _MyAppState extends State<MyApp> {
   Future<void> getAddress() async {
     try {
       final String keyDataHex = keyDataController.text;
-      // Make sure keyDataHex is a valid hex string
+      // Make sure keyDataHex is a valid hex string.
       if (keyDataHex.isEmpty ||
           !RegExp(r'^[0-9a-fA-F]+$').hasMatch(keyDataHex)) {
         throw 'Key data must be a valid hexadecimal string.';
       }
 
-      // Convert the hex string to a list of bytes and pad to 32 bytes if necessary
+      // Convert the hex string to a list of bytes and pad to 32 bytes.
       final List<int> keyData = keyDataHex.toBytes();
 
       final index = int.parse(indexController.text);
@@ -71,7 +71,6 @@ class _MyAppState extends State<MyApp> {
         print('Address: $address');
       }
     } catch (e) {
-      // Handle the error, e.g., show an alert or a snackbar
       print('Error getting address: $e');
     }
   }
@@ -104,7 +103,6 @@ class _MyAppState extends State<MyApp> {
     } else if (Platform.isWindows) {
       // return DynamicLibrary.open('sparkmobile.dll');
     }
-    // Optionally throw an error or handle other platforms
     throw UnsupportedError('This platform is not supported');
   }
 
@@ -141,7 +139,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  bool isTestnet = true; // Default to testnet
+  bool isTestnet = true; // Default to testnet.
 
   @override
   Widget build(BuildContext context) {
@@ -185,32 +183,36 @@ class _MyAppState extends State<MyApp> {
                   ),
                   const SizedBox(width: 8), // Spacing between inputs
                   Expanded(
-                    // index takes less space
-                    child: TextField(
-                      controller: indexController,
-                      decoration: const InputDecoration(labelText: 'Index'),
-                      keyboardType: TextInputType.number,
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 22),
+                      child: TextField(
+                        controller: indexController,
+                        decoration: const InputDecoration(labelText: 'Index'),
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8), // Spacing between inputs
                   Expanded(
-                    // diversifier takes less space
-                    child: TextField(
-                      controller: diversifierController,
-                      decoration:
-                          const InputDecoration(labelText: 'Diversifier'),
-                      keyboardType: TextInputType.number,
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 22),
+                      child: TextField(
+                        controller: diversifierController,
+                        decoration:
+                            const InputDecoration(labelText: 'Diversifier'),
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
                   ),
-                  Checkbox(
-                    value: isTestnet,
-                    onChanged: (bool? newValue) {
-                      setState(() {
-                        isTestnet = newValue ?? true;
-                      });
-                    },
-                  ),
-                  const Text('Testnet'),
+                  // Checkbox(
+                  //   value: isTestnet,
+                  //   onChanged: (bool? newValue) {
+                  //     setState(() {
+                  //       isTestnet = newValue ?? true;
+                  //     });
+                  //   },
+                  // ),
+                  // const Text('Testnet'),
                 ],
               ),
               const SizedBox(height: 20),
