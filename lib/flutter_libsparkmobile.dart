@@ -17,23 +17,33 @@ class FlutterLibsparkmobile {
 
   // SparkMobileBindings methods:
 
-  Future<String> getAddress(String keyData, int index, int diversifier) {
-    // Convert the Dart String to a Pointer<Char>.
-    final keyDataPointer = keyData.toNativeUtf8().cast<Char>();
+  Future<String> getAddress(
+      List<int> keyData, int index, int diversifier) async {
+    // Allocate space for the key data on the native heap.
+    final keyDataPointer =
+        malloc.allocate<Int>(keyData.length * sizeOf<Int32>());
 
-    // Call the native method.
-    Pointer<Char> addressPointer =
-        _bindings.getAddress(keyDataPointer, index, diversifier);
+    // Copy the key data into the allocated space.
+    for (int i = 0; i < keyData.length; i++) {
+      keyDataPointer[i] = keyData[i];
+    }
 
-    // Cast the Pointer<Char> to a Dart String.
-    final addressString = addressPointer.cast<Utf8>().toDartString();
+    // Call the native method with the pointer.
+    final addressPointer = _bindings
+        .getAddress(keyDataPointer, keyData.length, index, diversifier)
+        .cast<Utf8>();
 
-    // It's a good idea to free the native string after use if the native method allocates memory.
-    malloc.free(addressPointer);
+    // Convert the Pointer<Utf8> to a Dart String.
+    final addressString = addressPointer.toDartString();
 
-    // It's also important to free any pointers that were allocated to pass parameters.
+    // Free the native heap allocated memory for the key data.
     malloc.free(keyDataPointer);
 
-    return Future.value(addressString);
+    // The native side allocated memory for the returned address,
+    // it needs to be freed after copying it to Dart-controlled memory.
+    final String result = addressString;
+    malloc.free(addressPointer);
+
+    return result;
   }
 }
