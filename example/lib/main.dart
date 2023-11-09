@@ -32,15 +32,15 @@ class _MyAppState extends State<MyApp> {
   /// Derive an address from the keyData (mnemonic).
   Future<void> getAddress() async {
     try {
-      // Ensure keyData contains only numeric characters [0-9]
-      final String keyDataString = keyDataController.text;
-      if (keyDataString.isEmpty ||
-          !keyDataString.contains(RegExp(r'^[0-9]+$'))) {
-        throw 'Key data must only contain numbers 0-9.';
+      final String keyDataHex = keyDataController.text;
+      // Make sure keyDataHex is a valid hex string
+      if (keyDataHex.isEmpty ||
+          !RegExp(r'^[0-9a-fA-F]+$').hasMatch(keyDataHex)) {
+        throw 'Key data must be a valid hexadecimal string.';
       }
 
-      // Convert keyDataString to a List<int>
-      final List<int> keyData = keyDataString.codeUnits;
+      // Convert the hex string to a list of bytes and pad to 32 bytes if necessary
+      final List<int> keyData = _hexStringToBytes(keyDataHex);
 
       final index = int.parse(indexController.text);
       final diversifier = int.parse(diversifierController.text);
@@ -56,6 +56,22 @@ class _MyAppState extends State<MyApp> {
       // Handle the error, e.g., show an alert or a snackbar
       print('Error getting address: $e');
     }
+  }
+
+  /// Convert a string of hexadecimal digits into a list of bytes and pad it to be 32 bytes long if necessary.\
+  ///
+  /// TODO make extension.
+  List<int> _hexStringToBytes(String hexString) {
+    // Pad the string to 64 characters with zeros if it's shorter.
+    hexString = hexString.padLeft(64, '0');
+
+    List<int> bytes = [];
+    for (int i = 0; i < hexString.length; i += 2) {
+      var byteString = hexString.substring(i, i + 2);
+      var byteValue = int.parse(byteString, radix: 16);
+      bytes.add(byteValue);
+    }
+    return bytes;
   }
 
   String _platformVersion = 'Unknown';
@@ -156,6 +172,7 @@ class _MyAppState extends State<MyApp> {
                       controller: keyDataController,
                       decoration: const InputDecoration(labelText: 'Key Data'),
                       keyboardType: TextInputType.number,
+                      maxLength: 32,
                     ),
                   ),
                   const SizedBox(width: 8), // Spacing between inputs
