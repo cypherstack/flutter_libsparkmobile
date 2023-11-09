@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:bip39/bip39.dart' as bip39;
+import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,10 +22,26 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   /// Generate a keyData from the mnemonic.
-  ///
-  /// This is a placeholder function, TODO implement.
   Future<void> generateKeyData() async {
-    const keyData = '0';
+    final seed = bip39.mnemonicToSeed(
+      mnemonicController.text,
+      passphrase: '',
+    );
+    final root = coinlib.HDPrivateKey.fromSeed(seed);
+
+    const purpose = 44; // BIP44.
+    const coinType = 136; // Spark.
+    // See https://github.com/firoorg/firo/blob/74769e8d329b08382fdcc367fc7d88b81521db06/src/wallet/wallet.cpp#L258.
+    const account = 0; // Receiving.
+    const chain = 6; // BIP44_SPARK_INDEX.
+    final index = int.parse(indexController.text);
+    final derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
+
+    final keys = root.derivePath(derivePath);
+
+    // Cast Uint8List keys.privateKey.data to a hex string.
+    final keyData = keys.privateKey.data.toHexString();
+
     setState(() {
       keyDataController.text = keyData;
     });
@@ -61,7 +79,9 @@ class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   final FlutterLibsparkmobile _flutterLibsparkmobilePlugin;
 
-  final mnemonicController = TextEditingController();
+  final mnemonicController = TextEditingController(
+      text:
+          'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek');
   final keyDataController = TextEditingController(text: '0');
   final indexController =
       TextEditingController(text: '0'); // Default to index 0.
@@ -91,6 +111,10 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+
+    // Load coinlib.
+    coinlib.loadCoinlib();
+
     initPlatformState();
   }
 
@@ -156,7 +180,7 @@ class _MyAppState extends State<MyApp> {
                       controller: keyDataController,
                       decoration: const InputDecoration(labelText: 'Key Data'),
                       keyboardType: TextInputType.number,
-                      maxLength: 32,
+                      maxLength: 64,
                     ),
                   ),
                   const SizedBox(width: 8), // Spacing between inputs
@@ -221,5 +245,12 @@ extension on String {
       bytes.add(byteValue);
     }
     return bytes;
+  }
+}
+
+/// Convert a Uint8List to a hex string.
+extension on Uint8List {
+  String toHexString() {
+    return map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 }
