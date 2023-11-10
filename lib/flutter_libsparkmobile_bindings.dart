@@ -26,18 +26,20 @@ class SparkMobileBindings {
     ffi.Pointer<ffi.Char> keyDataHex,
     int index,
     int diversifier,
+    int isTestNet,
   ) {
     return _getAddress(
       keyDataHex,
       index,
       diversifier,
+      isTestNet,
     );
   }
 
   late final _getAddressPtr = _lookup<
       ffi.NativeFunction<
           ffi.Pointer<ffi.Char> Function(
-              ffi.Pointer<ffi.Char>, ffi.Int, ffi.Int)>>('getAddress');
+              ffi.Pointer<ffi.Char>, ffi.Int, ffi.Int, ffi.Int)>>('getAddress');
   late final _getAddress = _getAddressPtr.asFunction<
-      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>, int, int)>();
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>, int, int, int)>();
 }

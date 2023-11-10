@@ -19,7 +19,7 @@ class FlutterLibsparkmobile {
 
   /// Derive an address from the keyData (mnemonic).
   Future<String> getAddress(
-      List<int> keyData, int index, int diversifier) async {
+      List<int> keyData, int index, int diversifier, bool isTestNet) async {
     // Validate that the keyData is 32 bytes.
     if (keyData.length != 32) {
       throw 'Key data must be 32 bytes.';
@@ -30,8 +30,8 @@ class FlutterLibsparkmobile {
     final keyDataPointer = keyDataHex.toNativeUtf8().cast<Char>();
 
     // Call the native method with the pointer.
-    final addressPointer =
-        _bindings.getAddress(keyDataPointer, index, diversifier);
+    final addressPointer = _bindings.getAddress(
+        keyDataPointer, index, diversifier, isTestNet ? 1 : 0);
 
     // Convert the Pointer<Char> to a Dart String.
     final addressString = addressPointer.cast<Utf8>().toDartString();

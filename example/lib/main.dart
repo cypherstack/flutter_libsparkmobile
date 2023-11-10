@@ -64,7 +64,7 @@ class _MyAppState extends State<MyApp> {
       final diversifier = int.parse(diversifierController.text);
 
       String address = await _flutterLibsparkmobilePlugin.getAddress(
-          keyData, index, diversifier);
+          keyData, index, diversifier, isTestnet);
       addressController.text = address;
 
       if (kDebugMode) {
@@ -234,15 +234,24 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                   ),
-                  // Checkbox(
-                  //   value: isTestnet,
-                  //   onChanged: (bool? newValue) {
-                  //     setState(() {
-                  //       isTestnet = newValue ?? true;
-                  //     });
-                  //   },
-                  // ),
-                  // const Text('Testnet'),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 22),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: isTestnet,
+                            onChanged: (bool? newValue) {
+                              setState(() {
+                                isTestnet = newValue ?? true;
+                              });
+                            },
+                          ),
+                          const Text('Testnet'),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
