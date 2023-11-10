@@ -24,7 +24,8 @@ void main() {
         'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek';
 
     // Generate key data from the mnemonic.
-    final keyDataHex = await addressGenerator.generateKeyData(mnemonic, 0);
+    final keyDataHex =
+        await addressGenerator.generateKeyData(mnemonic, 0, true);
 
     // Derive the address from the key data.
     final address = await addressGenerator.getAddress(keyDataHex, 0, 0, true);

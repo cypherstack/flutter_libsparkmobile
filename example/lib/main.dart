@@ -13,12 +13,14 @@ class SparkAddressGenerator {
 
   SparkAddressGenerator(this._flutterLibsparkmobilePlugin);
 
-  Future<String> generateKeyData(String mnemonic, int index) async {
+  /// Generate key data from a mnemonic.
+  Future<String> generateKeyData(
+      String mnemonic, int index, bool isTestnet) async {
     final seed = bip39.mnemonicToSeed(mnemonic, passphrase: '');
     final root = coinlib.HDPrivateKey.fromSeed(seed);
 
     const purpose = 44; // BIP44.
-    const coinType = 136; // Spark.
+    final coinType = isTestnet ? 1 : 136; // Spark.
     const account = 0; // Receiving.
     const chain = 6; // BIP44_SPARK_INDEX.
     final derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
@@ -29,6 +31,7 @@ class SparkAddressGenerator {
     return keys.privateKey.data.toHexString();
   }
 
+  /// Derive an address from the keyData (mnemonic).
   Future<String> getAddress(
       String keyDataHex, int index, int diversifier, bool isTestnet) async {
     // Convert the hex string to a list of bytes and pad to 32 bytes.
@@ -130,7 +133,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> generateKeyData() async {
     final keyData = await _addressGenerator.generateKeyData(
-        mnemonicController.text, int.parse(indexController.text));
+        mnemonicController.text, int.parse(indexController.text), isTestnet);
     setState(() {
       keyDataController.text = keyData;
     });
