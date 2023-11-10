@@ -247,17 +247,6 @@ class _MyAppState extends State<MyApp> {
                       maxLength: 64,
                     ),
                   ),
-                  const SizedBox(width: 8), // Spacing between inputs
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(bottom: 22),
-                      child: TextField(
-                        controller: indexController,
-                        decoration: const InputDecoration(labelText: 'Index'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Container(
