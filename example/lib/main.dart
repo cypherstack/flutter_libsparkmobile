@@ -16,7 +16,7 @@ class SparkAddressGenerator {
 
   /// Generate key data from a mnemonic.
   Future<String> generateKeyData(String mnemonic, int purpose, int coinType,
-      int account, int chain, int index, bool isTestnet) async {
+      int account, int chain, int index) async {
     final seed = bip39.mnemonicToSeed(mnemonic, passphrase: '');
     final root = coinlib.HDPrivateKey.fromSeed(seed);
 
@@ -57,19 +57,22 @@ class _MyAppState extends State<MyApp> {
   final mnemonicController = TextEditingController(
       text:
           'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve');
+
   final keyDataController = TextEditingController();
   final diversifierController =
       TextEditingController(text: '0'); // See Spark flow document.
-  final addressController = TextEditingController();
+  bool isTestnet = false; // Default to mainnet.
 
   final purposeController = TextEditingController(text: '44'); // BIP44.
-  final coinTypeController = TextEditingController(text: '1'); // Testnet.
+  final coinTypeController = TextEditingController(text: '136'); // Mainnet.
   // 136 is mainnet, 1 is testnet.
   final accountController = TextEditingController(text: '0'); // Receiving.
   final chainController =
       TextEditingController(text: '6'); // BIP44_SPARK_INDEX.
   // BIP_44_SPARK_INDEX is 6.
   final indexController = TextEditingController(text: '1');
+
+  final addressController = TextEditingController();
 
   // Define mnemonic strengths.
   final List<int> mnemonicStrengths = [
@@ -134,8 +137,6 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  bool isTestnet = true; // Default to testnet.
-
   Future<void> generateKeyData() async {
     final keyData = await _addressGenerator.generateKeyData(
         mnemonicController.text,
@@ -143,8 +144,7 @@ class _MyAppState extends State<MyApp> {
         isTestnet ? 1 : int.parse(coinTypeController.text),
         int.parse(accountController.text),
         int.parse(chainController.text),
-        int.parse(indexController.text),
-        isTestnet);
+        int.parse(indexController.text));
     setState(() {
       keyDataController.text = keyData;
     });
@@ -170,13 +170,7 @@ class _MyAppState extends State<MyApp> {
     final index = int.parse(indexController.text);
 
     final keyData = await _addressGenerator.generateKeyData(
-        mnemonicController.text,
-        purpose,
-        coinType,
-        account,
-        chain,
-        index,
-        isTestnet);
+        mnemonicController.text, purpose, coinType, account, chain, index);
 
     setState(() {
       keyDataController.text = keyData;
