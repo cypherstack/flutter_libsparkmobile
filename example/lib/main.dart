@@ -59,16 +59,17 @@ class _MyAppState extends State<MyApp> {
           'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek');
   final keyDataController = TextEditingController();
   final diversifierController =
-      TextEditingController(text: '0'); // Default to diversifier 0.
+      TextEditingController(text: '0'); // See Spark flow document.
   final addressController = TextEditingController();
 
   final purposeController = TextEditingController(text: '44'); // BIP44.
   final coinTypeController = TextEditingController(text: '1'); // Testnet.
   // 136 is mainnet, 1 is testnet.
   final accountController = TextEditingController(text: '0'); // Receiving.
-  final chainController = TextEditingController(text: '2'); // BIP44_MINT_INDEX.
+  final chainController =
+      TextEditingController(text: '6'); // BIP44_SPARK_INDEX.
   // BIP_44_SPARK_INDEX is 6.
-  final indexController = TextEditingController(text: '0');
+  final indexController = TextEditingController(text: '1');
 
   // Define mnemonic strengths.
   final List<int> mnemonicStrengths = [
