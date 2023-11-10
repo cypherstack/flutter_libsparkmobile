@@ -24,6 +24,9 @@ See the [example](example) directory for a Flutter app that uses `flutter_libspa
 
 You must have the native library built for your platform before running the example app.  See the [Build](#build) section above.
 
+### Integration tests
+`example/test/integration_test.dart` tests various vectors for correctness.  Run it from `example` as in `flutter test integration_test/plugin_integration_test.dart`.
+
 ## Development
 ### Bindings generation (`dart run ffigen`)
 Bindings are generated using [ffigen](https://pub.dev/packages/ffigen).  After bindings are generated, wrap the bound functions in `flutter_libsparkmobile.dart`.

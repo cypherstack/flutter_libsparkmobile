@@ -21,18 +21,18 @@ void main() {
   testWidgets('mnemonic to address test', (WidgetTester tester) async {
     // Define the mnemonic.
     const mnemonic =
-        'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek';
+        'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve';
 
     // Generate key data from the mnemonic.
     final keyDataHex =
-        await addressGenerator.generateKeyData(mnemonic, 0, true);
+        await addressGenerator.generateKeyData(mnemonic, 44, 136, 0, 6, 1);
 
     // Derive the address from the key data.
-    final address = await addressGenerator.getAddress(keyDataHex, 0, 0, true);
+    final address = await addressGenerator.getAddress(keyDataHex, 1, 0, false);
 
     // Define the expected address.
     const expectedAddress =
-        'st1dycx6xhtmmk906jqywqrmqm3mk57sex4cuy8ar2jeecqc3ug7wu9dh8pu864avldkr6cef735ktw39gwlv4pq5h9egyqluhtluf06c0v0qeejqtf7cfafjdt6v4hftvh5xwxu6cldgjc5';
+        'sm1shqukway59rq5nefgywyrrmmt8eswgjqdgnsdn4ysrsfl2rna60l2drelf6nfe0pamyxh3w8ypa7y35znhf4c6w44d7lw8xu3kjra4sg2v0zn508hawuul5596fm2h4e2csa9egk4ks3a';
 
     // Compare the derived address with the expected address.
     expect(address, expectedAddress);
