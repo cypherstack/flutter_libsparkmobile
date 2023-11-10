@@ -4,10 +4,40 @@ import 'dart:io';
 
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
+
+class SparkAddressGenerator {
+  final FlutterLibsparkmobile _flutterLibsparkmobilePlugin;
+
+  SparkAddressGenerator(this._flutterLibsparkmobilePlugin);
+
+  Future<String> generateKeyData(String mnemonic, int index) async {
+    final seed = bip39.mnemonicToSeed(mnemonic, passphrase: '');
+    final root = coinlib.HDPrivateKey.fromSeed(seed);
+
+    const purpose = 44; // BIP44.
+    const coinType = 136; // Spark.
+    const account = 0; // Receiving.
+    const chain = 6; // BIP44_SPARK_INDEX.
+    final derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
+
+    final keys = root.derivePath(derivePath);
+
+    // Cast Uint8List keys.privateKey.data to a hex string.
+    return keys.privateKey.data.toHexString();
+  }
+
+  Future<String> getAddress(
+      String keyDataHex, int index, int diversifier, bool isTestnet) async {
+    // Convert the hex string to a list of bytes and pad to 32 bytes.
+    final List<int> keyData = keyDataHex.toBytes();
+
+    return await _flutterLibsparkmobilePlugin.getAddress(
+        keyData, index, diversifier, isTestnet);
+  }
+}
 
 void main() {
   runApp(const MyApp());
@@ -21,59 +51,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  /// Generate a keyData from the mnemonic.
-  Future<void> generateKeyData() async {
-    final seed = bip39.mnemonicToSeed(
-      mnemonicController.text,
-      passphrase: '',
-    );
-    final root = coinlib.HDPrivateKey.fromSeed(seed);
-
-    const purpose = 44; // BIP44.
-    const coinType = 136; // Spark.
-    // See https://github.com/firoorg/firo/blob/74769e8d329b08382fdcc367fc7d88b81521db06/src/wallet/wallet.cpp#L258.
-    const account = 0; // Receiving.
-    const chain = 6; // BIP44_SPARK_INDEX.
-    final index = int.parse(indexController.text);
-    final derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
-
-    final keys = root.derivePath(derivePath);
-
-    // Cast Uint8List keys.privateKey.data to a hex string.
-    final keyData = keys.privateKey.data.toHexString();
-
-    setState(() {
-      keyDataController.text = keyData;
-    });
-  }
-
-  /// Derive an address from the keyData (mnemonic).
-  Future<void> getAddress() async {
-    try {
-      final String keyDataHex = keyDataController.text;
-      // Make sure keyDataHex is a valid hex string.
-      if (keyDataHex.isEmpty ||
-          !RegExp(r'^[0-9a-fA-F]+$').hasMatch(keyDataHex)) {
-        throw 'Key data must be a valid hexadecimal string.';
-      }
-
-      // Convert the hex string to a list of bytes and pad to 32 bytes.
-      final List<int> keyData = keyDataHex.toBytes();
-
-      final index = int.parse(indexController.text);
-      final diversifier = int.parse(diversifierController.text);
-
-      String address = await _flutterLibsparkmobilePlugin.getAddress(
-          keyData, index, diversifier, isTestnet);
-      addressController.text = address;
-
-      if (kDebugMode) {
-        print('Address: $address');
-      }
-    } catch (e) {
-      print('Error getting address: $e');
-    }
-  }
+  late final SparkAddressGenerator _addressGenerator;
 
   String _platformVersion = 'Unknown';
   final FlutterLibsparkmobile _flutterLibsparkmobilePlugin;
@@ -120,6 +98,8 @@ class _MyAppState extends State<MyApp> {
     // Load coinlib.
     coinlib.loadCoinlib();
 
+    _addressGenerator = SparkAddressGenerator(_flutterLibsparkmobilePlugin);
+
     initPlatformState();
   }
 
@@ -147,6 +127,26 @@ class _MyAppState extends State<MyApp> {
   }
 
   bool isTestnet = true; // Default to testnet.
+
+  Future<void> generateKeyData() async {
+    final keyData = await _addressGenerator.generateKeyData(
+        mnemonicController.text, int.parse(indexController.text));
+    setState(() {
+      keyDataController.text = keyData;
+    });
+  }
+
+  Future<void> getAddress() async {
+    final address = await _addressGenerator.getAddress(
+      keyDataController.text,
+      int.parse(indexController.text),
+      int.parse(diversifierController.text),
+      isTestnet,
+    );
+    setState(() {
+      addressController.text = address;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
