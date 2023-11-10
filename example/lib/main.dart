@@ -59,7 +59,7 @@ class _MyAppState extends State<MyApp> {
           'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek');
   final keyDataController = TextEditingController();
   final diversifierController =
-      TextEditingController(text: '1'); // See Spark flow document.
+      TextEditingController(text: '0'); // Default to diversifier 0.
   final addressController = TextEditingController();
 
   final purposeController = TextEditingController(text: '44'); // BIP44.
