@@ -9,6 +9,7 @@ git submodule update --init --recursive
 ```
 
 2. Install dependencies required to build.
+Linux (Ubuntu 20.04):
 ```sh
 sudo apt install libboost-thread-dev
 ```
@@ -34,4 +35,4 @@ Bindings are generated using [ffigen](https://pub.dev/packages/ffigen).  After b
 ### `sparkmobile` troubleshooting
 If you need to test changes in `sparkmobile` itself, you may need to install Boost development libraries as in `sudo apt install libboost-all-dev`.
 
-Get vectors like `./test bin && ./bin/address_tests`.
+Run integration tests like `./interface bin && ./bin/interface_test`.
