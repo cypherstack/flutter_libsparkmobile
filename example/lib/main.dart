@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
 
   final mnemonicController = TextEditingController(
       text:
-          'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek');
+          'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve');
   final keyDataController = TextEditingController();
   final diversifierController =
       TextEditingController(text: '0'); // See Spark flow document.
