@@ -15,20 +15,14 @@ class SparkAddressGenerator {
   SparkAddressGenerator(this._flutterLibsparkmobilePlugin);
 
   /// Generate key data from a mnemonic.
-  Future<String> generateKeyData(
-      String mnemonic, int index, bool isTestnet) async {
+  Future<String> generateKeyData(String mnemonic, int purpose, int coinType,
+      int account, int chain, int index, bool isTestnet) async {
     final seed = bip39.mnemonicToSeed(mnemonic, passphrase: '');
     final root = coinlib.HDPrivateKey.fromSeed(seed);
 
-    const purpose = 44; // BIP44.
-    final coinType = isTestnet ? 1 : 136; // Spark.
-    const account = 0; // Receiving.
-    const chain = 6; // BIP44_SPARK_INDEX.
     final derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
-
     final keys = root.derivePath(derivePath);
 
-    // Cast Uint8List keys.privateKey.data to a hex string.
     return keys.privateKey.data.toHexString();
   }
 
@@ -64,11 +58,17 @@ class _MyAppState extends State<MyApp> {
       text:
           'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek');
   final keyDataController = TextEditingController();
-  final indexController =
-      TextEditingController(text: '0'); // Default to index 0.
   final diversifierController =
       TextEditingController(text: '0'); // Default to diversifier 0.
   final addressController = TextEditingController();
+
+  final purposeController = TextEditingController(text: '44'); // BIP44.
+  final coinTypeController = TextEditingController(text: '1'); // Testnet.
+  // 136 is mainnet, 1 is testnet.
+  final accountController = TextEditingController(text: '0'); // Receiving.
+  final chainController = TextEditingController(text: '2'); // BIP44_MINT_INDEX.
+  // BIP_44_SPARK_INDEX is 6.
+  final indexController = TextEditingController(text: '0');
 
   // Define mnemonic strengths.
   final List<int> mnemonicStrengths = [
@@ -107,7 +107,7 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
 
     SchedulerBinding.instance
-        .addPostFrameCallback((_) => generateKeyDataAndGetAddress(context));
+        .addPostFrameCallback((_) => generateKeyDataAndGetAddress());
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -137,7 +137,13 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> generateKeyData() async {
     final keyData = await _addressGenerator.generateKeyData(
-        mnemonicController.text, int.parse(indexController.text), isTestnet);
+        mnemonicController.text,
+        int.parse(purposeController.text),
+        isTestnet ? 1 : int.parse(coinTypeController.text),
+        int.parse(accountController.text),
+        int.parse(chainController.text),
+        int.parse(indexController.text),
+        isTestnet);
     setState(() {
       keyDataController.text = keyData;
     });
@@ -155,8 +161,26 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  Future<void> generateKeyDataAndGetAddress(BuildContext context) async {
-    await generateKeyData();
+  Future<void> generateKeyDataAndGetAddress() async {
+    final purpose = int.parse(purposeController.text);
+    final coinType = isTestnet ? 1 : int.parse(coinTypeController.text);
+    final account = int.parse(accountController.text);
+    final chain = int.parse(chainController.text);
+    final index = int.parse(indexController.text);
+
+    final keyData = await _addressGenerator.generateKeyData(
+        mnemonicController.text,
+        purpose,
+        coinType,
+        account,
+        chain,
+        index,
+        isTestnet);
+
+    setState(() {
+      keyDataController.text = keyData;
+    });
+
     await getAddress();
   }
 
@@ -234,7 +258,7 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8), // Spacing between inputs
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.only(bottom: 22),
@@ -256,6 +280,11 @@ class _MyAppState extends State<MyApp> {
                             onChanged: (bool? newValue) {
                               setState(() {
                                 isTestnet = newValue ?? true;
+                                if (isTestnet) {
+                                  coinTypeController.text = '1';
+                                } else {
+                                  coinTypeController.text = '136';
+                                }
                               });
                             },
                           ),
@@ -264,6 +293,19 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                   ),
+                ],
+              ),
+              Row(
+                children: [
+                  _buildNumberInput(purposeController, 'Purpose'),
+                  const SizedBox(width: 8),
+                  _buildNumberInput(coinTypeController, 'Coin Type'),
+                  const SizedBox(width: 8),
+                  _buildNumberInput(accountController, 'Account'),
+                  const SizedBox(width: 8),
+                  _buildNumberInput(chainController, 'Chain'),
+                  const SizedBox(width: 8),
+                  _buildNumberInput(indexController, 'Index'),
                 ],
               ),
               const SizedBox(height: 20),
@@ -280,6 +322,17 @@ class _MyAppState extends State<MyApp> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNumberInput(TextEditingController controller, String label) {
+    return Expanded(
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       ),
     );
   }
