@@ -23,9 +23,12 @@ void main() {
     const mnemonic =
         'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve';
 
+    // Construct derivePath string.
+    const derivePath = "m/44'/136'/0'/6/1";
+
     // Generate key data from the mnemonic.
     final keyDataHex =
-        await addressGenerator.generateKeyData(mnemonic, 44, 136, 0, 6, 1);
+        await addressGenerator.generateKeyData(mnemonic, derivePath);
 
     // Derive the address from the key data.
     final address = await addressGenerator.getAddress(keyDataHex, 1, 0, false);

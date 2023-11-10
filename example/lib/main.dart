@@ -15,12 +15,11 @@ class SparkAddressGenerator {
   SparkAddressGenerator(this._flutterLibsparkmobilePlugin);
 
   /// Generate key data from a mnemonic.
-  Future<String> generateKeyData(String mnemonic, int purpose, int coinType,
-      int account, int chain, int index) async {
+  Future<String> generateKeyData(String mnemonic, String derivePath) async {
     final seed = bip39.mnemonicToSeed(mnemonic, passphrase: '');
     final root = coinlib.HDPrivateKey.fromSeed(seed);
 
-    final derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
+    // TODO validate derivePath.
     final keys = root.derivePath(derivePath);
 
     return keys.privateKey.data.toHexString();
@@ -138,13 +137,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> generateKeyData() async {
+    // Construct derivePath string.
+    final derivePath =
+        "m/${purposeController.text}'/${coinTypeController.text}'/${accountController.text}'/${chainController.text}/${indexController.text}";
+
     final keyData = await _addressGenerator.generateKeyData(
-        mnemonicController.text,
-        int.parse(purposeController.text),
-        isTestnet ? 1 : int.parse(coinTypeController.text),
-        int.parse(accountController.text),
-        int.parse(chainController.text),
-        int.parse(indexController.text));
+        mnemonicController.text, derivePath);
     setState(() {
       keyDataController.text = keyData;
     });
@@ -164,13 +162,16 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> generateKeyDataAndGetAddress() async {
     final purpose = int.parse(purposeController.text);
-    final coinType = isTestnet ? 1 : int.parse(coinTypeController.text);
+    final coinType = int.parse(coinTypeController.text);
     final account = int.parse(accountController.text);
     final chain = int.parse(chainController.text);
     final index = int.parse(indexController.text);
 
+    // Construct derivePath string.
+    final String derivePath = "m/$purpose'/$coinType'/$account'/$chain/$index";
+
     final keyData = await _addressGenerator.generateKeyData(
-        mnemonicController.text, purpose, coinType, account, chain, index);
+        mnemonicController.text, derivePath);
 
     setState(() {
       keyDataController.text = keyData;
