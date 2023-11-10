@@ -1,6 +1,5 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
@@ -56,24 +55,4 @@ ffi.DynamicLibrary _loadLibrary() {
     return ffi.DynamicLibrary.open('sparkmobile.dll');
   }
   throw UnsupportedError('This platform is not supported');
-}
-
-/// Extension to convert hex string to list of bytes.
-extension on String {
-  Uint8List toBytes() {
-    List<int> bytes = [];
-    for (int i = 0; i < length; i += 2) {
-      var byteString = substring(i, i + 2);
-      var byteValue = int.parse(byteString, radix: 16);
-      bytes.add(byteValue);
-    }
-    return Uint8List.fromList(bytes);
-  }
-}
-
-/// Extension to convert Uint8List to a hex string.
-extension on Uint8List {
-  String toHexString() {
-    return map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
-  }
 }
