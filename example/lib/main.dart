@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 
@@ -62,7 +63,7 @@ class _MyAppState extends State<MyApp> {
   final mnemonicController = TextEditingController(
       text:
           'circle chunk sense green van control boat scare ketchup hidden depend attitude drama apple slogan robust fork exhaust screen easy response dumb fine creek');
-  final keyDataController = TextEditingController(text: '0');
+  final keyDataController = TextEditingController();
   final indexController =
       TextEditingController(text: '0'); // Default to index 0.
   final diversifierController =
@@ -104,6 +105,9 @@ class _MyAppState extends State<MyApp> {
     _addressGenerator = SparkAddressGenerator(_flutterLibsparkmobilePlugin);
 
     initPlatformState();
+
+    SchedulerBinding.instance
+        .addPostFrameCallback((_) => generateKeyDataAndGetAddress(context));
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -149,6 +153,11 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       addressController.text = address;
     });
+  }
+
+  Future<void> generateKeyDataAndGetAddress(BuildContext context) async {
+    await generateKeyData();
+    await getAddress();
   }
 
   @override
