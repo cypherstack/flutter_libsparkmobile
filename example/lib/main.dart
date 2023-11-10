@@ -214,6 +214,8 @@ class _MyAppState extends State<MyApp> {
                     onPressed: () => setState(() {
                       mnemonicController.text =
                           bip39.generateMnemonic(strength: currentStrength);
+
+                      generateKeyDataAndGetAddress();
                     }),
                     child: const Text('Generate Mnemonic'),
                   ),
