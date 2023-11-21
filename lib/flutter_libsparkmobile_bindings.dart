@@ -119,6 +119,19 @@ final class CIdentifiedCoinData extends ffi.Struct {
   external int memoLength;
 }
 
+final class CCRecipient extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> pubKey;
+
+  @ffi.Int()
+  external int pubKeyLength;
+
+  @ffi.Uint64()
+  external int cAmount;
+
+  @ffi.Int()
+  external int subtractFee;
+}
+
 const int _STDINT_H = 1;
 
 const int _FEATURES_H = 1;
