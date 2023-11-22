@@ -132,6 +132,15 @@ final class CCRecipient extends ffi.Struct {
   external int subtractFee;
 }
 
+final class CMintedCoinData extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> address;
+
+  @ffi.Uint64()
+  external int value;
+
+  external ffi.Pointer<ffi.Char> memo;
+}
+
 const int _STDINT_H = 1;
 
 const int _FEATURES_H = 1;
