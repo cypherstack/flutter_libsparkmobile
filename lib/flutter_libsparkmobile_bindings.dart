@@ -61,6 +61,35 @@ class SparkMobileBindings {
               CCoin, ffi.Pointer<ffi.Char>, ffi.Int)>>('identifyCoin');
   late final _identifyCoin = _identifyCoinPtr.asFunction<
       CIdentifiedCoinData Function(CCoin, ffi.Pointer<ffi.Char>, int)>();
+
+  ffi.Pointer<CCRecipient> createSparkMintRecipients(
+    int numRecipients,
+    ffi.Pointer<PubKeyScript> pubKeyScripts,
+    ffi.Pointer<ffi.Uint64> amounts,
+    ffi.Pointer<ffi.Char> memo,
+    int subtractFee,
+  ) {
+    return _createSparkMintRecipients(
+      numRecipients,
+      pubKeyScripts,
+      amounts,
+      memo,
+      subtractFee,
+    );
+  }
+
+  late final _createSparkMintRecipientsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<CCRecipient> Function(
+              ffi.Int,
+              ffi.Pointer<PubKeyScript>,
+              ffi.Pointer<ffi.Uint64>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Int)>>('createSparkMintRecipients');
+  late final _createSparkMintRecipients =
+      _createSparkMintRecipientsPtr.asFunction<
+          ffi.Pointer<CCRecipient> Function(int, ffi.Pointer<PubKeyScript>,
+              ffi.Pointer<ffi.Uint64>, ffi.Pointer<ffi.Char>, int)>();
 }
 
 final class __fsid_t extends ffi.Struct {
@@ -139,6 +168,13 @@ final class CMintedCoinData extends ffi.Struct {
   external int value;
 
   external ffi.Pointer<ffi.Char> memo;
+}
+
+final class PubKeyScript extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> bytes;
+
+  @ffi.Int()
+  external int length;
 }
 
 const int _STDINT_H = 1;
