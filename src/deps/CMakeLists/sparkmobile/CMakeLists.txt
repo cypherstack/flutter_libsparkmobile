@@ -15,6 +15,20 @@ LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
 add_subdirectory(secp256k1)
 
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
+    # Android exclusive library
+    find_library( # Defines the name of the path variable that stores the
+            # location of the NDK library.
+            log-lib
+
+            # Specifies the name of the NDK library that
+            # CMake needs to locate.
+            log )
+    SET(MY_CUSTOM_COMPILE_FLAGS "-L${distribution_DIR}/openssl-1.1.1k/lib/ -std=c++17")
+else()
+    SET(MY_CUSTOM_COMPILE_FLAGS "-std=c++17")
+endif()
+
 set_property(SOURCE src/spark.cpp
     bitcoin/amount.cpp
     bitcoin/arith_uint256.cpp
@@ -42,8 +56,8 @@ set_property(SOURCE src/spark.cpp
     src/schnorr.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
-        src/util.cpp
-    PROPERTY COMPILE_FLAGS "-std=c++17" )
+    src/util.cpp
+    PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
 
 add_library(sparkmobile SHARED
     src/spark.cpp
@@ -73,9 +87,13 @@ add_library(sparkmobile SHARED
     src/schnorr.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
-        src/util.cpp)
+    src/util.cpp)
 
-target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark)
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
+    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark ${log-lib})
+else()
+    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark)
+endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
