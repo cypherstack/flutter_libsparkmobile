@@ -4,7 +4,7 @@ project(sparkmobile)
 
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 
-SET(distribution_DIR /opt/android)
+SET(distribution_DIR "../../build/${BUILD_FOR_SYSTEM_NAME}")
 SET(OPENSSL_ROOT_DIR ${distribution_DIR}/prefix_${ANDROID_ABI})
 
 SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
@@ -42,9 +42,7 @@ set_property(SOURCE src/spark.cpp
     src/schnorr.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
-    src/util.cpp
-    src/utils.cpp
-    src/dart_interface.cpp
+        src/util.cpp
     PROPERTY COMPILE_FLAGS "-std=c++17" )
 
 add_library(sparkmobile SHARED
@@ -75,12 +73,10 @@ add_library(sparkmobile SHARED
     src/schnorr.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
-    src/util.cpp
-    src/utils.cpp
-    src/dart_interface.cpp)
+        src/util.cpp)
 
-target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1)
+target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark)
 
-add_dependencies(sparkmobile secp256k1)
+add_dependencies(sparkmobile secp256k1_spark)
 
-target_include_directories(sparkmobile PUBLIC secp256k1 ${OPENSSL_INCLUDE_DIR})
+target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
