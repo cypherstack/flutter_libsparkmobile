@@ -106,10 +106,7 @@ final class CCoin extends ffi.Struct {
   @ffi.Int()
   external int kLength;
 
-  external ffi.Pointer<ffi.Char> keyData;
-
-  @ffi.Int()
-  external int index;
+  external ffi.Pointer<ffi.Char> address;
 
   @ffi.Uint64()
   external int v;
@@ -175,6 +172,58 @@ final class PubKeyScript extends ffi.Struct {
 
   @ffi.Int()
   external int length;
+}
+
+final class COutputCoinData extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> address;
+
+  @ffi.Uint64()
+  external int value;
+
+  external ffi.Pointer<ffi.Char> memo;
+}
+
+final class CCSparkMintMeta extends ffi.Struct {
+  @ffi.Uint64()
+  external int height;
+
+  external ffi.Pointer<ffi.Char> id;
+
+  @ffi.Int()
+  external int isUsed;
+
+  external ffi.Pointer<ffi.Char> txid;
+
+  @ffi.Uint64()
+  external int i;
+
+  external ffi.Pointer<ffi.UnsignedChar> d;
+
+  @ffi.Int()
+  external int dLength;
+
+  @ffi.Uint64()
+  external int v;
+
+  external ffi.Pointer<ffi.UnsignedChar> k;
+
+  @ffi.Int()
+  external int kLength;
+
+  external ffi.Pointer<ffi.Char> memo;
+
+  @ffi.Int()
+  external int memoLength;
+
+  external ffi.Pointer<ffi.UnsignedChar> serial_context;
+
+  @ffi.Int()
+  external int serial_contextLength;
+
+  @ffi.Char()
+  external int type;
+
+  external CCoin coin;
 }
 
 const int _STDINT_H = 1;
