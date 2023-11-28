@@ -1,6 +1,3 @@
-import 'dart:ffi' as ffi;
-import 'dart:io';
-
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 import 'package:flutter_libsparkmobile_example/main.dart';
@@ -13,24 +10,23 @@ void main() {
   // Load coinlib for crypto operations.
   coinlib.loadCoinlib();
 
-  // Initialize the plugin.
-  final FlutterLibsparkmobile plugin = FlutterLibsparkmobile(_loadLibrary());
-  final SparkAddressGenerator addressGenerator = SparkAddressGenerator(plugin);
-
   testWidgets('mnemonic to address test', (WidgetTester tester) async {
     // Define the mnemonic.
     const mnemonic =
         'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve';
 
+    const index = 1;
+
     // Construct derivePath string.
-    const derivePath = "m/44'/136'/0'/6/1";
+    const derivePath = "m/44'/136'/0'/$kSparkChain/$index";
 
     // Generate key data from the mnemonic.
     final keyDataHex =
-        await addressGenerator.generateKeyData(mnemonic, derivePath);
+        await SparkAddressGenerator.generateKeyData(mnemonic, derivePath);
 
     // Derive the address from the key data.
-    final address = await addressGenerator.getAddress(keyDataHex, 1, 0, false);
+    final address =
+        await SparkAddressGenerator.getAddress(keyDataHex, index, 0, false);
 
     // Define the expected address.
     const expectedAddress =
@@ -39,20 +35,4 @@ void main() {
     // Compare the derived address with the expected address.
     expect(address, expectedAddress);
   });
-}
-
-/// Load the native library.
-ffi.DynamicLibrary _loadLibrary() {
-  if (Platform.isLinux) {
-    return ffi.DynamicLibrary.open('libsparkmobile.so');
-  } else if (Platform.isAndroid) {
-    return ffi.DynamicLibrary.open('libsparkmobile.so');
-  } else if (Platform.isIOS) {
-    return ffi.DynamicLibrary.open('libsparkmobile.dylib');
-  } else if (Platform.isMacOS) {
-    return ffi.DynamicLibrary.open('libsparkmobile.dylib');
-  } else if (Platform.isWindows) {
-    return ffi.DynamicLibrary.open('sparkmobile.dll');
-  }
-  throw UnsupportedError('This platform is not supported');
 }
