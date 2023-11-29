@@ -31,7 +31,8 @@ android {
 
     // Bumping the plugin ndkVersion requires all clients of this plugin to bump
     // the version in their app and to download a newer version of the NDK.
-    ndkVersion "23.1.7779620"
+//    ndkVersion "23.1.7779620"
+    ndkVersion = "21.1.6352462"
 
     // Invoke the shared CMake build with the Android Gradle Plugin.
     externalNativeBuild {
@@ -54,15 +55,14 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
         ndkVersion = "21.1.6352462"
 
         externalNativeBuild {
             cmake {
                 arguments "-DBUILD_FOR_SYSTEM_NAME=android", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang -v"
                 cppFlags "-frtti -fexceptions -v -DANDROID -std=c++17"
-                abiFilters  'x86_64', 'arm64-v8a'
-//                abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+                abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
             }
         }
     }
