@@ -55,23 +55,27 @@ echo $OPENSSL_SHA256 "$OPENSSL_FILE_PATH" | sha256sum -c - || exit 1
 
 for arch in "aarch" "aarch64" "i686" "x86_64"
 do
-PREFIX=$WORKDIR/prefix_${arch}
 
 case $arch in
 	"aarch")   CLANG=armv7a-linux-androideabi${API}-clang
 		   CXXLANG=armv7a-linux-androideabi${API}-clang++
+       PREFIX="$WORKDIR/prefix_armeabi-v7a"
 		   X_ARCH="android-arm";;
 	"aarch64") CLANG=${arch}-linux-android${API}-clang
 		   CXXLANG=${arch}-linux-android${API}-clang++
+       PREFIX="$WORKDIR/prefix_arm64-v8a"
 		   X_ARCH="android-arm64";;
 	"i686")    CLANG=${arch}-linux-android${API}-clang
 		   CXXLANG=${arch}-linux-android${API}-clang++
+       PREFIX="$WORKDIR/prefix_x86"
 		   X_ARCH="android-x86";;
 	"x86_64")  CLANG=${arch}-linux-android${API}-clang
 		   CXXLANG=${arch}-linux-android${API}-clang++
+       PREFIX="$WORKDIR/prefix_x86_64"
 		   X_ARCH="android-x86_64";;
 	*)	   CLANG=${arch}-linux-android${API}-clang
 		   CXXLANG=${arch}-linux-android${API}-clang++
+       PREFIX="$WORKDIR/prefix_${arch}"
 		   X_ARCH="android-${arch}";;
 esac
 

@@ -7,6 +7,7 @@
       <excludeFolder url="file://$MODULE_DIR$/src/build" />
       <excludeFolder url="file://$MODULE_DIR$/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/android/.cxx" />
       <excludeFolder url="file://$MODULE_DIR$/example/.dart_tool" />
     </content>
     <orderEntry type="inheritedJdk" />
