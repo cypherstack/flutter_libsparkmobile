@@ -1,3 +1,4 @@
-[submodule "sparkmobile"]
-	path = sparkmobile
-	url = https://github.com/firoorg/sparkmobile
+[submodule "src/deps/sparkmobile"]
+	path = src/deps/sparkmobile
+	url = https://github.com/firoorg/sparkmobile.git
+	ignore = untracked

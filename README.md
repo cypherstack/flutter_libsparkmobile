@@ -5,7 +5,8 @@
 
 1. Initialize `sparkmobile` submodule.
 ```sh
-git submodule update --init --recursive
+cd flutter_libsparkmobile/scripts
+./prebuild.sh
 ```
 
 2. Install dependencies required to build.
@@ -14,7 +15,7 @@ Linux (Ubuntu 20.04):
 sudo apt install libboost-thread-dev
 ```
 
-3. Build the native library for your platform like:
+3. Build the native library deps for your platform like:
 ```sh
 cd flutter_libsparkmobile/scripts/linux
 ./build_all.sh

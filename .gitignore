@@ -28,10 +28,7 @@ doc/api/
 
 .idea/
 
-lib/git_versions.dart
-
 # Ignore build artifacts.
-scripts/*/cache/
-scripts/*/sparkmobile
-scripts/*/CMakeLists/sparkmobile/CMakeLists.txt
-scripts/*/CMakeLists/secp256k1/CMakeLists.txt
+src/deps/sparkmobile/CMakeLists.txt
+src/deps/sparkmobile/secp256k1/CMakeLists.txt
+src/build

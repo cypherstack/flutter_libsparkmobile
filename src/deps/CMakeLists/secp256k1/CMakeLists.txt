@@ -1,9 +1,9 @@
 # Copyright (c) 2017 The Bitcoin developers
 
 cmake_minimum_required(VERSION 3.1)
-project(secp256k1)
+project(secp256k1_spark)
 
-SET(distribution_DIR /opt/android)
+SET(distribution_DIR "../../../build/${BUILD_FOR_SYSTEM_NAME}")
 SET(OPENSSL_ROOT_DIR ${distribution_DIR}/prefix_${ANDROID_ABI})
 
 SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
@@ -15,21 +15,27 @@ ADD_DEFINITIONS(-DUSE_ENDOMORPHISM=1)
 ADD_DEFINITIONS(-DUSE_NUM_NONE=1)
 ADD_DEFINITIONS(-DUSE_FIELD_INV_BUILTIN=1)
 ADD_DEFINITIONS(-DUSE_SCALAR_INV_BUILTIN=1)
-ADD_DEFINITIONS(-fPIC)
+
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
+	# nothing
+else()
+	ADD_DEFINITIONS(-fPIC)
+endif()
+
 
 LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
 # TODO: change this to include when possible
 include_directories(. include src/modules/ecdh src)
 
-add_library(secp256k1 src/secp256k1.c src/cpp/GroupElement.cpp src/cpp/MultiExponent.cpp src/cpp/Scalar.cpp src/modules/ecdh/main_impl.h include/secp256k1_ecdh.h src/scratch_impl.h src/scratch.h)
+add_library(secp256k1_spark src/secp256k1.c src/cpp/GroupElement.cpp src/cpp/MultiExponent.cpp src/cpp/Scalar.cpp src/modules/ecdh/main_impl.h include/secp256k1_ecdh.h src/scratch_impl.h src/scratch.h)
 
 # We need to link in GMP
 find_package(GMP)
 if(GMP_INCLUDE_DIR AND GMP_LIBRARIES)
 	target_include_directories(secp256k1 PUBLIC ${GMP_INCLUDE_DIR})
-	target_link_libraries(secp256k1 ${GMP_LIBRARIES})
-	target_compile_definitions(secp256k1
+	target_link_libraries(secp256k1_spark ${GMP_LIBRARIES})
+	target_compile_definitions(secp256k1_spark
 		PUBLIC
 			HAVE_LIBGMP
 			USE_NUM_GMP
@@ -37,7 +43,7 @@ if(GMP_INCLUDE_DIR AND GMP_LIBRARIES)
 			USE_SCALAR_INV_BUILTIN
 	)
 else()
-	target_compile_definitions(secp256k1
+	target_compile_definitions(secp256k1_spark
 		PUBLIC
 			USE_NUM_NONE
 			USE_FIELD_INV_BUILTIN
@@ -49,7 +55,7 @@ endif()
 include(CheckTypeSize)
 check_type_size(__int128 SIZEOF___INT128)
 if(SIZEOF___INT128 EQUAL 16)
-	target_compile_definitions(secp256k1 PUBLIC HAVE___INT128)
+	target_compile_definitions(secp256k1_spark PUBLIC HAVE___INT128)
 else()
 	# If we do not support __int128, we should be falling back
 	# on 32bits implementations for field and scalar.
@@ -64,17 +70,17 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 		message(SEND_ERROR "Compiler does not support __int128")
 	endif()
 
-	target_compile_definitions(secp256k1 PUBLIC USE_SCALAR_4X64)
-	target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52)
+	target_compile_definitions(secp256k1_spark PUBLIC USE_SCALAR_4X64)
+	target_compile_definitions(secp256k1_spark PUBLIC USE_FIELD_5X52)
 else()
-	target_compile_definitions(secp256k1 PUBLIC USE_SCALAR_8X32)
-	target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26)
+	target_compile_definitions(secp256k1_spark PUBLIC USE_SCALAR_8X32)
+	target_compile_definitions(secp256k1_spark PUBLIC USE_FIELD_10X26)
 endif()
 
 
 # TODO: emult static precomputation
 # TODO: ecdh module
 # TODO: RECOVERY module
-TARGET_INCLUDE_DIRECTORIES(secp256k1 PUBLIC ${OPENSSL_INCLUDE_DIR})
-TARGET_LINK_LIBRARIES(secp256k1 ${OPENSSL_LIBRARIES})
-#target_link_libraries(secp256k1 ${OPENSSL_LIBRARIES})
+TARGET_INCLUDE_DIRECTORIES(secp256k1_spark PUBLIC ${OPENSSL_INCLUDE_DIR})
+TARGET_LINK_LIBRARIES(secp256k1_spark ${OPENSSL_LIBRARIES})
+#target_link_libraries(secp256k1_spark ${OPENSSL_LIBRARIES})

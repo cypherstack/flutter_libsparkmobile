@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
@@ -5,46 +6,32 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:flutter_libsparkmobile/extensions.dart';
 
-import 'flutter_libsparkmobile_bindings.dart';
+import 'flutter_libsparkmobile_bindings_generated.dart';
 
 const kSparkChain = 6;
 const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";
 
+const String _kLibName = 'flutter_libsparkmobile';
+
+/// The dynamic library in which the symbols for [FlutterLibsparkmobileBindings] can be found.
+final DynamicLibrary _dylib = () {
+  // TODO: Make available in test somehow. Not sure if easily possible atm
+
+  if (Platform.isMacOS || Platform.isIOS) {
+    return DynamicLibrary.open('$_kLibName.framework/$_kLibName');
+  }
+  if (Platform.isAndroid || Platform.isLinux) {
+    return DynamicLibrary.open('lib$_kLibName.so');
+  }
+  if (Platform.isWindows) {
+    return DynamicLibrary.open('$_kLibName.dll');
+  }
+  throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
+}();
+
 abstract final class LibSpark {
-  static SparkMobileBindings? _bindings;
-
-  static void _checkLoaded() {
-    _bindings ??= SparkMobileBindings(_loadLibrary());
-  }
-
-  static DynamicLibrary _loadLibrary() {
-    // hack in prefix for test env
-    String testPrefix = "";
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
-      if (Platform.isLinux) {
-        testPrefix = 'scripts/linux/build/';
-      } else if (Platform.isMacOS) {
-        testPrefix = 'scripts/macos/build/';
-      } else if (Platform.isWindows) {
-        testPrefix = 'scripts/windows/build/';
-      } else {
-        throw UnsupportedError('This platform is not supported');
-      }
-    }
-
-    if (Platform.isLinux) {
-      return DynamicLibrary.open('${testPrefix}libsparkmobile.so');
-    } else if (Platform.isAndroid) {
-      // return DynamicLibrary.open('${testPrefix}libsparkmobile.so');
-    } else if (Platform.isIOS) {
-      // return DynamicLibrary.open('${testPrefix}libsparkmobile.dylib');
-    } else if (Platform.isMacOS) {
-      // return DynamicLibrary.open('${testPrefix}libsparkmobile.dylib');
-    } else if (Platform.isWindows) {
-      // return DynamicLibrary.open('${testPrefix}sparkmobile.dll');
-    }
-    throw UnsupportedError('This platform is not supported');
-  }
+  static final FlutterLibsparkmobileBindings _bindings =
+      FlutterLibsparkmobileBindings(_dylib);
 
   // SparkMobileBindings methods:
 
@@ -55,8 +42,6 @@ abstract final class LibSpark {
     required int diversifier,
     bool isTestNet = false,
   }) async {
-    _checkLoaded();
-
     if (index < 0) {
       throw Exception("Index must not be negative.");
     }
@@ -75,7 +60,7 @@ abstract final class LibSpark {
     final keyDataPointer = privateKey.toHexString().toNativeUtf8().cast<Char>();
 
     // Call the native method with the pointer.
-    final addressPointer = _bindings!.getAddress(
+    final addressPointer = _bindings.getAddress(
       keyDataPointer,
       index,
       diversifier,

@@ -4,7 +4,7 @@ project(sparkmobile)
 
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 
-SET(distribution_DIR /opt/android)
+SET(distribution_DIR "../../build/${BUILD_FOR_SYSTEM_NAME}")
 SET(OPENSSL_ROOT_DIR ${distribution_DIR}/prefix_${ANDROID_ABI})
 
 SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
@@ -14,6 +14,20 @@ SET(OPENSSL_LIBRARIES "ssl" "crypto")
 LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
 add_subdirectory(secp256k1)
+
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
+    # Android exclusive library
+    find_library( # Defines the name of the path variable that stores the
+            # location of the NDK library.
+            log-lib
+
+            # Specifies the name of the NDK library that
+            # CMake needs to locate.
+            log )
+    SET(MY_CUSTOM_COMPILE_FLAGS "-L${distribution_DIR}/openssl-1.1.1k/lib/ -std=c++17")
+else()
+    SET(MY_CUSTOM_COMPILE_FLAGS "-std=c++17")
+endif()
 
 set_property(SOURCE src/spark.cpp
     bitcoin/amount.cpp
@@ -43,9 +57,7 @@ set_property(SOURCE src/spark.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
     src/util.cpp
-    src/utils.cpp
-    src/dart_interface.cpp
-    PROPERTY COMPILE_FLAGS "-std=c++17" )
+    PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
 
 add_library(sparkmobile SHARED
     src/spark.cpp
@@ -75,12 +87,14 @@ add_library(sparkmobile SHARED
     src/schnorr.cpp
     src/spend_transaction.cpp
     src/transcript.cpp
-    src/util.cpp
-    src/utils.cpp
-    src/dart_interface.cpp)
+    src/util.cpp)
 
-target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1)
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
+    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark ${log-lib})
+else()
+    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark)
+endif()
 
-add_dependencies(sparkmobile secp256k1)
+add_dependencies(sparkmobile secp256k1_spark)
 
-target_include_directories(sparkmobile PUBLIC secp256k1 ${OPENSSL_INCLUDE_DIR})
+target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
