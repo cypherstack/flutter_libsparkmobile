@@ -4,9 +4,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter_libsparkmobile/extensions.dart';
 
-import 'flutter_libsparkmobile_bindings_generated.dart';
+import 'src/extensions.dart';
+import 'src/flutter_libsparkmobile_bindings_generated.dart';
 
 const kSparkChain = 6;
 const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";

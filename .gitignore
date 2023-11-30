@@ -29,6 +29,8 @@ doc/api/
 .idea/
 
 # Ignore build artifacts.
+macos/flutter_libsparkmobile.framework
+scripts/macos/build
 src/deps/sparkmobile/CMakeLists.txt
 src/deps/sparkmobile/secp256k1/CMakeLists.txt
 src/build

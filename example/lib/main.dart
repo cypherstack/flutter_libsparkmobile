@@ -5,8 +5,8 @@ import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_libsparkmobile/extensions.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
+import 'package:flutter_libsparkmobile/src/extensions.dart';
 
 abstract class SparkAddressGenerator {
   /// Generate key data from a mnemonic.
@@ -25,7 +25,7 @@ abstract class SparkAddressGenerator {
   static Future<String> getAddress(
       String keyDataHex, int index, int diversifier, bool isTestnet) async {
     return await LibSpark.getAddress(
-      privateKey: keyDataHex.toBytes32(),
+      privateKey: keyDataHex.to32BytesFromHex(),
       index: index,
       diversifier: diversifier,
       isTestNet: isTestnet,
