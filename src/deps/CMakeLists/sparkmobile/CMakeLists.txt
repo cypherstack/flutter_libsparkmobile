@@ -4,12 +4,16 @@ project(sparkmobile)
 
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 
-SET(distribution_DIR "../../build/${BUILD_FOR_SYSTEM_NAME}")
-SET(OPENSSL_ROOT_DIR ${distribution_DIR}/prefix_${ANDROID_ABI})
+SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}/prefix_${ANDROID_ABI}")
+
+SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
+
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+list(APPEND CMAKE_FIND_ROOT_PATH "${OPENSSL_ROOT_DIR}")
+
+find_package(OpenSSL REQUIRED)
 
 SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
-SET(OPENSSL_INCLUDE_DIR ${OPENSSL_ROOT_DIR}/include)
-SET(OPENSSL_LIBRARIES "ssl" "crypto")
 
 LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
@@ -24,10 +28,9 @@ if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
             # Specifies the name of the NDK library that
             # CMake needs to locate.
             log )
-    SET(MY_CUSTOM_COMPILE_FLAGS "-L${distribution_DIR}/openssl-1.1.1k/lib/ -std=c++17")
-else()
-    SET(MY_CUSTOM_COMPILE_FLAGS "-std=c++17")
 endif()
+
+SET(MY_CUSTOM_COMPILE_FLAGS "-std=c++17")
 
 set_property(SOURCE src/spark.cpp
     bitcoin/amount.cpp
@@ -58,6 +61,8 @@ set_property(SOURCE src/spark.cpp
     src/transcript.cpp
     src/util.cpp
     PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
+
+LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
 add_library(sparkmobile SHARED
     src/spark.cpp
@@ -90,9 +95,12 @@ add_library(sparkmobile SHARED
     src/util.cpp)
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
-    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark ${log-lib})
+#    target_link_libraries(sparkmobile secp256k1_spark Boost::thread ${log-lib})
+    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark Boost::thread ${log-lib})
+#    target_link_libraries(sparkmobile ${LIB_SSL} ${LIB_CRYPTO} secp256k1_spark Boost::thread ${log-lib})
 else()
-    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark)
+    target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark Boost::thread)
+#    target_link_libraries(sparkmobile ${LIB_SSL} ${LIB_CRYPTO} secp256k1_spark Boost::thread)
 endif()
 
 add_dependencies(sparkmobile secp256k1_spark)

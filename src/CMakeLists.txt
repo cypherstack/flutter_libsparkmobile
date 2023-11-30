@@ -14,6 +14,7 @@ add_library(flutter_libsparkmobile SHARED
         "utils.cpp"
 )
 
+add_subdirectory(deps/boost-cmake)
 add_subdirectory("deps/sparkmobile")
 
 set_target_properties(flutter_libsparkmobile PROPERTIES

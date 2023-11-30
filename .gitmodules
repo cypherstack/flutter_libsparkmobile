@@ -2,3 +2,6 @@
 	path = src/deps/sparkmobile
 	url = https://github.com/firoorg/sparkmobile.git
 	ignore = untracked
+[submodule "src/deps/boost-cmake"]
+	path = src/deps/boost-cmake
+	url = https://github.com/Orphis/boost-cmake
