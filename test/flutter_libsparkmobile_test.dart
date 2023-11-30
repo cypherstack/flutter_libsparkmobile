@@ -1,4 +1,3 @@
-import 'package:flutter_libsparkmobile/extensions.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,7 +19,7 @@ void main() {
 
     // Derive the address from the key data.
     final address = await LibSpark.getAddress(
-      privateKey: keyDataHex.toBytes(),
+      privateKey: keyDataHex.toBytes32(),
       index: 1,
       diversifier: 0,
       isTestNet: false,

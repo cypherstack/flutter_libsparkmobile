@@ -25,7 +25,7 @@ abstract class SparkAddressGenerator {
   static Future<String> getAddress(
       String keyDataHex, int index, int diversifier, bool isTestnet) async {
     return await LibSpark.getAddress(
-      privateKey: keyDataHex.toBytes(),
+      privateKey: keyDataHex.toBytes32(),
       index: index,
       diversifier: diversifier,
       isTestNet: isTestnet,
