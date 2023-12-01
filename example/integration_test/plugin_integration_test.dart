@@ -1,6 +1,6 @@
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
-import 'package:flutter_libsparkmobile_example/main.dart';
+import 'package:flutter_libsparkmobile_example/util/address_generator.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
