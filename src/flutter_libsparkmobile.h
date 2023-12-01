@@ -1,4 +1,3 @@
-
 #ifndef ORG_FIRO_SPARK_DART_INTERFACE_H
 #define ORG_FIRO_SPARK_DART_INTERFACE_H
 
@@ -15,10 +14,6 @@
 #endif
 #endif
 
-
-/*
- * FFI-friendly wrapper for spark::getAddress.
- */
 FFI_PLUGIN_EXPORT
 const char* getAddress(const char* keyDataHex, int index, int diversifier, int isTestNet);
 
@@ -33,15 +28,13 @@ const char* createIncomingViewKey(const char* keyData, int index);
 /*
  * FFI-friendly wrapper for a spark::Coin.
  *
- * A Coin is a type, a key, an index, a value, a memo, and a serial context.  We accept these params
- * as a C struct, deriving the key from the keyData and index.
+ * Coin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/coin.h#L66
  */
 struct CCoin {
     char type;
     const unsigned char* k;
     int kLength;
-    const char* keyData;
-    int index;
+    const char* address;
     uint64_t v;
     const unsigned char* memo;
     int memoLength;
@@ -52,8 +45,7 @@ struct CCoin {
 /*
  * FFI-friendly wrapper for a spark::IdentifiedCoinData.
  *
- * An IdentifiedCoinData is a diversifier, encrypted diversifier, value, nonce, and memo.  We accept
- * these params as a C struct.
+ * IdentifiedCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/coin.h#L19
  */
 struct CIdentifiedCoinData {
     uint64_t i;
@@ -68,6 +60,8 @@ struct CIdentifiedCoinData {
 
 /*
  * FFI-friendly wrapper for spark::identifyCoin.
+ *
+ * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
 FFI_PLUGIN_EXPORT
 struct CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, int index);
@@ -75,9 +69,7 @@ struct CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDa
 /*
  * FFI-friendly wrapper for a spark::CRecipient.
  *
- * A CRecipient is a CScript, CAmount, and a bool.  We accept a C-style, FFI-friendly CCRecipient
- * struct in order to construct a C++ CRecipient.  A CScript is constructed from a hex string, a
- * CAmount is just a uint64_t, and the bool will be an int.
+ * CRecipient: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/include/spark.h#L27
  */
 struct CCRecipient {
     const unsigned char* pubKey;
@@ -89,9 +81,7 @@ struct CCRecipient {
 /*
  * FFI-friendly wrapper for a spark::MintedCoinData.
  *
- * A MintedCoinData is a struct that contains an Address, a uint64_t value, and a string memo.  We
- * accept these as a CMintedCoinData from the Dart interface, and convert them to a MintedCoinData
- * struct.
+ * MintedCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/mint_transaction.h#L12
  */
 struct CMintedCoinData {
     const char* address;
@@ -106,13 +96,128 @@ struct PubKeyScript {
 
 /*
  * FFI-friendly wrapper for spark::createSparkMintRecipients.
+ *
+ * createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
  */
 FFI_PLUGIN_EXPORT
 struct CCRecipient* createSparkMintRecipients(
-        int numRecipients,
-        struct PubKeyScript* pubKeyScripts,
-        uint64_t* amounts,
-        const char* memo,
-        int subtractFee);
+        struct CMintedCoinData* outputs,
+        int outputsLength,
+        const char* serial_context,
+        int serial_contextLength,
+        int generate);
+
+/*
+ * FFI-friendly wrapper for a std::pair<CAmount, bool>.
+ *
+ * Note this is an ambiguation of a spark::CRecipient.  This CRecip(ient) is just a wrapper for a
+ * CAmount and bool pair, and is not the same as the spark::CRecipient struct above, which gets
+ * wrapped for us as a CCRecipient and is unrelated to this struct.
+ *
+ * See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L190
+ */
+struct CRecip {
+    uint64_t amount;
+    int subtractFee;
+};
+
+/*
+ * FFI-friendly wrapper for a spark::OutputCoinData.
+ *
+ * OutputCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L33
+ */
+struct COutputCoinData {
+    const char* address;
+    uint64_t value;
+    const char* memo;
+};
+
+/*
+ * FFI-friendly wrapper for a <spark::OutputCoinData, bool>.
+ *
+ * See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L195
+ */
+struct COutputRecipient {
+    struct COutputCoinData output;
+    int subtractFee;
+};
+
+/*
+ * FFI-friendly wrapper for a spark::CSparkMintMeta.
+ *
+ * CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
+ */
+struct CCSparkMintMeta {
+    uint64_t height;
+    const char* id;
+    int isUsed;
+    const char* txid;
+    uint64_t i; // Diversifier.
+    const unsigned char* d; // Encrypted diversifier.
+    int dLength;
+    uint64_t v; // Value.
+    const unsigned char* k; // Nonce.
+    int kLength;
+    const char* memo;
+    int memoLength;
+    unsigned char* serial_context;
+    int serial_contextLength;
+    char type;
+    CDataStream coin;
+
+    CCSparkMintMeta(uint64_t height, const char* id, int isUsed, const char* txid, uint64_t i, const unsigned char* d, int dLength, uint64_t v, const unsigned char* k, int kLength, const char* memo, int memoLength, unsigned char* serial_context, int serial_contextLength, char type, const CDataStream& coinData);
+    ~CCSparkMintMeta();
+};
+
+/*
+ * FFI-friendly wrapper for a spark::CoverSetData.
+ *
+ * CoverSetData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L28
+ */
+struct CCoverSetData {
+    CDataStream** cover_set; // vs. struct CCoin* cover_set;
+    int cover_setLength;
+    const unsigned char* cover_set_representation;
+    int cover_set_representationLength;
+};
+
+/*
+ * FFI-friendly wrapper for a std::unordered_map<uint64_t, spark::CoverSetData>.
+ *
+ * See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L197
+ */
+struct CCoverSets {
+    struct CCoverSetData* cover_sets;
+    int cover_setsLength;
+};
+
+struct OutputScript {
+    unsigned char* bytes;
+    int length;
+};
+
+/*
+ * FFI-friendly wrapper for spark::createSparkSpendTransaction.
+ *
+ * createSparkSpendTransaction: https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L190
+ */
+FFI_PLUGIN_EXPORT
+unsigned char* cCreateSparkSpendTransaction(
+        const char* keyDataHex,
+        int index,
+        struct CRecip* recipients,
+        int recipientsLength,
+        struct COutputRecipient* privateRecipients,
+        int privateRecipientsLength,
+        struct CCSparkMintMeta* coins,
+        int coinsLength,
+        struct CCoverSets* cover_set_data_all,
+        int cover_set_data_allLength,
+        const char* txHashSig,
+        int txHashSigLength,
+        uint64_t fee,
+        const OutputScript* outputScripts,
+        int outputScriptsLength
+);
 
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H
