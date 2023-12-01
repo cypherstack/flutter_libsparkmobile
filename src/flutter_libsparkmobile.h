@@ -26,7 +26,6 @@ FFI_PLUGIN_EXPORT
 const char* createIncomingViewKey(const char* keyData, int index);
 */
 
-
 /*
  * FFI-friendly wrapper for spark::identifyCoin.
  *
@@ -34,7 +33,6 @@ const char* createIncomingViewKey(const char* keyData, int index);
  */
 FFI_PLUGIN_EXPORT
 struct CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, int index);
-
 
 /*
  * FFI-friendly wrapper for spark::createSparkMintRecipients.
@@ -48,7 +46,6 @@ struct CCRecipient* createSparkMintRecipients(
         const char* serial_context,
         int serial_contextLength,
         int generate);
-
 
 /*
  * FFI-friendly wrapper for spark::createSparkSpendTransaction.

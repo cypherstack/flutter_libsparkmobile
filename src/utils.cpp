@@ -76,14 +76,14 @@ CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* ad
  */
 spark::Coin fromFFI(const CCoin& c_struct) {
     spark::Coin cpp_struct(
-            // The test params are only used for unit tests.
-            spark::Params::get_default(),
-            c_struct.type,
-            spark::Scalar(c_struct.k),
-            decodeAddress(c_struct.address),
-            c_struct.v,
-            std::string(reinterpret_cast<const char*>(c_struct.memo), c_struct.memoLength),
-            std::vector<unsigned char>(c_struct.serial_context, c_struct.serial_context + c_struct.serial_contextLength)
+        // The test params are only used for unit tests.
+        spark::Params::get_default(),
+        c_struct.type,
+        spark::Scalar(c_struct.k),
+        decodeAddress(c_struct.address),
+        c_struct.v,
+        std::string(reinterpret_cast<const char*>(c_struct.memo), c_struct.memoLength),
+        std::vector<unsigned char>(c_struct.serial_context, c_struct.serial_context + c_struct.serial_contextLength)
     );
 
     return cpp_struct;
@@ -170,9 +170,9 @@ CRecipient fromFFI(const CCRecipient& c_struct) {
     CScript script = createCScriptFromBytes(c_struct.pubKey, c_struct.pubKeyLength);
 
     CRecipient cpp_struct = createCRecipient(
-            script,
-            c_struct.cAmount,
-            static_cast<bool>(c_struct.subtractFee)
+        script,
+        c_struct.cAmount,
+        static_cast<bool>(c_struct.subtractFee)
     );
 
     return cpp_struct;
@@ -241,9 +241,9 @@ spark::Address decodeAddress(const std::string& str) {
  */
 spark::MintedCoinData createMintedCoinData(const char* address, uint64_t v, const char* memo) {
     return {
-            decodeAddress(address),
-            v,
-            memo
+        decodeAddress(address),
+        v,
+        memo
     };
 }
 
@@ -252,9 +252,9 @@ spark::MintedCoinData createMintedCoinData(const char* address, uint64_t v, cons
  */
 spark::MintedCoinData fromFFI(const CMintedCoinData& c_struct) {
     return createMintedCoinData(
-            c_struct.address,
-            c_struct.value,
-            c_struct.memo
+        c_struct.address,
+        c_struct.value,
+        c_struct.memo
     );
 }
 
@@ -285,9 +285,9 @@ CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct, int isTestNet) {
  */
 spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, const char* memo) {
     return {
-            decodeAddress(address),
-            v,
-            memo
+        decodeAddress(address),
+        v,
+        memo
     };
 }
 
@@ -296,9 +296,9 @@ spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, cons
  */
 spark::OutputCoinData fromFFI(const COutputCoinData& c_struct) {
     return createOutputCoinData(
-            c_struct.address,
-            c_struct.value,
-            c_struct.memo
+        c_struct.address,
+        c_struct.value,
+        c_struct.memo
     );
 }
 
@@ -321,9 +321,9 @@ COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet) {
     std::string address = cpp_struct.address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
 
     return createCOutputCoinData(
-            address.c_str(),
-            cpp_struct.v,
-            cpp_struct.memo.c_str()
+        address.c_str(),
+        cpp_struct.v,
+        cpp_struct.memo.c_str()
     );
 }
 
@@ -335,12 +335,12 @@ COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet) {
  * CCSparkMintMeta from the Dart interface and convert them to a C++ CSparkMintMeta struct.
  */
 CSparkMintMeta createCSparkMintMeta(
-        const uint64_t height, const uint64_t id, const int isUsed,
-        const char* txidStr, const uint64_t diversifier,
-        const char* encryptedDiversifierStr, const uint64_t value,
-        const char* nonceStr, const char* memoStr,
-        const unsigned char* serialContext,
-        const int serialContextLength, const char type, const CCoin coin
+    const uint64_t height, const uint64_t id, const int isUsed,
+    const char* txidStr, const uint64_t diversifier,
+    const char* encryptedDiversifierStr, const uint64_t value,
+    const char* nonceStr, const char* memoStr,
+    const unsigned char* serialContext,
+    const int serialContextLength, const char type, const CCoin coin
 ) {
     CSparkMintMeta cpp_struct;
 
@@ -404,7 +404,7 @@ CSparkMintMeta fromFFI(const CCSparkMintMeta& c_struct) {
     cpp_struct.coin = fromFFI(coin);
     return cpp_struct;
 }
-//
+
 ///*
 // * CCSparkMintMeta constructor.
 // *
@@ -519,8 +519,8 @@ CCSparkMintMeta toFFI(const CSparkMintMeta& cpp_struct) {
  * CoverSetData factory.
  */
 spark::CoverSetData createCoverSetData(
-        const std::vector<spark::Coin>& cover_set,
-        const std::vector<unsigned char>& cover_set_representations
+    const std::vector<spark::Coin>& cover_set,
+    const std::vector<unsigned char>& cover_set_representations
 ) {
     spark::CoverSetData coverSetData;
     coverSetData.cover_set = cover_set;
@@ -537,9 +537,9 @@ spark::CoverSetData fromFFI(const CCoverSetData& c_struct) {
     for (int i = 0; i < c_struct.cover_setLength; i++) {
         spark::Coin coin;
         CDataStream coinStream(
-                *c_struct.cover_set[i]->data,
-                c_struct.cover_set[i]->data[c_struct.cover_set[i]->length - 1],
-                SER_NETWORK, PROTOCOL_VERSION);
+            *c_struct.cover_set[i]->data,
+            c_struct.cover_set[i]->data[c_struct.cover_set[i]->length - 1],
+            SER_NETWORK, PROTOCOL_VERSION);
         coinStream >> coin;
         cover_set.emplace_back(coin);
     }

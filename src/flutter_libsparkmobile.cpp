@@ -67,7 +67,7 @@ CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, 
  * createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
  */
 FFI_PLUGIN_EXPORT
-  CCRecipient* createSparkMintRecipients(
+CCRecipient* createSparkMintRecipients(
     struct CMintedCoinData* cOutputs,
     int outputsLength,
     const char* serial_context,

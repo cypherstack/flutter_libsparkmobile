@@ -24,7 +24,7 @@ You must have the native library built for your platform before running the exam
 `example/test/integration_test.dart` tests various vectors for correctness.  Run it from `example` as in `flutter test integration_test/plugin_integration_test.dart`.
 
 ## Development
-### Bindings generation (`dart run ffigen`)
+### Bindings generation (`dart run ffigen --config ffigen.yaml`)
 Bindings are generated using [ffigen](https://pub.dev/packages/ffigen).  After bindings are generated, wrap the bound functions in `flutter_libsparkmobile.dart`.
 
 ### `sparkmobile` troubleshooting
