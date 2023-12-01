@@ -4,7 +4,7 @@ project(sparkmobile)
 
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}")
 else()
     SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}/prefix_${ANDROID_ABI}")
@@ -68,7 +68,13 @@ set_property(SOURCE src/spark.cpp
 
 LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
-add_library(sparkmobile SHARED
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+    SET(CUSTOM_LIB_TYPE STATIC)
+else()
+    SET(CUSTOM_LIB_TYPE SHARED)
+endif()
+
+add_library(sparkmobile ${CUSTOM_LIB_TYPE}
     src/spark.cpp
     bitcoin/amount.cpp
     bitcoin/arith_uint256.cpp
@@ -106,7 +112,7 @@ endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${CMAKE_SOURCE_DIR}/deps/missing_headers")
 else()
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})

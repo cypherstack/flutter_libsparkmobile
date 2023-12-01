@@ -9,6 +9,8 @@ SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
     set(CMAKE_CXX_STANDARD 17)
+elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+    set(CMAKE_CXX_STANDARD 17)
 endif()
 
 
@@ -20,7 +22,7 @@ add_library(flutter_libsparkmobile SHARED
 add_subdirectory(deps/boost-cmake)
 add_subdirectory("deps/sparkmobile")
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     set_target_properties(flutter_libsparkmobile PROPERTIES FRAMEWORK TRUE
         FRAMEWORK_VERSION C
         MACOSX_FRAMEWORK_IDENTIFIER com.cypherstack.flutter_libsparkmobile
