@@ -73,9 +73,9 @@ build_openssl_compile_x86_64() {
 
 build_openssl_install_common() {
 	DIR=$1
-	mv ${DIR}/include/* $EXTERNAL_MACOS_INCLUDE_DIR
-	mv ${DIR}/libcrypto.a ${EXTERNAL_MACOS_LIB_DIR}/libcrypto.a
-	mv ${DIR}/libssl.a ${EXTERNAL_MACOS_LIB_DIR}/libssl.a
+	cp -R ${DIR}/include/* "${EXTERNAL_MACOS_INCLUDE_DIR}/"
+	cp -R ${DIR}/libcrypto.a ${EXTERNAL_MACOS_LIB_DIR}/libcrypto.a
+	cp -R ${DIR}/libssl.a ${EXTERNAL_MACOS_LIB_DIR}/libssl.a
 }
 
 build_openssl_install_arm64() {

@@ -17,7 +17,9 @@ mkdir -p $EXTERNAL_MACOS_SOURCE_DIR
 
 ./build_openssl_arm64.sh
 
-mkdir build
+if [ ! -d build ] ; then
+  mkdir build
+fi
 cd build
 cmake ../../../src -DBUILD_FOR_SYSTEM_NAME="macos" && make -j12
 cp -R flutter_libsparkmobile.framework "${PROJECT_ROOT_DIR}/macos/"
