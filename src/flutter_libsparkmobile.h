@@ -70,7 +70,7 @@ unsigned char* cCreateSparkSpendTransaction(
         const char* txHashSig,
         int txHashSigLength,
         uint64_t fee,
-        const OutputScript* outputScripts,
+        const struct OutputScript* outputScripts,
         int outputScriptsLength
 );
 

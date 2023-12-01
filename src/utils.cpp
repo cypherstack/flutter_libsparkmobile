@@ -76,37 +76,41 @@ CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* ad
  */
 spark::Coin fromFFI(const CCoin& c_struct) {
     spark::Coin cpp_struct(
-        // The test params are only used for unit tests.
-        spark::Params::get_default(),
-        c_struct.type,
-        spark::Scalar(c_struct.k),
-        decodeAddress(c_struct.address),
-        c_struct.v,
-        std::string(reinterpret_cast<const char*>(c_struct.memo), c_struct.memoLength),
-        std::vector<unsigned char>(c_struct.serial_context, c_struct.serial_context + c_struct.serial_contextLength)
+            // The test params are only used for unit tests.
+            spark::Params::get_default(),
+            c_struct.type,
+            spark::Scalar(c_struct.k),
+            decodeAddress(c_struct.address),
+            c_struct.v,
+            std::string(reinterpret_cast<const char*>(c_struct.memo), c_struct.memoLength),
+            std::vector<unsigned char>(c_struct.serial_context, c_struct.serial_context + c_struct.serial_contextLength)
     );
 
     return cpp_struct;
 }
 
-/*
- * Utility function to convert a C++ Coin struct to an FFI-friendly C CDataStream struct.
- */
-spark::Coin fromFFI(CDataStream& coinStream) {
+
+spark::Coin fromFFI(CCDataStream& cdStream) {
     spark::Coin coin;
+    CDataStream coinStream(cdStream.data, &cdStream.data[cdStream.length - 1], SER_NETWORK, PROTOCOL_VERSION);
     coinStream >> coin;
     return coin;
 }
 
+
 /*
- * Utility function to convert a C++ Coin struct to an FFI-friendly C CDataStream struct.
+ * Utility function to convert a C++ Coin struct to an FFI-friendly C CCDataStream struct.
  */
-CDataStream toFFI(const spark::Coin& coin) {
+CCDataStream toFFI(const spark::Coin& coin) {
     // Serialize the Coin object into a CDataStream
     CDataStream ccoinStream(SER_NETWORK, PROTOCOL_VERSION);
     ccoinStream << coin;
 
-    return ccoinStream;
+    CCDataStream ccStream;
+    ccStream.data = ccoinStream.data();
+    ccStream.length = ccoinStream.size();
+
+    return ccStream;
 }
 
 /*
@@ -331,12 +335,12 @@ COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet) {
  * CCSparkMintMeta from the Dart interface and convert them to a C++ CSparkMintMeta struct.
  */
 CSparkMintMeta createCSparkMintMeta(
-    const uint64_t height, const uint64_t id, const int isUsed,
-    const char* txidStr, const uint64_t diversifier,
-    const char* encryptedDiversifierStr, const uint64_t value,
-    const char* nonceStr, const char* memoStr,
-    const unsigned char* serialContext,
-    const int serialContextLength, const char type, const CCoin coin
+        const uint64_t height, const uint64_t id, const int isUsed,
+        const char* txidStr, const uint64_t diversifier,
+        const char* encryptedDiversifierStr, const uint64_t value,
+        const char* nonceStr, const char* memoStr,
+        const unsigned char* serialContext,
+        const int serialContextLength, const char type, const CCoin coin
 ) {
     CSparkMintMeta cpp_struct;
 
@@ -396,43 +400,43 @@ CSparkMintMeta fromFFI(const CCSparkMintMeta& c_struct) {
     cpp_struct.type = c_struct.type;
     // c_struct.coin is a const, but we need a non-const reference to pass to fromFFI.
     // Convert c_struct.coin to a non-const.
-    CDataStream coin = c_struct.coin;
+    CCDataStream coin = c_struct.coin;
     cpp_struct.coin = fromFFI(coin);
     return cpp_struct;
 }
-
-/*
- * CCSparkMintMeta constructor.
- *
- * Needed because CDataStream has no constructor.
- */
-CCSparkMintMeta::CCSparkMintMeta(uint64_t height, const char* id, int isUsed, const char* txid,
-                                 uint64_t i, const unsigned char* d, int dLength, uint64_t v,
-                                 const unsigned char* k, int kLength, const char* memo,
-                                 int memoLength, unsigned char* serial_context,
-                                 int serial_contextLength, char type, const CDataStream& coinData
-) : height(height), isUsed(isUsed), i(i), v(v), dLength(dLength), kLength(kLength),
-    memoLength(memoLength), serial_contextLength(serial_contextLength), type(type), coin(coinData)
-{
-    this->id = strdup(id);
-    this->txid = strdup(txid);
-    this->d = copyBytes(d, dLength);
-    this->k = copyBytes(k, kLength);
-    this->memo = strdup(memo);
-    this->serial_context = copyBytes(serial_context, serial_contextLength);
-}
-
-/*
- * CCSparkMintMeta destructor.
- */
-CCSparkMintMeta::~CCSparkMintMeta() {
-    free(const_cast<char*>(id));
-    free(const_cast<char*>(txid));
-    delete[] d;
-    delete[] k;
-    free(const_cast<char*>(memo));
-    delete[] serial_context;
-}
+//
+///*
+// * CCSparkMintMeta constructor.
+// *
+// * Needed because CDataStream has no constructor.
+// */
+//CCSparkMintMeta createCCSparkMintMeta(uint64_t height, const char* id, int isUsed, const char* txid,
+//                                 uint64_t i, const unsigned char* d, int dLength, uint64_t v,
+//                                 const unsigned char* k, int kLength, const char* memo,
+//                                 int memoLength, unsigned char* serial_context,
+//                                 int serial_contextLength, char type, const CCDataStream& coinData
+//) : height(height), isUsed(isUsed), i(i), v(v), dLength(dLength), kLength(kLength),
+//    memoLength(memoLength), serial_contextLength(serial_contextLength), type(type), coin(coinData)
+//{
+//    this->id = strdup(id);
+//    this->txid = strdup(txid);
+//    this->d = copyBytes(d, dLength);
+//    this->k = copyBytes(k, kLength);
+//    this->memo = strdup(memo);
+//    this->serial_context = copyBytes(serial_context, serial_contextLength);
+//}
+//
+///*
+// * CCSparkMintMeta destructor.
+// */
+//CCSparkMintMeta::~CCSparkMintMeta() {
+//    free(const_cast<char*>(id));
+//    free(const_cast<char*>(txid));
+//    delete[] d;
+//    delete[] k;
+//    free(const_cast<char*>(memo));
+//    delete[] serial_context;
+//}
 
 /*
  * CCSparkMintMeta factory.
@@ -452,27 +456,28 @@ CCSparkMintMeta createCCSparkMintMeta(const uint64_t height, const uint64_t id, 
 
     // Convert coin to CDataStream
     spark::Coin coinStruct = fromFFI(coin);
-    CDataStream coinStream = toFFI(coinStruct);
+    CCDataStream coinStream = toFFI(coinStruct);
 
-    // Construct CCSparkMintMeta using the constructor
-    return CCSparkMintMeta(
-        height,
-        idCStr,
-        isUsed,
-        txid,
-        diversifier,
-        encryptedDiversifierCStr,
-        std::strlen(encryptedDiversifier),
-        value,
-        nonceCStr,
-        std::strlen(nonce),
-        memo,
-        std::strlen(memo),
-        const_cast<unsigned char*>(serial_context),
-        serial_contextLength,
-        type,
-        coinStream
-    );
+    CCSparkMintMeta meta;
+
+    meta.height  = height;
+    meta.id  = idCStr;
+    meta.isUsed  = isUsed;
+    meta.txid  = txid;
+    meta.i  = diversifier;
+    meta.d  = encryptedDiversifierCStr;
+    meta.dLength  = std::strlen(encryptedDiversifier);
+    meta.v  = value;
+    meta.k  = nonceCStr;
+    meta.kLength  = std::strlen(nonce);
+    meta.memo  = memo;
+    meta.memoLength  = std::strlen(memo);
+    meta.serial_context  = const_cast<unsigned char*>(serial_context);
+    meta.serial_contextLength  = serial_contextLength;
+    meta.type  = type;
+    meta.coin  = coinStream;
+
+    return meta;
 }
 
 /*
@@ -483,29 +488,31 @@ CCSparkMintMeta toFFI(const CSparkMintMeta& cpp_struct) {
     std::string idStr = std::to_string(cpp_struct.nId);
     const char* idCStr = idStr.c_str();
 
-    CDataStream coinStream = toFFI(cpp_struct.coin);
+    CCDataStream coinStream = toFFI(cpp_struct.coin);
 
     std::vector<unsigned char> scalarBytes(32);
     cpp_struct.k.serialize(scalarBytes.data());
 
-    return CCSparkMintMeta(
-        cpp_struct.nHeight,
-        idCStr,
-        cpp_struct.isUsed,
-        cpp_struct.txid.ToString().c_str(),
-        cpp_struct.i,
-        copyBytes(cpp_struct.d.data(), cpp_struct.d.size()),
-        cpp_struct.d.size(),
-        cpp_struct.v,
-        copyBytes(scalarBytes.data(), scalarBytes.size()), // Size should be 32.
-        32,
-        strdup(cpp_struct.memo.c_str()),
-        cpp_struct.memo.size(),
-        copyBytes(cpp_struct.serial_context.data(), cpp_struct.serial_context.size()),
-        cpp_struct.serial_context.size(),
-        cpp_struct.type,
-        coinStream
-    );
+    CCSparkMintMeta meta;
+
+    meta.height = cpp_struct.nHeight;
+    meta.id = idCStr;
+    meta.isUsed = cpp_struct.isUsed;
+    meta.txid = cpp_struct.txid.ToString().c_str();
+    meta.i =  cpp_struct.i;
+    meta.d = copyBytes(cpp_struct.d.data(), cpp_struct.d.size());
+    meta.dLength = cpp_struct.d.size();
+    meta.v = cpp_struct.v;
+    meta.k = copyBytes(scalarBytes.data(), scalarBytes.size());
+    meta.kLength = 32;
+    meta.memo = strdup(cpp_struct.memo.c_str());
+    meta.memoLength = cpp_struct.memo.size();
+    meta.serial_context = copyBytes(cpp_struct.serial_context.data(), cpp_struct.serial_context.size());
+    meta.serial_contextLength = cpp_struct.serial_context.size();
+    meta.type =  cpp_struct.type;
+    meta.coin = coinStream;
+
+    return meta;
 }
 
 /*
@@ -529,7 +536,10 @@ spark::CoverSetData fromFFI(const CCoverSetData& c_struct) {
 
     for (int i = 0; i < c_struct.cover_setLength; i++) {
         spark::Coin coin;
-        CDataStream coinStream = *c_struct.cover_set[i];
+        CDataStream coinStream(
+                *c_struct.cover_set[i]->data,
+                c_struct.cover_set[i]->data[c_struct.cover_set[i]->length - 1],
+                SER_NETWORK, PROTOCOL_VERSION);
         coinStream >> coin;
         cover_set.emplace_back(coin);
     }
@@ -545,7 +555,7 @@ spark::CoverSetData fromFFI(const CCoverSetData& c_struct) {
 CCoverSetData createCCoverSetData(const CCoin* cover_set,
                                   const unsigned char* cover_set_representation,
                                   const int cover_set_representationLength) {
-    std::vector<CDataStream> cover_set_streams;
+    std::vector<CCDataStream> cover_set_streams;
 
     for (int i = 0; i < cover_set_representationLength; i++) {
         // Convert CCoin to Coin.
@@ -555,12 +565,17 @@ CCoverSetData createCCoverSetData(const CCoin* cover_set,
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << coin;
 
+
+        CCDataStream ccStream;
+        ccStream.data = stream.data();
+        ccStream.length = stream.size();
+
         // Add stream to vector.
-        cover_set_streams.push_back(stream);
+        cover_set_streams.push_back(ccStream);
     }
 
     // Create array containing the address of cover_set_streams
-    CDataStream** cover_set_streams_pp = new CDataStream*[cover_set_representationLength];
+    CCDataStream** cover_set_streams_pp = new CCDataStream*[cover_set_representationLength];
 
     for (int i = 0; i < cover_set_representationLength; i++) {
         cover_set_streams_pp[i] = &cover_set_streams[i];

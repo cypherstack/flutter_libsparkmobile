@@ -2,7 +2,10 @@
 #define ORG_FIRO_SPARK_DART_STRUCTS_H
 
 #include <stdint.h>
-#include "deps/sparkmobile/include/spark.h"
+
+//#ifdef __cplusplus
+//extern C {
+//#endif
 
 /*
  * FFI-friendly wrapper for a spark::Coin.
@@ -11,13 +14,13 @@
  */
 struct CCoin {
     char type;
-    const unsigned char* k;
+    const unsigned char *k;
     int kLength;
-    const char* address;
+    const char *address;
     uint64_t v;
-    const unsigned char* memo;
+    const unsigned char *memo;
     int memoLength;
-    const unsigned char* serial_context;
+    const unsigned char *serial_context;
     int serial_contextLength;
 };
 
@@ -28,12 +31,12 @@ struct CCoin {
  */
 struct CIdentifiedCoinData {
     uint64_t i;
-    const unsigned char* d;
+    const unsigned char *d;
     int dLength;
     uint64_t v;
-    const unsigned char* k;
+    const unsigned char *k;
     int kLength;
-    const char* memo;
+    const char *memo;
     int memoLength;
 };
 
@@ -43,7 +46,7 @@ struct CIdentifiedCoinData {
  * CRecipient: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/include/spark.h#L27
  */
 struct CCRecipient {
-    const unsigned char* pubKey;
+    const unsigned char *pubKey;
     int pubKeyLength;
     uint64_t cAmount;
     int subtractFee;
@@ -55,16 +58,15 @@ struct CCRecipient {
  * MintedCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/mint_transaction.h#L12
  */
 struct CMintedCoinData {
-    const char* address;
+    const char *address;
     uint64_t value;
-    const char* memo;
+    const char *memo;
 };
 
 struct PubKeyScript {
-    unsigned char* bytes;
+    unsigned char *bytes;
     int length;
 };
-
 
 
 /*
@@ -87,9 +89,9 @@ struct CRecip {
  * OutputCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L33
  */
 struct COutputCoinData {
-    const char* address;
+    const char *address;
     uint64_t value;
-    const char* memo;
+    const char *memo;
 };
 
 /*
@@ -102,6 +104,11 @@ struct COutputRecipient {
     int subtractFee;
 };
 
+struct CCDataStream {
+    const char *data;
+    int length;
+};
+
 /*
  * FFI-friendly wrapper for a spark::CSparkMintMeta.
  *
@@ -109,24 +116,30 @@ struct COutputRecipient {
  */
 struct CCSparkMintMeta {
     uint64_t height;
-    const char* id;
+    const char *id;
     int isUsed;
-    const char* txid;
+    const char *txid;
     uint64_t i; // Diversifier.
-    const unsigned char* d; // Encrypted diversifier.
+    const unsigned char *d; // Encrypted diversifier.
     int dLength;
     uint64_t v; // Value.
-    const unsigned char* k; // Nonce.
+    const unsigned char *k; // Nonce.
     int kLength;
-    const char* memo;
+    const char *memo;
     int memoLength;
-    unsigned char* serial_context;
+    unsigned char *serial_context;
     int serial_contextLength;
     char type;
-    CDataStream coin;
+    struct CCDataStream coin;
 
-    CCSparkMintMeta(uint64_t height, const char* id, int isUsed, const char* txid, uint64_t i, const unsigned char* d, int dLength, uint64_t v, const unsigned char* k, int kLength, const char* memo, int memoLength, unsigned char* serial_context, int serial_contextLength, char type, const CDataStream& coinData);
-    ~CCSparkMintMeta();
+//    CCSparkMintMeta(uint64_t height, const char *id, int isUsed,
+//                    const char *txid, uint64_t i, const unsigned char *d,
+//                    int dLength, uint64_t v, const unsigned char *k,
+//                    int kLength, const char *memo, int memoLength,
+//                    unsigned char *serial_context, int serial_contextLength,
+//                    char type, const CCDataStream &coinData);
+//
+//    ~CCSparkMintMeta();
 };
 
 /*
@@ -135,9 +148,9 @@ struct CCSparkMintMeta {
  * CoverSetData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L28
  */
 struct CCoverSetData {
-    CDataStream** cover_set; // vs. struct CCoin* cover_set;
+    struct CCDataStream **cover_set; // vs. struct CCoin* cover_set;
     int cover_setLength;
-    const unsigned char* cover_set_representation;
+    const unsigned char *cover_set_representation;
     int cover_set_representationLength;
 };
 
@@ -152,9 +165,12 @@ struct CCoverSets {
 };
 
 struct OutputScript {
-    unsigned char* bytes;
+    unsigned char *bytes;
     int length;
 };
 
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif //ORG_FIRO_SPARK_DART_STRUCTS_H

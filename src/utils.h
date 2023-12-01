@@ -8,7 +8,6 @@
 
 #include "structs.h"
 #include "deps/sparkmobile/include/spark.h"
-#include "deps/sparkmobile/bitcoin/streams.h" // For CDataStream.
 
 const char* getAddressFromData(const char* keyData, int index, const uint64_t diversifier, int isTestNet);
 
@@ -16,11 +15,11 @@ spark::SpendKey createSpendKeyFromData(const char *keyData, int index);
 
 spark::Coin fromFFI(const CCoin& c_struct);
 
-spark::Coin fromFFI(CDataStream& coinStream);
+spark::Coin fromFFI(CCDataStream& coinStream);
 
 CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
 
-CDataStream toFFI(const spark::Coin& cpp_struct);
+CCDataStream toFFI(const spark::Coin& cpp_struct);
 
 spark::IdentifiedCoinData fromFFI(const CIdentifiedCoinData& c_struct);
 

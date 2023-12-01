@@ -44,7 +44,7 @@ const char* getAddress(const char* keyDataHex, int index, int diversifier, int i
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
 FFI_PLUGIN_EXPORT
-struct CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, int index) {
+CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, int index) {
     try {
         spark::Coin coin = fromFFI(c_struct);
 
@@ -67,7 +67,7 @@ struct CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDa
  * createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
  */
 FFI_PLUGIN_EXPORT
-struct CCRecipient* createSparkMintRecipients(
+  CCRecipient* createSparkMintRecipients(
     struct CMintedCoinData* cOutputs,
     int outputsLength,
     const char* serial_context,

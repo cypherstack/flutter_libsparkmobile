@@ -8,8 +8,10 @@ output: 'lib/src/flutter_libsparkmobile_bindings_generated.dart'
 headers:
   entry-points:
     - 'src/flutter_libsparkmobile.h'
+    - 'src/structs.h'
   include-directives:
     - 'src/flutter_libsparkmobile.h'
+    - 'src/structs.h'
 preamble: |
   // ignore_for_file: always_specify_types
   // ignore_for_file: camel_case_types
