@@ -8,16 +8,19 @@
 
 #include "flutter_libsparkmobile.h"
 #include "deps/sparkmobile/include/spark.h"
+#include "deps/sparkmobile/bitcoin/streams.h" // For CDataStream.
 
-const char* getAddressFromData(const char* keyData, int index, const uint64_t diversifier);
+const char* getAddressFromData(const char* keyData, int index, const uint64_t diversifier, int isTestNet);
 
 spark::SpendKey createSpendKeyFromData(const char *keyData, int index);
 
 spark::Coin fromFFI(const CCoin& c_struct);
 
-CCoin toFFI(const spark::Coin& cpp_struct);
+spark::Coin fromFFI(CDataStream& coinStream);
 
-struct CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* keyData, int index, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
+struct CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
+
+CDataStream toFFI(const spark::Coin& cpp_struct);
 
 spark::IdentifiedCoinData fromFFI(const CIdentifiedCoinData& c_struct);
 
@@ -43,12 +46,36 @@ spark::MintedCoinData fromFFI(const CMintedCoinData& c_struct);
 
 CMintedCoinData createCMintedCoinData(const char* address, uint64_t value, const char* memo);
 
-CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct);
+CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct, int isTestNet);
+
+spark::OutputCoinData fromFFI(const COutputCoinData& c_struct);
+
+spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, const char* memo);
+
+COutputCoinData createCOutputCoinData(const char* address, uint64_t value, const char* memo);
+
+COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet);
+
+CSparkMintMeta createCSparkMintMeta(const uint64_t height, const uint64_t id, const int isUsed, const char* txid, const uint64_t diversifier, const char* encryptedDiversifier, const uint64_t value, const char* nonce, const char* memo, const unsigned char* serialContext, const int serialContextLength, const char type, const CCoin coin);
+
+CSparkMintMeta fromFFI(const CCSparkMintMeta& c_struct);
+
+CCSparkMintMeta createCCSparkMintMeta(const uint64_t height, const uint64_t id, const int isUsed, const char* txid, const uint64_t diversifier, const char* encryptedDiversifier, const uint64_t value, const char* nonce, const char* memo, const unsigned char* serialContext, const int serialContextLength, const char type, const CCoin coin);
+
+CCSparkMintMeta toFFI(const CSparkMintMeta& cpp_struct);
+
+spark::CoverSetData createCoverSetData(const std::vector<spark::Coin>& cover_set, const std::vector<std::vector<unsigned char>>& cover_set_representations);
+
+spark::CoverSetData fromFFI(const CCoverSetData& c_struct);
+
+CCoverSetData createCCoverSetData(const CCoin* cover_set, const unsigned char* cover_set_representation, const int cover_set_representationLength);
 
 char const hexArray[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
-						   'e', 'f'};
+                           'e', 'f'};
 
 unsigned char* copyBytes(const unsigned char* source, int length);
+
+Scalar bytesToScalar(const unsigned char* bytes, int size);
 
 unsigned char *hexToBytes(const char *str);
 
@@ -57,6 +84,5 @@ const char *bytesToHex(const unsigned char *bytes, int size);
 const char *bytesToHex(const char *bytes, int size);
 
 const char *bytesToHex(std::vector<unsigned char> bytes, int size);
-
 
 #endif //ORG_FIRO_SPARK_UTILS_H
