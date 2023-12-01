@@ -1,9 +1,10 @@
 #include "flutter_libsparkmobile.h"
 #include "utils.h"
 #include "deps/sparkmobile/include/spark.h"
+#include "deps/sparkmobile/bitcoin/uint256.h"
+#include "structs.h"
 
 #include <cstring>
-#include "deps/sparkmobile/bitcoin/uint256.h"
 #include <iostream> // Just for printing.
 
 using namespace spark;

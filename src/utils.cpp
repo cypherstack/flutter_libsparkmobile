@@ -6,10 +6,10 @@
 #include <vector>
 #include <string>
 
-#include "flutter_libsparkmobile.h"
+#include "structs.h"
 #include "deps/sparkmobile/src/coin.h"
 #include "deps/sparkmobile/src/keys.h"
-#include "deps/sparkmobile//bitcoin/script.h"  // For CScript.
+#include "deps/sparkmobile/bitcoin/script.h"  // For CScript.
 
 /*
  * Utility function to generate an address from keyData, index, and a diversifier.
@@ -57,7 +57,7 @@ spark::SpendKey createSpendKeyFromData(const char *keyData, int index) {
  *
  * TODO manage the memory allocated by this function.
  */
-struct CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength) {
+CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength) {
     CCoin coin;
     coin.type = type;
     coin.k = copyBytes(k, kLength);
@@ -179,7 +179,7 @@ CRecipient fromFFI(const CCRecipient& c_struct) {
  *
  * TODO manage the memory allocated by this function.
  */
-struct CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee) {
+CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee) {
     CCRecipient recipient;
     recipient.pubKey = copyBytes(pubKey, 32);
     recipient.cAmount = amount;

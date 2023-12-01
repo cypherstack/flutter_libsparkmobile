@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "flutter_libsparkmobile.h"
+#include "structs.h"
 #include "deps/sparkmobile/include/spark.h"
 #include "deps/sparkmobile/bitcoin/streams.h" // For CDataStream.
 
@@ -18,7 +18,7 @@ spark::Coin fromFFI(const CCoin& c_struct);
 
 spark::Coin fromFFI(CDataStream& coinStream);
 
-struct CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
+CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
 
 CDataStream toFFI(const spark::Coin& cpp_struct);
 
@@ -34,7 +34,7 @@ CRecipient createCRecipient(const CScript& script, CAmount amount, bool subtract
 
 CRecipient fromFFI(const CCRecipient& c_struct);
 
-struct CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee);
+CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee);
 
 CCRecipient toFFI(const CRecipient& cpp_struct);
 
