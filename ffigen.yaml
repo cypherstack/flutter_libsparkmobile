@@ -4,7 +4,7 @@ description: |
   Bindings for `src/flutter_libsparkmobile.h`.
 
   Regenerate bindings with `flutter pub run ffigen --config ffigen.yaml`.
-output: 'lib/flutter_libsparkmobile_bindings_generated.dart'
+output: 'lib/src/flutter_libsparkmobile_bindings_generated.dart'
 headers:
   entry-points:
     - 'src/flutter_libsparkmobile.h'

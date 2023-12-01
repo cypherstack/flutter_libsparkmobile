@@ -7,20 +7,39 @@ project(flutter_libsparkmobile_library VERSION 0.0.1)
 
 SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+    set(CMAKE_CXX_STANDARD 17)
+elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+    set(CMAKE_CXX_STANDARD 17)
+endif()
 
 
 add_library(flutter_libsparkmobile SHARED
-  "flutter_libsparkmobile.cpp"
-        "utils.cpp"
+    "flutter_libsparkmobile.cpp"
+    "utils.cpp"
 )
 
 add_subdirectory(deps/boost-cmake)
 add_subdirectory("deps/sparkmobile")
 
-set_target_properties(flutter_libsparkmobile PROPERTIES
-  PUBLIC_HEADER flutter_libsparkmobile.h
-  OUTPUT_NAME "flutter_libsparkmobile"
-)
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+    set_target_properties(flutter_libsparkmobile PROPERTIES FRAMEWORK TRUE
+        FRAMEWORK_VERSION C
+        MACOSX_FRAMEWORK_IDENTIFIER com.cypherstack.flutter_libsparkmobile
+        # "current version" in semantic format in Mach-O binary file
+        VERSION 16.4.0
+        # "compatibility version" in semantic format in Mach-O binary file
+        SOVERSION 1.0.0
+        PUBLIC_HEADER flutter_libsparkmobile.h
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
+    )
+    target_compile_options(flutter_libsparkmobile PUBLIC -fembed-bitcode)
+else()
+    set_target_properties(flutter_libsparkmobile PROPERTIES
+        PUBLIC_HEADER flutter_libsparkmobile.h
+        OUTPUT_NAME "flutter_libsparkmobile"
+    )
+endif()
 
 target_link_libraries(flutter_libsparkmobile sparkmobile)
 
