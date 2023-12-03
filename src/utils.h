@@ -84,4 +84,6 @@ const char *bytesToHex(const char *bytes, int size);
 
 const char *bytesToHex(std::vector<unsigned char> bytes, int size);
 
+spark::Coin deserializeCoin(const char *serializedCoin, int length);
+
 #endif //ORG_FIRO_SPARK_UTILS_H

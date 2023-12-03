@@ -44,9 +44,9 @@ const char* getAddress(const char* keyDataHex, int index, int diversifier, int i
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
 FFI_PLUGIN_EXPORT
-CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, int index) {
+CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinLength, const char* keyDataHex, int index) {
     try {
-        spark::Coin coin = fromFFI(c_struct);
+        spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
 
         // Derive the incoming view key from the key data and index.
         spark::SpendKey spendKey = createSpendKeyFromData(keyDataHex, index);

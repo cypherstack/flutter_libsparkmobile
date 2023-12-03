@@ -51,12 +51,14 @@ class FlutterLibsparkmobileBindings {
   ///
   /// identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
   CIdentifiedCoinData identifyCoin(
-    CCoin c_struct,
+    ffi.Pointer<ffi.Char> serializedCoin,
+    int serializedCoinLength,
     ffi.Pointer<ffi.Char> keyDataHex,
     int index,
   ) {
     return _identifyCoin(
-      c_struct,
+      serializedCoin,
+      serializedCoinLength,
       keyDataHex,
       index,
     );
@@ -64,10 +66,11 @@ class FlutterLibsparkmobileBindings {
 
   late final _identifyCoinPtr = _lookup<
       ffi.NativeFunction<
-          CIdentifiedCoinData Function(
-              CCoin, ffi.Pointer<ffi.Char>, ffi.Int)>>('identifyCoin');
+          CIdentifiedCoinData Function(ffi.Pointer<ffi.Char>, ffi.Int,
+              ffi.Pointer<ffi.Char>, ffi.Int)>>('identifyCoin');
   late final _identifyCoin = _identifyCoinPtr.asFunction<
-      CIdentifiedCoinData Function(CCoin, ffi.Pointer<ffi.Char>, int)>();
+      CIdentifiedCoinData Function(
+          ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Char>, int)>();
 
   /// FFI-friendly wrapper for spark::createSparkMintRecipients.
   ///

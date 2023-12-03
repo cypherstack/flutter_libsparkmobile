@@ -32,7 +32,7 @@ const char* createIncomingViewKey(const char* keyData, int index);
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
 FFI_PLUGIN_EXPORT
-struct CIdentifiedCoinData identifyCoin(struct CCoin c_struct, const char* keyDataHex, int index);
+struct CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinLength, const char* keyDataHex, int index);
 
 /*
  * FFI-friendly wrapper for spark::createSparkMintRecipients.

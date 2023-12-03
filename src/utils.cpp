@@ -690,3 +690,11 @@ const char *bytesToHex(std::vector<unsigned char> bytes, int size) {
     std::strcpy(new_str, str.c_str());
     return new_str;
 }
+
+spark::Coin deserializeCoin(const char *serializedCoin, int length) {
+    std::vector<char> vec(serializedCoin, serializedCoin + length);
+    CDataStream stream(vec, SER_NETWORK, 0);
+    spark::Coin coin(spark::Params::get_default());
+    stream >> coin;
+    return coin;
+}
