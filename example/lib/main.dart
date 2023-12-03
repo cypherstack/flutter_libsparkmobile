@@ -1,6 +1,7 @@
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter/material.dart';
 import 'package:flutter_libsparkmobile_example/views/address_view.dart';
+import 'package:flutter_libsparkmobile_example/views/id_coin_view.dart';
 
 void main() async {
   await coinlib.loadCoinlib();
@@ -37,6 +38,21 @@ class _MyAppState extends State<MyApp> {
               },
               child: const Text(
                 "Addresses",
+              ),
+            ),
+            const SizedBox(
+              height: 24,
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<dynamic>(
+                    builder: (_) => const IdCoinView(),
+                  ),
+                );
+              },
+              child: const Text(
+                "ID Coin",
               ),
             )
           ],

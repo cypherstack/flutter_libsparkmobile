@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter_libsparkmobile/src/models/spark_coin.dart';
 
 import 'src/extensions.dart';
 import 'src/flutter_libsparkmobile_bindings_generated.dart';
@@ -75,5 +76,37 @@ abstract final class LibSpark {
     malloc.free(addressPointer);
 
     return addressString;
+  }
+
+  ///
+  /// Check whether the spark coin is ours and if so recover required data
+  /// and encapsulate into a single object ([SparkCoin]).
+  ///
+  /// Returns a [SparkCoin] if the coin belongs to us, or null otherwise.
+  ///
+  static SparkCoin? identifyAndRecoverCoin(
+    String serializedCoin, {
+    required String privateKeyHex,
+    required int index,
+  }) {
+    final result = _bindings.identifyCoin(
+      serializedCoin.toNativeUtf8().cast<Char>(),
+      serializedCoin.length,
+      privateKeyHex.toNativeUtf8().cast<Char>(),
+      index,
+    );
+
+    throw UnimplementedError(
+      "Have ffi return all the data we need for SparkCoin."
+      " This may or may not encompass all fields currently in SparkCoin.",
+    );
+  }
+}
+
+extension on Uint8List {
+  Pointer<UnsignedChar> unsignedCharPointer() {
+    final pointer = malloc.allocate<Uint8>(sizeOf<Uint8>() * lengthInBytes);
+    pointer.asTypedList(lengthInBytes).setAll(0, this);
+    return pointer.cast<UnsignedChar>();
   }
 }
