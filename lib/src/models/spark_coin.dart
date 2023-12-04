@@ -11,7 +11,7 @@ enum LibSparkCoinType {
 class LibSparkCoin {
   final LibSparkCoinType type;
 
-  final Uint8List? k; // TODO: proper name (not single char!!) is this nonce???
+  final Uint8List? nonce;
 
   final String? address;
 
@@ -26,11 +26,11 @@ class LibSparkCoin {
   final Uint8List? serial;
   final Uint8List? tag;
 
-  final Uint8List? lTagHash;
+  final String? lTagHash;
 
   LibSparkCoin({
     required this.type,
-    this.k,
+    this.nonce,
     this.address,
     this.value,
     this.memo,
@@ -44,7 +44,7 @@ class LibSparkCoin {
 
   LibSparkCoin copyWith({
     LibSparkCoinType? type,
-    Uint8List? k,
+    Uint8List? nonce,
     String? address,
     BigInt? value,
     String? memo,
@@ -53,11 +53,11 @@ class LibSparkCoin {
     Uint8List? encryptedDiversifier,
     Uint8List? serial,
     Uint8List? tag,
-    Uint8List? lTagHash,
+    String? lTagHash,
   }) {
     return LibSparkCoin(
       type: type ?? this.type,
-      k: k ?? this.k,
+      nonce: nonce ?? this.nonce,
       address: address ?? this.address,
       value: value ?? this.value,
       memo: memo ?? this.memo,
@@ -74,7 +74,7 @@ class LibSparkCoin {
   String toString() {
     return 'LibSparkCoin('
         ', type: $type'
-        ', k: $k'
+        ', k: $nonce'
         ', address: $address'
         ', value: $value'
         ', memo: $memo'

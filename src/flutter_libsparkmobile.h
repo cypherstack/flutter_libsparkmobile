@@ -34,6 +34,15 @@ const char* createIncomingViewKey(const char* keyData, int index);
 FFI_PLUGIN_EXPORT
 struct CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinLength, const char* keyDataHex, int index);
 
+FFI_PLUGIN_EXPORT
+struct AggregateCoinData* idAndRecoverCoin(
+        const char* serializedCoin,
+        int serializedCoinLength,
+        const char* keyDataHex,
+        int index,
+        int isTestNet
+);
+
 /*
  * FFI-friendly wrapper for spark::createSparkMintRecipients.
  *

@@ -72,6 +72,34 @@ class FlutterLibsparkmobileBindings {
       CIdentifiedCoinData Function(
           ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Char>, int)>();
 
+  ffi.Pointer<AggregateCoinData> idAndRecoverCoin(
+    ffi.Pointer<ffi.Char> serializedCoin,
+    int serializedCoinLength,
+    ffi.Pointer<ffi.Char> keyDataHex,
+    int index,
+    int isTestNet,
+  ) {
+    return _idAndRecoverCoin(
+      serializedCoin,
+      serializedCoinLength,
+      keyDataHex,
+      index,
+      isTestNet,
+    );
+  }
+
+  late final _idAndRecoverCoinPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<AggregateCoinData> Function(
+              ffi.Pointer<ffi.Char>,
+              ffi.Int,
+              ffi.Pointer<ffi.Char>,
+              ffi.Int,
+              ffi.Int)>>('idAndRecoverCoin');
+  late final _idAndRecoverCoin = _idAndRecoverCoinPtr.asFunction<
+      ffi.Pointer<AggregateCoinData> Function(
+          ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Char>, int, int)>();
+
   /// FFI-friendly wrapper for spark::createSparkMintRecipients.
   ///
   /// createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
@@ -395,4 +423,37 @@ final class OutputScript extends ffi.Struct {
 
   @ffi.Int()
   external int length;
+}
+
+/// Aggregate data structure to handle passing spark mint/spend data across FFI
+final class AggregateCoinData extends ffi.Struct {
+  @ffi.Char()
+  external int type;
+
+  @ffi.Uint64()
+  external int diversifier;
+
+  @ffi.Uint64()
+  external int value;
+
+  external ffi.Pointer<ffi.Char> address;
+
+  external ffi.Pointer<ffi.Char> memo;
+
+  external ffi.Pointer<ffi.Char> lTagHash;
+
+  external ffi.Pointer<ffi.UnsignedChar> encryptedDiversifier;
+
+  @ffi.Int()
+  external int encryptedDiversifierLength;
+
+  external ffi.Pointer<ffi.UnsignedChar> serial;
+
+  @ffi.Int()
+  external int serialLength;
+
+  external ffi.Pointer<ffi.UnsignedChar> nonce;
+
+  @ffi.Int()
+  external int nonceLength;
 }

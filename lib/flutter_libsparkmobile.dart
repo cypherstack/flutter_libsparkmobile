@@ -88,18 +88,57 @@ abstract final class LibSpark {
     String serializedCoin, {
     required String privateKeyHex,
     required int index,
+    bool isTestNet = false,
   }) {
-    final result = _bindings.identifyCoin(
+    final result = _bindings.idAndRecoverCoin(
       serializedCoin.toNativeUtf8().cast<Char>(),
       serializedCoin.length,
       privateKeyHex.toNativeUtf8().cast<Char>(),
       index,
+      isTestNet ? 1 : 0,
     );
 
-    throw UnimplementedError(
-      "Have ffi return all the data we need for SparkCoin."
-      " This may or may not encompass all fields currently in SparkCoin.",
+    final LibSparkCoinType coinType;
+    switch (result.ref.type) {
+      case 0:
+        coinType = LibSparkCoinType.mint;
+        break;
+      case 1:
+        coinType = LibSparkCoinType.mint;
+        break;
+      default:
+        throw Exception("Unknown coin type \"${result.ref.type}\" found.");
+    }
+
+    final ret = LibSparkCoin(
+      type: coinType,
+      nonce: result.ref.nonce.toUint8List(result.ref.nonceLength),
+      address: result.ref.address.cast<Utf8>().toDartString(),
+      value: BigInt.from(result.ref.value),
+      memo: result.ref.memo.cast<Utf8>().toDartString(),
+      diversifier: BigInt.from(result.ref.diversifier),
+      encryptedDiversifier:
+          result.ref.serial.toUint8List(result.ref.encryptedDiversifierLength),
+      serial: result.ref.serial.toUint8List(result.ref.serialLength),
+      lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
     );
+
+    malloc.free(result.ref.address);
+    malloc.free(result.ref.memo);
+    malloc.free(result.ref.lTagHash);
+    malloc.free(result.ref.encryptedDiversifier);
+    malloc.free(result.ref.nonce);
+    malloc.free(result.ref.serial);
+    malloc.free(result);
+
+    return ret;
+  }
+}
+
+extension on Pointer<UnsignedChar> {
+  Uint8List toUint8List(int length) {
+    // TODO needs free?
+    return Uint8List.fromList(cast<Uint8>().asTypedList(length));
   }
 }
 

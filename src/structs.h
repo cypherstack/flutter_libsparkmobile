@@ -169,6 +169,41 @@ struct OutputScript {
     int length;
 };
 
+/*
+ * Aggregate data structure to handle passing spark mint/spend data across FFI
+ */
+struct AggregateCoinData {
+    char type;
+    uint64_t diversifier;
+    uint64_t value;
+      char *address;
+      char *memo;
+      char *lTagHash;
+
+    unsigned char *encryptedDiversifier;
+    int encryptedDiversifierLength;
+
+    unsigned char *serial;
+    int serialLength;
+
+    unsigned char *nonce;
+    int nonceLength;
+};
+
+
+//struct IdentifiedCoinData {
+//    uint64_t i; // diversifier
+//    std::vector<unsigned char> d; // encrypted diversifier
+//    uint64_t v; // value
+//    Scalar k; // nonce
+//    std::string memo; // memo
+//};
+//
+//struct RecoveredCoinData {
+//    Scalar s; // serial
+//    GroupElement T; // tag
+//};
+
 //#ifdef __cplusplus
 //}
 //#endif

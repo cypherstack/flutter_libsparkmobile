@@ -61,6 +61,63 @@ CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinL
     }
 }
 
+FFI_PLUGIN_EXPORT
+AggregateCoinData* idAndRecoverCoin(
+        const char* serializedCoin,
+        int serializedCoinLength,
+        const char* keyDataHex,
+        int index,
+        int isTestNet) {
+    try {
+        spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
+
+        // Derive the incoming view key from the key data and index.
+        spark::SpendKey spendKey = createSpendKeyFromData(keyDataHex, index);
+        spark::FullViewKey fullViewKey(spendKey);
+        spark::IncomingViewKey incomingViewKey(fullViewKey);
+
+        spark::IdentifiedCoinData identifiedCoinData = coin.identify(incomingViewKey);
+
+        spark::RecoveredCoinData data = coin.recover(fullViewKey, identifiedCoinData);
+
+        spark::Address address = getAddress(incomingViewKey, identifiedCoinData.i);
+        std::string addressString = address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
+
+        AggregateCoinData* result = (AggregateCoinData*)malloc(sizeof(AggregateCoinData));
+
+        result->type = coin.type;
+        result->diversifier = identifiedCoinData.i;
+        result->value = identifiedCoinData.v;
+
+        result->address = (char*)malloc((addressString.length() + 1) * sizeof(char));
+        std::strcpy(result->address, addressString.c_str());
+
+        result->memo = (char*)malloc((identifiedCoinData.memo.length() + 1) * sizeof(char));
+        std::strcpy(result->memo, identifiedCoinData.memo.c_str());
+
+        uint256 lTagHash = primitives::GetLTagHash(data.T);
+        result->lTagHash = (char*)malloc((lTagHash.GetHex().length() + 1) * sizeof(char));
+        std::strcpy(result->lTagHash, lTagHash.GetHex().c_str());
+
+        result->encryptedDiversifier = (unsigned char*)malloc(identifiedCoinData.d.size() * sizeof(unsigned char));
+        result->encryptedDiversifierLength = identifiedCoinData.d.size();
+        memcpy(result->encryptedDiversifier,identifiedCoinData.d.data(),identifiedCoinData.d.size() * sizeof(unsigned char));
+
+        result->nonce = (unsigned char*)malloc(32 * sizeof(unsigned char));
+        result->nonceLength = 32;
+        identifiedCoinData.k.serialize(result->nonce);
+
+        result->serial = (unsigned char*)malloc(data.s.GetHex().length() * sizeof(unsigned char));
+        result->serialLength = data.s.GetHex().length();
+        memcpy(result->serial,data.s.GetHex().c_str(),data.s.GetHex().length() * sizeof(unsigned char));
+
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
 /*
  * FFI-friendly wrapper for spark::createSparkMintRecipients.
  *
