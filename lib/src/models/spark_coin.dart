@@ -1,15 +1,15 @@
 import 'dart:typed_data';
 
-enum SparkCoinType {
+enum LibSparkCoinType {
   mint(0),
   spend(1);
 
-  const SparkCoinType(this.value);
+  const LibSparkCoinType(this.value);
   final int value;
 }
 
-class SparkCoin {
-  final SparkCoinType type;
+class LibSparkCoin {
+  final LibSparkCoinType type;
 
   final Uint8List? k; // TODO: proper name (not single char!!) is this nonce???
 
@@ -28,7 +28,7 @@ class SparkCoin {
 
   final Uint8List? lTagHash;
 
-  SparkCoin({
+  LibSparkCoin({
     required this.type,
     this.k,
     this.address,
@@ -42,8 +42,8 @@ class SparkCoin {
     this.lTagHash,
   });
 
-  SparkCoin copyWith({
-    SparkCoinType? type,
+  LibSparkCoin copyWith({
+    LibSparkCoinType? type,
     Uint8List? k,
     String? address,
     BigInt? value,
@@ -55,7 +55,7 @@ class SparkCoin {
     Uint8List? tag,
     Uint8List? lTagHash,
   }) {
-    return SparkCoin(
+    return LibSparkCoin(
       type: type ?? this.type,
       k: k ?? this.k,
       address: address ?? this.address,
@@ -72,7 +72,7 @@ class SparkCoin {
 
   @override
   String toString() {
-    return 'SparkCoin('
+    return 'LibSparkCoin('
         ', type: $type'
         ', k: $k'
         ', address: $address'

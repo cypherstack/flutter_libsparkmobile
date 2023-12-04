@@ -80,11 +80,11 @@ abstract final class LibSpark {
 
   ///
   /// Check whether the spark coin is ours and if so recover required data
-  /// and encapsulate into a single object ([SparkCoin]).
+  /// and encapsulate into a single object ([LibSparkCoin]).
   ///
-  /// Returns a [SparkCoin] if the coin belongs to us, or null otherwise.
+  /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
   ///
-  static SparkCoin? identifyAndRecoverCoin(
+  static LibSparkCoin? identifyAndRecoverCoin(
     String serializedCoin, {
     required String privateKeyHex,
     required int index,
