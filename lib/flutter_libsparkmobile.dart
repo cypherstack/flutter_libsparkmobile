@@ -98,6 +98,10 @@ abstract final class LibSpark {
       isTestNet ? 1 : 0,
     );
 
+    if (result.address == nullptr.address) {
+      return null;
+    }
+
     final LibSparkCoinType coinType;
     switch (result.ref.type) {
       case 0:
