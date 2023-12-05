@@ -9,9 +9,7 @@
 #include "structs.h"
 #include "deps/sparkmobile/include/spark.h"
 
-const char* getAddressFromData(const char* keyData, int index, const uint64_t diversifier, int isTestNet);
-
-spark::SpendKey createSpendKeyFromData(const char *keyData, int index);
+spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index);
 
 spark::Coin fromFFI(const CCoin& c_struct);
 
@@ -84,6 +82,6 @@ const char *bytesToHex(const char *bytes, int size);
 
 const char *bytesToHex(std::vector<unsigned char> bytes, int size);
 
-spark::Coin deserializeCoin(const char *serializedCoin, int length);
+spark::Coin deserializeCoin(const unsigned char *serializedCoin, int length);
 
 #endif //ORG_FIRO_SPARK_UTILS_H

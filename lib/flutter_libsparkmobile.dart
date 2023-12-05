@@ -1,16 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter_libsparkmobile/src/extensions.dart';
 import 'package:flutter_libsparkmobile/src/models/spark_coin.dart';
 
-import 'src/extensions.dart';
 import 'src/flutter_libsparkmobile_bindings_generated.dart';
 
 const kSparkChain = 6;
 const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";
+const kSparkBaseDerivationPathTestnet = "m/44'/1'/0'/$kSparkChain/";
 
 const String _kLibName = 'flutter_libsparkmobile';
 
@@ -58,7 +60,7 @@ abstract final class LibSpark {
     }
 
     // Allocate memory for the hex string on the native heap.
-    final keyDataPointer = privateKey.toHexString().toNativeUtf8().cast<Char>();
+    final keyDataPointer = privateKey.unsignedCharPointer();
 
     // Call the native method with the pointer.
     final addressPointer = _bindings.getAddress(
@@ -85,18 +87,25 @@ abstract final class LibSpark {
   /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
   ///
   static LibSparkCoin? identifyAndRecoverCoin(
-    String serializedCoin, {
-    required String privateKeyHex,
-    required int index,
-    bool isTestNet = false,
+    final String serializedCoin, {
+    required final String privateKeyHex,
+    required final int index,
+    final bool isTestNet = false,
   }) {
+    final serializedCoinPtr =
+        base64Decode(serializedCoin).unsignedCharPointer();
+    final privateKeyPtr = privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+
     final result = _bindings.idAndRecoverCoin(
-      serializedCoin.toNativeUtf8().cast<Char>(),
+      serializedCoinPtr,
       serializedCoin.length,
-      privateKeyHex.toNativeUtf8().cast<Char>(),
+      privateKeyPtr,
       index,
       isTestNet ? 1 : 0,
     );
+
+    malloc.free(serializedCoinPtr);
+    malloc.free(privateKeyPtr);
 
     if (result.address == nullptr.address) {
       return null;

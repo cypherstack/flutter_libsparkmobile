@@ -15,10 +15,10 @@ using namespace spark;
  * getAddress: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L388
  */
 FFI_PLUGIN_EXPORT
-const char* getAddress(const char* keyDataHex, int index, int diversifier, int isTestNet) {
+const char* getAddress(unsigned char* keyData, int index, int diversifier, int isTestNet) {
     try {
         // Use the hex string directly to create the SpendKey.
-        spark::SpendKey spendKey = createSpendKeyFromData(keyDataHex, index);
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
 
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
@@ -44,12 +44,12 @@ const char* getAddress(const char* keyDataHex, int index, int diversifier, int i
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
 FFI_PLUGIN_EXPORT
-CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinLength, const char* keyDataHex, int index) {
+CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index) {
     try {
         spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
 
         // Derive the incoming view key from the key data and index.
-        spark::SpendKey spendKey = createSpendKeyFromData(keyDataHex, index);
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
 
@@ -63,16 +63,16 @@ CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinL
 
 FFI_PLUGIN_EXPORT
 AggregateCoinData* idAndRecoverCoin(
-        const char* serializedCoin,
+        const unsigned char* serializedCoin,
         int serializedCoinLength,
-        const char* keyDataHex,
+        unsigned char* keyData,
         int index,
         int isTestNet) {
     try {
         spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
 
         // Derive the incoming view key from the key data and index.
-        spark::SpendKey spendKey = createSpendKeyFromData(keyDataHex, index);
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
 
@@ -113,7 +113,7 @@ AggregateCoinData* idAndRecoverCoin(
 
         return result;
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+//        std::cerr << "Exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -169,7 +169,7 @@ CCRecipient* createSparkMintRecipients(
  */
 FFI_PLUGIN_EXPORT
 unsigned char* cCreateSparkSpendTransaction(
-    const char* keyDataHex,
+    unsigned char* keyData,
     int index,
     struct CRecip* recipients, // This CRecip(ient) is not the same as a CRecipient.
     int recipientsLength,
@@ -190,7 +190,7 @@ unsigned char* cCreateSparkSpendTransaction(
 ) {
     try {
         // Derive the keys from the key data and index.
-        spark::SpendKey spendKey = createSpendKeyFromData(keyDataHex, index);
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
 

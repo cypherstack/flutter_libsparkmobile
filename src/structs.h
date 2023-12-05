@@ -176,9 +176,9 @@ struct AggregateCoinData {
     char type;
     uint64_t diversifier;
     uint64_t value;
-      char *address;
-      char *memo;
-      char *lTagHash;
+    char *address;
+    char *memo;
+    char *lTagHash;
 
     unsigned char *encryptedDiversifier;
     int encryptedDiversifierLength;

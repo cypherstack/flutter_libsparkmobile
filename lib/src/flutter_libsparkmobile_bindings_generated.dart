@@ -27,13 +27,13 @@ class FlutterLibsparkmobileBindings {
       : _lookup = lookup;
 
   ffi.Pointer<ffi.Char> getAddress(
-    ffi.Pointer<ffi.Char> keyDataHex,
+    ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
     int diversifier,
     int isTestNet,
   ) {
     return _getAddress(
-      keyDataHex,
+      keyData,
       index,
       diversifier,
       isTestNet,
@@ -42,47 +42,48 @@ class FlutterLibsparkmobileBindings {
 
   late final _getAddressPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<ffi.Char> Function(
-              ffi.Pointer<ffi.Char>, ffi.Int, ffi.Int, ffi.Int)>>('getAddress');
+          ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int,
+              ffi.Int, ffi.Int)>>('getAddress');
   late final _getAddress = _getAddressPtr.asFunction<
-      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>, int, int, int)>();
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ffi.UnsignedChar>, int, int, int)>();
 
   /// FFI-friendly wrapper for spark::identifyCoin.
   ///
   /// identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
   CIdentifiedCoinData identifyCoin(
-    ffi.Pointer<ffi.Char> serializedCoin,
+    ffi.Pointer<ffi.UnsignedChar> serializedCoin,
     int serializedCoinLength,
-    ffi.Pointer<ffi.Char> keyDataHex,
+    ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
   ) {
     return _identifyCoin(
       serializedCoin,
       serializedCoinLength,
-      keyDataHex,
+      keyData,
       index,
     );
   }
 
   late final _identifyCoinPtr = _lookup<
       ffi.NativeFunction<
-          CIdentifiedCoinData Function(ffi.Pointer<ffi.Char>, ffi.Int,
-              ffi.Pointer<ffi.Char>, ffi.Int)>>('identifyCoin');
+          CIdentifiedCoinData Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int,
+              ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>>('identifyCoin');
   late final _identifyCoin = _identifyCoinPtr.asFunction<
-      CIdentifiedCoinData Function(
-          ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Char>, int)>();
+      CIdentifiedCoinData Function(ffi.Pointer<ffi.UnsignedChar>, int,
+          ffi.Pointer<ffi.UnsignedChar>, int)>();
 
   ffi.Pointer<AggregateCoinData> idAndRecoverCoin(
-    ffi.Pointer<ffi.Char> serializedCoin,
+    ffi.Pointer<ffi.UnsignedChar> serializedCoin,
     int serializedCoinLength,
-    ffi.Pointer<ffi.Char> keyDataHex,
+    ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
     int isTestNet,
   ) {
     return _idAndRecoverCoin(
       serializedCoin,
       serializedCoinLength,
-      keyDataHex,
+      keyData,
       index,
       isTestNet,
     );
@@ -91,14 +92,14 @@ class FlutterLibsparkmobileBindings {
   late final _idAndRecoverCoinPtr = _lookup<
       ffi.NativeFunction<
           ffi.Pointer<AggregateCoinData> Function(
-              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
-              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
               ffi.Int)>>('idAndRecoverCoin');
   late final _idAndRecoverCoin = _idAndRecoverCoinPtr.asFunction<
-      ffi.Pointer<AggregateCoinData> Function(
-          ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Char>, int, int)>();
+      ffi.Pointer<AggregateCoinData> Function(ffi.Pointer<ffi.UnsignedChar>,
+          int, ffi.Pointer<ffi.UnsignedChar>, int, int)>();
 
   /// FFI-friendly wrapper for spark::createSparkMintRecipients.
   ///
@@ -136,7 +137,7 @@ class FlutterLibsparkmobileBindings {
   ///
   /// createSparkSpendTransaction: https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L190
   ffi.Pointer<ffi.UnsignedChar> cCreateSparkSpendTransaction(
-    ffi.Pointer<ffi.Char> keyDataHex,
+    ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
     ffi.Pointer<CRecip> recipients,
     int recipientsLength,
@@ -153,7 +154,7 @@ class FlutterLibsparkmobileBindings {
     int outputScriptsLength,
   ) {
     return _cCreateSparkSpendTransaction(
-      keyDataHex,
+      keyData,
       index,
       recipients,
       recipientsLength,
@@ -174,7 +175,7 @@ class FlutterLibsparkmobileBindings {
   late final _cCreateSparkSpendTransactionPtr = _lookup<
       ffi.NativeFunction<
           ffi.Pointer<ffi.UnsignedChar> Function(
-              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
               ffi.Pointer<CRecip>,
               ffi.Int,
@@ -192,7 +193,7 @@ class FlutterLibsparkmobileBindings {
   late final _cCreateSparkSpendTransaction =
       _cCreateSparkSpendTransactionPtr.asFunction<
           ffi.Pointer<ffi.UnsignedChar> Function(
-              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.UnsignedChar>,
               int,
               ffi.Pointer<CRecip>,
               int,

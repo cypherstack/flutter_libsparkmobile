@@ -12,39 +12,11 @@
 #include "deps/sparkmobile/bitcoin/script.h"  // For CScript.
 
 /*
- * Utility function to generate an address from keyData, index, and a diversifier.
- */
-const char* getAddressFromData(const char* keyData, int index, const uint64_t diversifier, int isTestNet) {
-    try {
-        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
-        spark::FullViewKey fullViewKey(spendKey);
-        spark::IncomingViewKey incomingViewKey(fullViewKey);
-        spark::Address address(incomingViewKey, diversifier);
-
-        // Encode the Address object into a string.
-        std::string encodedAddress = address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
-
-        // Allocate memory for the C-style string and return it.
-        char* result = new char[encodedAddress.size() + 1];
-        std::copy(encodedAddress.begin(), encodedAddress.end(), result);
-        result[encodedAddress.size()] = '\0'; // Null-terminate the C string.
-
-        return result;
-    } catch (const std::exception& e) {
-        return nullptr;
-    }
-}
-
-/*
  * Utility function to generate SpendKey from keyData and index.
  */
-spark::SpendKey createSpendKeyFromData(const char *keyData, int index) {
+spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index) {
     try {
-        // Convert the keyData from hex string to binary
-        unsigned char* key_data_bin = hexToBytes(keyData);
-
-        const SpendKeyData *data = new SpendKeyData(key_data_bin, index);
-
+        const SpendKeyData *data = new SpendKeyData(keyData, index);
         return createSpendKey(*data);
     } catch (const std::exception& e) {
         // We can't return here, so just throw the exception again.
@@ -691,9 +663,9 @@ const char *bytesToHex(std::vector<unsigned char> bytes, int size) {
     return new_str;
 }
 
-spark::Coin deserializeCoin(const char *serializedCoin, int length) {
+spark::Coin deserializeCoin(const unsigned char *serializedCoin, int length) {
     std::vector<char> vec(serializedCoin, serializedCoin + length);
-    CDataStream stream(vec, SER_NETWORK, 0);
+    CDataStream stream(vec, SER_NETWORK, PROTOCOL_VERSION);
     spark::Coin coin(spark::Params::get_default());
     stream >> coin;
     return coin;

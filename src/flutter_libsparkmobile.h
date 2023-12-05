@@ -16,7 +16,7 @@
 #endif
 
 FFI_PLUGIN_EXPORT
-const char* getAddress(const char* keyDataHex, int index, int diversifier, int isTestNet);
+const char* getAddress(unsigned char* keyData, int index, int diversifier, int isTestNet);
 
 /*
 FFI_PLUGIN_EXPORT
@@ -32,13 +32,13 @@ const char* createIncomingViewKey(const char* keyData, int index);
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
 FFI_PLUGIN_EXPORT
-struct CIdentifiedCoinData identifyCoin(const char* serializedCoin, int serializedCoinLength, const char* keyDataHex, int index);
+struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
 
 FFI_PLUGIN_EXPORT
 struct AggregateCoinData* idAndRecoverCoin(
-        const char* serializedCoin,
+        const unsigned char* serializedCoin,
         int serializedCoinLength,
-        const char* keyDataHex,
+        unsigned char* keyData,
         int index,
         int isTestNet
 );
@@ -63,7 +63,7 @@ struct CCRecipient* createSparkMintRecipients(
  */
 FFI_PLUGIN_EXPORT
 unsigned char* cCreateSparkSpendTransaction(
-        const char* keyDataHex,
+        unsigned char* keyData,
         int index,
         struct CRecip* recipients,
         int recipientsLength,
