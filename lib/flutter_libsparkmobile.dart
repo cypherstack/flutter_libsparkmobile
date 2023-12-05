@@ -92,13 +92,15 @@ abstract final class LibSpark {
     required final int index,
     final bool isTestNet = false,
   }) {
-    final serializedCoinPtr =
-        base64Decode(serializedCoin).unsignedCharPointer();
-    final privateKeyPtr = privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+    final b64CoinDecoded = base64Decode(serializedCoin);
+
+    final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
+    final privateKeyPtr =
+        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
     final result = _bindings.idAndRecoverCoin(
       serializedCoinPtr,
-      serializedCoin.length,
+      b64CoinDecoded.length,
       privateKeyPtr,
       index,
       isTestNet ? 1 : 0,
