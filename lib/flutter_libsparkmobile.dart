@@ -92,7 +92,8 @@ abstract final class LibSpark {
     required final int index,
     final bool isTestNet = false,
   }) {
-    final b64CoinDecoded = base64Decode(serializedCoin);
+    // take sublist as tx hash is also appended here for some reason
+    final b64CoinDecoded = base64Decode(serializedCoin).sublist(0, 244);
 
     final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
     final privateKeyPtr =
@@ -147,6 +148,36 @@ abstract final class LibSpark {
     malloc.free(result);
 
     return ret;
+  }
+
+  ///
+  /// Attempt to create and sign a spark mint transaction.
+  ///
+  /// Returns the raw transaction hex if successful, otherwise null.
+  ///
+  static String? createSparkMintTransaction({
+    required String privateKeyHex,
+    // TODO what do we need?
+  }) {
+    // TODO allocate/create data structures required by the generated bindings
+
+    // some kind of failure
+    return null;
+  }
+
+  ///
+  /// Attempt to create and sign a spark spend transaction.
+  ///
+  /// Returns the raw transaction hex if successful, otherwise null.
+  ///
+  static String? createSparkSendTransaction({
+    required String privateKeyHex,
+    // TODO what do we need?
+  }) {
+    // TODO allocate/create data structures required by the generated bindings
+
+    // some kind of failure
+    return null;
   }
 }
 
