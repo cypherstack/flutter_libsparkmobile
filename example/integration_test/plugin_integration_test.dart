@@ -83,4 +83,35 @@ void main() {
     // Compare the derived address with the expected address.
     expect(address, expectedAddress);
   });
+
+  test('identify coin', () async {
+    // Define the mnemonic.
+    const mnemonic =
+        'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve';
+
+    const index = 1;
+
+    // Construct derivePath string.
+    const derivePath = "m/44'/1'/0'/$kSparkChain/$index";
+
+    // Generate key data from the mnemonic.
+    final keyDataHex =
+        await SparkAddressGenerator.generateKeyData(mnemonic, derivePath);
+
+    // A serialized coin produced by firo-qt with the `jazz settle...` mnemonic.
+    //
+    // See tx 640e4a0016a5802d57be4fe212c398cd107ff81b55b02b79dac0a133528fadd3.
+    const serializedCoin =
+        "AAYgxtq4T3i1KH5fgrtb/FjWK0v2TX2eDX9K0dQEJqzjAQCEFvHR39VYxiAeBSugNRfkLytkBwHkHnfbbYeVtPK7PAAAkjacXJtxgT/j5pYB+HBQBBEWvTlJwF+tQh7Q4HIQB9QBAFIuZMbFIWSzhuA+4sYx+uPB+6i1VTXG4VyuWDJM5eKxmkeZllxQMvx/s0JYBWPXW+4J9QDA233bR68p3TG4HYS7ZwF3kMyQoB9w/I8hVJUq5uKzEGXKxs615pqxwNHKCAgKUykguw58PkTRN1Gbdxk+LAydUW83BHj4vb8iPj/nDGNMI1TADs0dAAAAANOtj1IzocDaeSuwVRv4fxDNmMMS4k++Vy2ApRYASg5k";
+
+    // Identify the coin.
+    final coin = LibSpark.identifyAndRecoverCoin(
+      serializedCoin,
+      privateKeyHex: keyDataHex,
+      index: index,
+      isTestNet: true,
+    );
+
+    expect(coin, isNotNull);
+  });
 }
