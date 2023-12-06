@@ -10,6 +10,28 @@ void main() {
   // Load coinlib for crypto operations.
   coinlib.loadCoinlib();
 
+  testWidgets('derive keydata', (WidgetTester tester) async {
+    // Define the mnemonic.
+    const mnemonic =
+        'jazz settle broccoli dove hurt deny leisure coffee ivory calm pact chicken flag spot nature gym afford cotton dinosaur young private flash core approve';
+
+    const index = 1;
+
+    // Construct derivePath string.
+    const derivePath = "m/44'/1'/0'/$kSparkChain/$index";
+
+    // Generate key data from the mnemonic.
+    final keyDataHex =
+        await SparkAddressGenerator.generateKeyData(mnemonic, derivePath);
+
+    // Define the expected key.
+    const expectedKey =
+        'a5381ccbbf0b068447d349aa98adadd81333467a5821784d0048c1fe9cc77504';
+
+    // Compare the derived key with the expected one.
+    expect(keyDataHex, expectedKey);
+  });
+
   testWidgets('mnemonic to address test mainnet', (WidgetTester tester) async {
     // Define the mnemonic.
     const mnemonic =
