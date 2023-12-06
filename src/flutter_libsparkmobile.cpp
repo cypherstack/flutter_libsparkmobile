@@ -124,10 +124,10 @@ AggregateCoinData* idAndRecoverCoin(
  * createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
  */
 FFI_PLUGIN_EXPORT
-CCRecipient* createSparkMintRecipients(
+CCRecipientList* cCreateSparkMintRecipients(
     struct CMintedCoinData* cOutputs,
     int outputsLength,
-    const char* serial_context,
+    unsigned char* serial_context,
     int serial_contextLength,
     int generate
 ) {
@@ -136,30 +136,36 @@ CCRecipient* createSparkMintRecipients(
 
     // Copy the data from the array to the vector.
     for (int i = 0; i < outputsLength; i++) {
-        outputs.push_back(fromFFI(cOutputs[i]));
+        spark::MintedCoinData data = fromFFI(cOutputs[i]);
+        outputs.push_back(data);
     }
 
     // Construct vector of unsigned chars.
-    std::vector<unsigned char> blankSerialContext;
-
-    // Copy the data from the array to the vector.
-    for (int i = 0; i < serial_contextLength; i++) {
-        blankSerialContext.push_back(serial_context[i]);
-    }
+    std::vector<unsigned char> serialVec(serial_context, serial_context + serial_contextLength);
 
     // Call spark::createSparkMintRecipients.
-    std::vector<CRecipient> recipients = createSparkMintRecipients(outputs, blankSerialContext, generate);
+    std::vector<CRecipient> recipients = createSparkMintRecipients(outputs, serialVec, generate);
 
     // Create a CRecipient* array.
-    CCRecipient* cRecipients = new CCRecipient[recipients.size()];
+    CCRecipientList *data = (CCRecipientList*)malloc(sizeof(CCRecipientList));
+    data->length = recipients.size();
+    data->list = (CCRecipient*)malloc(sizeof(CCRecipient) * recipients.size());
 
     // Copy the data from the vector to the array.
     for (int i = 0; i < recipients.size(); i++) {
-        cRecipients[i] = toFFI(recipients[i]);
+        data->list[i].cAmount = recipients[i].amount;
+        data->list[i].subtractFee = recipients[i].subtractFeeFromAmount;
+        data->list[i].pubKeyLength = recipients[i].pubKey.size();
+        data->list[i].pubKey = (unsigned char*)malloc(sizeof(unsigned char) * recipients[i].pubKey.size());
+        std::vector<unsigned char> vec(recipients[i].pubKey.begin(), recipients[i].pubKey.end());
+        unsigned char* ptr = vec.data();
+        for (int j = 0; j < data->list[i].pubKeyLength; j++) {
+            data->list[i].pubKey[j] = ptr[j];
+        }
     }
 
     // Return the array.
-    return cRecipients;
+    return data;
 }
 
 /*

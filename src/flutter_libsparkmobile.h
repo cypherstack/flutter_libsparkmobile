@@ -49,10 +49,10 @@ struct AggregateCoinData* idAndRecoverCoin(
  * createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
  */
 FFI_PLUGIN_EXPORT
-struct CCRecipient* createSparkMintRecipients(
+struct CCRecipientList* cCreateSparkMintRecipients(
         struct CMintedCoinData* outputs,
         int outputsLength,
-        const char* serial_context,
+        unsigned char* serial_context,
         int serial_contextLength,
         int generate);
 

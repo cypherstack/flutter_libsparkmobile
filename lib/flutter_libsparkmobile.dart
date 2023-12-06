@@ -151,18 +151,75 @@ abstract final class LibSpark {
   }
 
   ///
-  /// Attempt to create and sign a spark mint transaction.
+  /// Create spark mint recipients
   ///
-  /// Returns the raw transaction hex if successful, otherwise null.
+  /// Returns a list of spark mint recipients
   ///
-  static String? createSparkMintTransaction({
-    required String privateKeyHex,
-    // TODO what do we need?
+  static List<
+      ({
+        Uint8List scriptPubKey,
+        int amount,
+        bool subtractFeeFromAmount,
+      })> createSparkMintRecipients({
+    required List<({String sparkAddress, int value, String memo})> outputs,
+    required Uint8List serialContext,
+    bool generate = false,
   }) {
-    // TODO allocate/create data structures required by the generated bindings
+    final outputsPtr = malloc
+        .allocate<CMintedCoinData>(sizeOf<CMintedCoinData>() * outputs.length);
 
-    // some kind of failure
-    return null;
+    for (int i = 0; i < outputs.length; i++) {
+      outputsPtr[i].value = outputs[i].value;
+      outputsPtr[i].address =
+          outputs[i].sparkAddress.toNativeUtf8().cast<Char>();
+      outputsPtr[i].memo = outputs[i].memo.toNativeUtf8().cast<Char>();
+    }
+
+    final serialContextPtr = serialContext.unsignedCharPointer();
+
+    final result = _bindings.cCreateSparkMintRecipients(
+      outputsPtr,
+      outputs.length,
+      serialContextPtr,
+      serialContext.length,
+      generate ? 1 : 0,
+    );
+
+    if (result.address == nullptr.address) {
+      for (int i = 0; i < outputs.length; i++) {
+        malloc.free(outputsPtr[i].address);
+        malloc.free(outputsPtr[i].memo);
+      }
+      malloc.free(outputsPtr);
+      throw Exception("createSparkMintRecipients() FFI call returned null!");
+    }
+
+    final List<
+        ({
+          Uint8List scriptPubKey,
+          int amount,
+          bool subtractFeeFromAmount,
+        })> ret = [];
+
+    for (int i = 0; i < result.ref.length; i++) {
+      final d = result.ref.list[i];
+      ret.add((
+        scriptPubKey: d.pubKey.toUint8List(d.pubKeyLength),
+        amount: d.cAmount,
+        subtractFeeFromAmount: d.subtractFee > 0,
+      ));
+      malloc.free(d.pubKey);
+    }
+
+    malloc.free(result.ref.list);
+    malloc.free(result);
+    for (int i = 0; i < outputs.length; i++) {
+      malloc.free(outputsPtr[i].address);
+      malloc.free(outputsPtr[i].memo);
+    }
+    malloc.free(outputsPtr);
+
+    return ret;
   }
 
   ///

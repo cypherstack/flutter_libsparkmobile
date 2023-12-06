@@ -46,10 +46,15 @@ struct CIdentifiedCoinData {
  * CRecipient: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/include/spark.h#L27
  */
 struct CCRecipient {
-    const unsigned char *pubKey;
+    unsigned char *pubKey;
     int pubKeyLength;
     uint64_t cAmount;
     int subtractFee;
+};
+
+struct CCRecipientList {
+    struct CCRecipient* list;
+    int length;
 };
 
 /*

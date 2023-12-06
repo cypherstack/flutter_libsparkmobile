@@ -104,14 +104,14 @@ class FlutterLibsparkmobileBindings {
   /// FFI-friendly wrapper for spark::createSparkMintRecipients.
   ///
   /// createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
-  ffi.Pointer<CCRecipient> createSparkMintRecipients(
+  ffi.Pointer<CCRecipientList> cCreateSparkMintRecipients(
     ffi.Pointer<CMintedCoinData> outputs,
     int outputsLength,
-    ffi.Pointer<ffi.Char> serial_context,
+    ffi.Pointer<ffi.UnsignedChar> serial_context,
     int serial_contextLength,
     int generate,
   ) {
-    return _createSparkMintRecipients(
+    return _cCreateSparkMintRecipients(
       outputs,
       outputsLength,
       serial_context,
@@ -120,18 +120,18 @@ class FlutterLibsparkmobileBindings {
     );
   }
 
-  late final _createSparkMintRecipientsPtr = _lookup<
+  late final _cCreateSparkMintRecipientsPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<CCRecipient> Function(
+          ffi.Pointer<CCRecipientList> Function(
               ffi.Pointer<CMintedCoinData>,
               ffi.Int,
-              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
-              ffi.Int)>>('createSparkMintRecipients');
-  late final _createSparkMintRecipients =
-      _createSparkMintRecipientsPtr.asFunction<
-          ffi.Pointer<CCRecipient> Function(ffi.Pointer<CMintedCoinData>, int,
-              ffi.Pointer<ffi.Char>, int, int)>();
+              ffi.Int)>>('cCreateSparkMintRecipients');
+  late final _cCreateSparkMintRecipients =
+      _cCreateSparkMintRecipientsPtr.asFunction<
+          ffi.Pointer<CCRecipientList> Function(ffi.Pointer<CMintedCoinData>,
+              int, ffi.Pointer<ffi.UnsignedChar>, int, int)>();
 
   /// FFI-friendly wrapper for spark::createSparkSpendTransaction.
   ///
@@ -278,6 +278,13 @@ final class CCRecipient extends ffi.Struct {
 
   @ffi.Int()
   external int subtractFee;
+}
+
+final class CCRecipientList extends ffi.Struct {
+  external ffi.Pointer<CCRecipient> list;
+
+  @ffi.Int()
+  external int length;
 }
 
 /// FFI-friendly wrapper for a spark::MintedCoinData.
