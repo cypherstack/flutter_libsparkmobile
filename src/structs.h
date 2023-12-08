@@ -105,12 +105,12 @@ struct COutputCoinData {
  * See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L195
  */
 struct COutputRecipient {
-    struct COutputCoinData output;
+    struct COutputCoinData* output;
     int subtractFee;
 };
 
 struct CCDataStream {
-    const char *data;
+    unsigned char *data;
     int length;
 };
 
@@ -119,24 +119,24 @@ struct CCDataStream {
  *
  * CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
  */
-struct CCSparkMintMeta {
-    uint64_t height;
-    const char *id;
-    int isUsed;
-    const char *txid;
-    uint64_t i; // Diversifier.
-    const unsigned char *d; // Encrypted diversifier.
-    int dLength;
-    uint64_t v; // Value.
-    const unsigned char *k; // Nonce.
-    int kLength;
-    const char *memo;
-    int memoLength;
-    unsigned char *serial_context;
-    int serial_contextLength;
-    char type;
-    struct CCDataStream coin;
-
+//struct CCSparkMintMeta {
+//    uint64_t height;
+//    const char *id;
+//    int isUsed;
+//    const char *txid;
+//    uint64_t i; // Diversifier.
+//    const unsigned char *d; // Encrypted diversifier.
+//    int dLength;
+//    uint64_t v; // Value.
+//    const unsigned char *k; // Nonce.
+//    int kLength;
+//    const char *memo;
+//    int memoLength;
+//    unsigned char *serial_context;
+//    int serial_contextLength;
+//    char type;
+//    struct CCDataStream coin;
+//
 //    CCSparkMintMeta(uint64_t height, const char *id, int isUsed,
 //                    const char *txid, uint64_t i, const unsigned char *d,
 //                    int dLength, uint64_t v, const unsigned char *k,
@@ -145,7 +145,7 @@ struct CCSparkMintMeta {
 //                    char type, const CCDataStream &coinData);
 //
 //    ~CCSparkMintMeta();
-};
+//};
 
 /*
  * FFI-friendly wrapper for a spark::CoverSetData.
@@ -153,21 +153,15 @@ struct CCSparkMintMeta {
  * CoverSetData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L28
  */
 struct CCoverSetData {
-    struct CCDataStream **cover_set; // vs. struct CCoin* cover_set;
+    struct CCDataStream *cover_set; // vs. struct CCoin* cover_set;
     int cover_setLength;
     const unsigned char *cover_set_representation;
     int cover_set_representationLength;
+
+    int setId;
 };
 
-/*
- * FFI-friendly wrapper for a std::unordered_map<uint64_t, spark::CoverSetData>.
- *
- * See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L197
- */
-struct CCoverSets {
-    struct CCoverSetData* cover_sets;
-    int cover_setsLength;
-};
+
 
 struct OutputScript {
     unsigned char *bytes;
@@ -195,19 +189,22 @@ struct AggregateCoinData {
     int nonceLength;
 };
 
+/*
+ * Aggregate data structure to handle passing spark spend data across FFI.
+ *
+ * Contains the serialized transaction or the error message if isError is true.
+ */
+struct SparkSpendTransactionResult {
+    unsigned char *data;
+    int dataLength;
 
-//struct IdentifiedCoinData {
-//    uint64_t i; // diversifier
-//    std::vector<unsigned char> d; // encrypted diversifier
-//    uint64_t v; // value
-//    Scalar k; // nonce
-//    std::string memo; // memo
-//};
-//
-//struct RecoveredCoinData {
-//    Scalar s; // serial
-//    GroupElement T; // tag
-//};
+    struct OutputScript* outputScripts;
+    int outputScriptsLength;
+
+    int fee;
+
+    int isError;
+};
 
 //#ifdef __cplusplus
 //}

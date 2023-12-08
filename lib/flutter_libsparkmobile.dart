@@ -223,18 +223,140 @@ abstract final class LibSpark {
   }
 
   ///
-  /// Attempt to create and sign a spark spend transaction.
+  /// Attempt to create a spark spend.
   ///
-  /// Returns the raw transaction hex if successful, otherwise null.
+  /// Returns the serialized spark spend.
   ///
-  static String? createSparkSendTransaction({
+  static ({
+    String serializedSpendPayload,
+    List<Uint8List> outputScripts,
+    int fee,
+  }) createSparkSendTransaction({
     required String privateKeyHex,
-    // TODO what do we need?
+    int index = 1,
+    required List<({String address, int amount, bool subtractFeeFromAmount})>
+        recipients,
+    required List<
+            ({
+              String sparkAddress,
+              int amount,
+              bool subtractFeeFromAmount,
+              String memo
+            })>
+        privateRecipients,
+    required List<Uint8List> serializedMintMetas,
+    required List<
+            ({
+              int setId,
+              String setHash,
+              List<({String serializedCoin, String txHash})> set
+            })>
+        allAnonymitySets,
   }) {
-    // TODO allocate/create data structures required by the generated bindings
+    final privateKeyPtr =
+        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
-    // some kind of failure
-    return null;
+    final recipientsPtr =
+        malloc.allocate<CRecip>(sizeOf<CRecip>() * recipients.length);
+    for (int i = 0; i < recipients.length; i++) {
+      recipientsPtr[i].amount = recipients[i].amount;
+      recipientsPtr[i].subtractFee =
+          recipients[i].subtractFeeFromAmount ? 1 : 0;
+    }
+
+    final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
+        sizeOf<COutputRecipient>() * recipients.length);
+    for (int i = 0; i < recipients.length; i++) {
+      privateRecipientsPtr[i].subtractFee =
+          recipients[i].subtractFeeFromAmount ? 1 : 0;
+
+      privateRecipientsPtr[i].output =
+          malloc.allocate<COutputCoinData>(sizeOf<COutputCoinData>());
+      privateRecipientsPtr[i].output.ref.value = privateRecipients[i].amount;
+      privateRecipientsPtr[i].output.ref.memo =
+          privateRecipients[i].memo.toNativeUtf8().cast<Char>();
+      privateRecipientsPtr[i].output.ref.address =
+          privateRecipients[i].sparkAddress.toNativeUtf8().cast<Char>();
+    }
+
+    final serializedMintMetasPtr = malloc.allocate<CCDataStream>(
+        sizeOf<CCDataStream>() * serializedMintMetas.length);
+    for (int i = 0; i < serializedMintMetas.length; i++) {
+      serializedMintMetasPtr[i].data =
+          serializedMintMetas[i].unsignedCharPointer();
+      serializedMintMetasPtr[i].length = serializedMintMetas[i].length;
+    }
+
+    final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
+        sizeOf<CCoverSetData>() * allAnonymitySets.length);
+    for (int i = 0; i < allAnonymitySets.length; i++) {
+      coverSetDataAllPtr[i].setId = allAnonymitySets[i].setId;
+
+      coverSetDataAllPtr[i].cover_set = malloc.allocate<CCDataStream>(
+          sizeOf<CCDataStream>() * allAnonymitySets[i].set.length);
+      coverSetDataAllPtr[i].cover_setLength = allAnonymitySets[i].set.length;
+
+      for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
+        final b64CoinDecoded =
+            base64Decode(allAnonymitySets[i].set[j].serializedCoin);
+        coverSetDataAllPtr[i].cover_set[j].length = b64CoinDecoded.length;
+        coverSetDataAllPtr[i].cover_set[j].data =
+            b64CoinDecoded.unsignedCharPointer();
+      }
+
+      final setHash = base64Decode(allAnonymitySets[i].setHash);
+      coverSetDataAllPtr[i].cover_set_representation =
+          setHash.unsignedCharPointer();
+      coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
+    }
+
+    final result = _bindings.cCreateSparkSpendTransaction(
+      privateKeyPtr,
+      index,
+      recipientsPtr,
+      recipients.length,
+      privateRecipientsPtr,
+      privateRecipients.length,
+      serializedMintMetasPtr,
+      serializedMintMetas.length,
+      coverSetDataAllPtr,
+      allAnonymitySets.length,
+    );
+
+    // todo: more comprehensive frees
+    malloc.free(privateKeyPtr);
+    malloc.free(recipientsPtr);
+    malloc.free(privateRecipientsPtr);
+    malloc.free(serializedMintMetasPtr);
+    malloc.free(coverSetDataAllPtr);
+
+    if (result.address == nullptr.address) {
+      throw Exception(
+        "createSparkSendTransaction() failed for an unknown reason",
+      );
+    }
+
+    final messageBytes = result.ref.data.toUint8List(result.ref.dataLength);
+    final message = utf8.decode(messageBytes);
+    malloc.free(result.ref.data);
+
+    if (result.ref.isError > 0) {
+      throw Exception(message);
+    }
+
+    final fee = result.ref.fee;
+
+    final List<Uint8List> scripts = [];
+    for (int i = 0; i < result.ref.outputScriptsLength; i++) {
+      final script = result.ref.outputScripts[i].bytes
+          .toUint8List(result.ref.outputScripts[i].length);
+      malloc.free(result.ref.outputScripts[i].bytes);
+      scripts.add(script);
+    }
+
+    malloc.free(result.ref.outputScripts);
+
+    return (serializedSpendPayload: message, fee: fee, outputScripts: scripts);
   }
 }
 

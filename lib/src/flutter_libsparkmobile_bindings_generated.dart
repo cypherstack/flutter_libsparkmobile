@@ -136,22 +136,17 @@ class FlutterLibsparkmobileBindings {
   /// FFI-friendly wrapper for spark::createSparkSpendTransaction.
   ///
   /// createSparkSpendTransaction: https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L190
-  ffi.Pointer<ffi.UnsignedChar> cCreateSparkSpendTransaction(
+  ffi.Pointer<SparkSpendTransactionResult> cCreateSparkSpendTransaction(
     ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
     ffi.Pointer<CRecip> recipients,
     int recipientsLength,
     ffi.Pointer<COutputRecipient> privateRecipients,
     int privateRecipientsLength,
-    ffi.Pointer<CCSparkMintMeta> coins,
-    int coinsLength,
-    ffi.Pointer<CCoverSets> cover_set_data_all,
+    ffi.Pointer<CCDataStream> serializedMintMetas,
+    int serializedMintMetasLength,
+    ffi.Pointer<CCoverSetData> cover_set_data_all,
     int cover_set_data_allLength,
-    ffi.Pointer<ffi.Char> txHashSig,
-    int txHashSigLength,
-    int fee,
-    ffi.Pointer<OutputScript> outputScripts,
-    int outputScriptsLength,
   ) {
     return _cCreateSparkSpendTransaction(
       keyData,
@@ -160,53 +155,38 @@ class FlutterLibsparkmobileBindings {
       recipientsLength,
       privateRecipients,
       privateRecipientsLength,
-      coins,
-      coinsLength,
+      serializedMintMetas,
+      serializedMintMetasLength,
       cover_set_data_all,
       cover_set_data_allLength,
-      txHashSig,
-      txHashSigLength,
-      fee,
-      outputScripts,
-      outputScriptsLength,
     );
   }
 
   late final _cCreateSparkSpendTransactionPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<ffi.UnsignedChar> Function(
+          ffi.Pointer<SparkSpendTransactionResult> Function(
               ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
               ffi.Pointer<CRecip>,
               ffi.Int,
               ffi.Pointer<COutputRecipient>,
               ffi.Int,
-              ffi.Pointer<CCSparkMintMeta>,
+              ffi.Pointer<CCDataStream>,
               ffi.Int,
-              ffi.Pointer<CCoverSets>,
-              ffi.Int,
-              ffi.Pointer<ffi.Char>,
-              ffi.Int,
-              ffi.Uint64,
-              ffi.Pointer<OutputScript>,
+              ffi.Pointer<CCoverSetData>,
               ffi.Int)>>('cCreateSparkSpendTransaction');
   late final _cCreateSparkSpendTransaction =
       _cCreateSparkSpendTransactionPtr.asFunction<
-          ffi.Pointer<ffi.UnsignedChar> Function(
+          ffi.Pointer<SparkSpendTransactionResult> Function(
               ffi.Pointer<ffi.UnsignedChar>,
               int,
               ffi.Pointer<CRecip>,
               int,
               ffi.Pointer<COutputRecipient>,
               int,
-              ffi.Pointer<CCSparkMintMeta>,
+              ffi.Pointer<CCDataStream>,
               int,
-              ffi.Pointer<CCoverSets>,
-              int,
-              ffi.Pointer<ffi.Char>,
-              int,
-              int,
-              ffi.Pointer<OutputScript>,
+              ffi.Pointer<CCoverSetData>,
               int)>();
 }
 
@@ -337,67 +317,17 @@ final class COutputCoinData extends ffi.Struct {
 ///
 /// See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L195
 final class COutputRecipient extends ffi.Struct {
-  external COutputCoinData output;
+  external ffi.Pointer<COutputCoinData> output;
 
   @ffi.Int()
   external int subtractFee;
 }
 
 final class CCDataStream extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> data;
+  external ffi.Pointer<ffi.UnsignedChar> data;
 
   @ffi.Int()
   external int length;
-}
-
-/// FFI-friendly wrapper for a spark::CSparkMintMeta.
-///
-/// CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
-final class CCSparkMintMeta extends ffi.Struct {
-  @ffi.Uint64()
-  external int height;
-
-  external ffi.Pointer<ffi.Char> id;
-
-  @ffi.Int()
-  external int isUsed;
-
-  external ffi.Pointer<ffi.Char> txid;
-
-  /// Diversifier.
-  @ffi.Uint64()
-  external int i;
-
-  /// Encrypted diversifier.
-  external ffi.Pointer<ffi.UnsignedChar> d;
-
-  @ffi.Int()
-  external int dLength;
-
-  /// Value.
-  @ffi.Uint64()
-  external int v;
-
-  /// Nonce.
-  external ffi.Pointer<ffi.UnsignedChar> k;
-
-  @ffi.Int()
-  external int kLength;
-
-  external ffi.Pointer<ffi.Char> memo;
-
-  @ffi.Int()
-  external int memoLength;
-
-  external ffi.Pointer<ffi.UnsignedChar> serial_context;
-
-  @ffi.Int()
-  external int serial_contextLength;
-
-  @ffi.Char()
-  external int type;
-
-  external CCDataStream coin;
 }
 
 /// FFI-friendly wrapper for a spark::CoverSetData.
@@ -405,7 +335,7 @@ final class CCSparkMintMeta extends ffi.Struct {
 /// CoverSetData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L28
 final class CCoverSetData extends ffi.Struct {
   /// vs. struct CCoin* cover_set;
-  external ffi.Pointer<ffi.Pointer<CCDataStream>> cover_set;
+  external ffi.Pointer<CCDataStream> cover_set;
 
   @ffi.Int()
   external int cover_setLength;
@@ -414,16 +344,9 @@ final class CCoverSetData extends ffi.Struct {
 
   @ffi.Int()
   external int cover_set_representationLength;
-}
-
-/// FFI-friendly wrapper for a std::unordered_map<uint64_t, spark::CoverSetData>.
-///
-/// See https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L197
-final class CCoverSets extends ffi.Struct {
-  external ffi.Pointer<CCoverSetData> cover_sets;
 
   @ffi.Int()
-  external int cover_setsLength;
+  external int setId;
 }
 
 final class OutputScript extends ffi.Struct {
@@ -464,4 +387,25 @@ final class AggregateCoinData extends ffi.Struct {
 
   @ffi.Int()
   external int nonceLength;
+}
+
+/// Aggregate data structure to handle passing spark spend data across FFI.
+///
+/// Contains the serialized transaction or the error message if isError is true.
+final class SparkSpendTransactionResult extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> data;
+
+  @ffi.Int()
+  external int dataLength;
+
+  external ffi.Pointer<OutputScript> outputScripts;
+
+  @ffi.Int()
+  external int outputScriptsLength;
+
+  @ffi.Int()
+  external int fee;
+
+  @ffi.Int()
+  external int isError;
 }

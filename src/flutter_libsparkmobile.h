@@ -62,22 +62,17 @@ struct CCRecipientList* cCreateSparkMintRecipients(
  * createSparkSpendTransaction: https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L190
  */
 FFI_PLUGIN_EXPORT
-unsigned char* cCreateSparkSpendTransaction(
+struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         unsigned char* keyData,
         int index,
-        struct CRecip* recipients,
+        struct CRecip* recipients, // This CRecip(ient) is not the same as a CRecipient.
         int recipientsLength,
         struct COutputRecipient* privateRecipients,
         int privateRecipientsLength,
-        struct CCSparkMintMeta* coins,
-        int coinsLength,
-        struct CCoverSets* cover_set_data_all,
-        int cover_set_data_allLength,
-        const char* txHashSig,
-        int txHashSigLength,
-        uint64_t fee,
-        const struct OutputScript* outputScripts,
-        int outputScriptsLength
+        struct CCDataStream* serializedMintMetas,
+        int serializedMintMetasLength,
+        struct CCoverSetData* cover_set_data_all,
+        int cover_set_data_allLength
 );
 
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H
