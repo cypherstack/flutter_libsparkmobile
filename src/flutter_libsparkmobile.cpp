@@ -291,3 +291,78 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         return result;
     }
 }
+
+
+FFI_PLUGIN_EXPORT
+SelectedSparkSpendCoins* getCoinsToSpend(int64_t spendAmount, CCSparkMintMeta* coins, int coinsLength) {
+    std::vector<CSparkMintMeta> coinsToSpend_out;
+    int64_t change;
+
+    std::list<CSparkMintMeta> _coins;
+
+    for (int i = 0; i < coinsLength; i++) {
+        CSparkMintMeta meta;
+        meta.nHeight = coins[i].height;
+        meta.nId = coins[i].id;
+        meta.isUsed = coins[i].isUsed > 0;
+        meta.txid = uint256S(coins[i].txid);
+        meta.i = coins[i].i;
+        meta.d = std::vector<unsigned char>(coins[i].d, coins[i].d + coins[i].dLength);
+        meta.v = coins[i].v;
+        meta.k = Scalar(coins[i].k);
+        meta.memo = std::string(coins[i].memo, coins[i].memoLength);
+        meta.serial_context = std::vector<unsigned char>(coins[i].serial_context, coins[i].serial_context + coins[i].serial_contextLength);
+        meta.type = coins[i].type;
+        meta.coin = deserializeCoin(coins[i].serializedCoin, coins[i].serializedCoinLength);
+
+        _coins.push_back(meta);
+    }
+
+    GetCoinsToSpend(spendAmount, coinsToSpend_out, _coins, change);
+
+    SelectedSparkSpendCoins* result = (SelectedSparkSpendCoins*)malloc(sizeof(SelectedSparkSpendCoins));
+    result->changeToMint = change;
+    result->length = coinsToSpend_out.size();
+    result->list = (CCSparkMintMeta*)malloc(sizeof(CCSparkMintMeta) * result->length);
+
+    for (int i = 0; i < coinsToSpend_out.size(); i++) {
+        result->list[i].height = coinsToSpend_out[i].nHeight;
+
+        result->list[i].id = coinsToSpend_out[i].nId;
+
+        result->list[i].isUsed = coinsToSpend_out[i].isUsed;
+
+        result->list[i].txid = (const char*)malloc(sizeof(const char*) * coinsToSpend_out[i].txid.size());
+        memcpy(result->list[i].txid, coinsToSpend_out[i].txid.begin(), sizeof(const char*) * coinsToSpend_out[i].txid.size());
+
+        result->list[i].i = coinsToSpend_out[i].i;
+
+        result->list[i].dLength = coinsToSpend_out[i].d.size();
+        result->list[i].d = (const unsigned char*)malloc(sizeof(const unsigned char) * coinsToSpend_out[i].d.size());
+        memcpy(result->list[i].d, coinsToSpend_out[i].d.begin(), sizeof(const unsigned char*) * coinsToSpend_out[i].d.size());
+
+        result->list[i].v = coinsToSpend_out[i].v;
+
+        result->list[i].kLength = coinsToSpend_out[i].k.s;
+        result->list[i].k = (const unsigned char*)malloc(sizeof(const unsigned char) * coinsToSpend_out[i].k.size());
+        memcpy(result->list[i].k, coinsToSpend_out[i].k.begin(), sizeof(const unsigned char*) * coinsToSpend_out[i].k.size());
+
+        result->list[i].memo = (const char*)malloc(sizeof(const char) * coinsToSpend_out[i].memo.size());
+        memcpy(result->list[i].memo, coinsToSpend_out[i].memo.begin(), sizeof(const char*) * coinsToSpend_out[i].memo.size());
+        result->list[i].memoLength = coinsToSpend_out[i].memo.size();
+
+        result->list[i].serial_context = (unsigned char*)malloc(sizeof(unsigned char) * coinsToSpend_out[i].serial_context.size());
+        memcpy(result->list[i].serial_context, coinsToSpend_out[i].serial_context.begin(), sizeof(unsigned char*) * coinsToSpend_out[i].serial_context.size());
+        result->list[i].serial_contextLength = coinsToSpend_out[i].serial_context.size();
+
+        CDataStream coinStream(SER_NETWORK, PROTOCOL_VERSION);
+        coinStream << coinsToSpend_out[i].coin;
+        result->list[i].serializedCoinLength = coinStream.size();
+        result->list[i].serializedCoin = (unsigned char*)malloc(sizeof(unsigned char) * coinStream.size());
+        memcpy(result->list[i].serializedCoin, coinStream.data(), coinStream.size());
+
+        result->list[i].type = coinsToSpend_out[i].type;
+    }
+
+    return result;
+}

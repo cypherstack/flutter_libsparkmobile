@@ -10,7 +10,8 @@ import 'package:flutter_libsparkmobile/src/models/spark_coin.dart';
 
 import 'src/flutter_libsparkmobile_bindings_generated.dart';
 
-const kSparkChain = 6;
+const kSparkChain = 0x6;
+const kSparkChange = 0x270F;
 const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";
 const kSparkBaseDerivationPathTestnet = "m/44'/1'/0'/$kSparkChain/";
 
@@ -357,6 +358,110 @@ abstract final class LibSpark {
     malloc.free(result.ref.outputScripts);
 
     return (serializedSpendPayload: message, fee: fee, outputScripts: scripts);
+  }
+
+  static ({int changeToMint, List<LibSparkCoin> coins}) getCoinsToSpend({
+    required int sendAmount,
+    required int recipientsToSubtractFee,
+    required List<LibSparkCoin> coins,
+    required int privateRecipientsCount,
+    required int recipientsCount,
+  }) {
+    final coinsPtr = malloc.allocate<CCSparkMintMeta>(
+      sizeOf<CCSparkMintMeta>() * coins.length,
+    );
+
+    for (int i = 0; i < coins.length; i++) {
+      coinsPtr[i].height = coins[i].height!;
+      coinsPtr[i].id = coins[i].id!;
+      coinsPtr[i].isUsed = coins[i].isUsed! ? 1 : 0;
+      coinsPtr[i].txid = coins[i].txHash!.unsignedCharPointer();
+      coinsPtr[i].i = coins[i].diversifier!.toInt();
+      coinsPtr[i].d = coins[i].encryptedDiversifier!.unsignedCharPointer();
+      coinsPtr[i].dLength = coins[i].encryptedDiversifier!.length;
+      coinsPtr[i].k = coins[i].nonce!.unsignedCharPointer();
+      coinsPtr[i].kLength = coins[i].nonce!.length;
+      coinsPtr[i].memo = coins[i].memo!.toNativeUtf8().cast<Char>();
+      coinsPtr[i].memoLength = coins[i].memo!.length;
+      coinsPtr[i].serial_context =
+          coins[i].serialContext!.unsignedCharPointer();
+      coinsPtr[i].serial_contextLength = coins[i].serialContext!.length;
+      coinsPtr[i].type = coins[i].type.value;
+
+      final serCoin = base64Decode(coins[i].serializedCoin!);
+      coinsPtr[i].serializedCoin = serCoin.unsignedCharPointer();
+      coinsPtr[i].serializedCoinLength = serCoin.length;
+    }
+
+    final result = _bindings.getCoinsToSpend(
+      sendAmount,
+      coinsPtr,
+      coins.length,
+    );
+
+    for (int i = 0; i < coins.length; i++) {
+      malloc.free(coinsPtr[i].txid);
+      malloc.free(coinsPtr[i].d);
+      malloc.free(coinsPtr[i].k);
+      malloc.free(coinsPtr[i].memo);
+      malloc.free(coinsPtr[i].serial_context);
+      malloc.free(coinsPtr[i].serializedCoin);
+    }
+    malloc.free(coinsPtr);
+
+    final ({int changeToMint, List<LibSparkCoin> coins}) ret = (
+      changeToMint: result.ref.changeToMint,
+      coins: <LibSparkCoin>[],
+    );
+
+    for (int i = 0; i < result.ref.length; i++) {
+      final LibSparkCoinType coinType;
+      switch (result.ref.list[i].type) {
+        case 0:
+          coinType = LibSparkCoinType.mint;
+          break;
+        case 1:
+          coinType = LibSparkCoinType.mint;
+          break;
+        default:
+          throw Exception(
+            "Unknown coin type \"${result.ref.list[i].type}\" found.",
+          );
+      }
+
+      final coin = LibSparkCoin(
+        type: coinType,
+        id: result.ref.list[i].id,
+        height: result.ref.list[i].height,
+        isUsed: result.ref.list[i].isUsed > 0,
+        nonce: result.ref.list[i].k.toUint8List(result.ref.list[i].kLength),
+        value: BigInt.from(result.ref.list[i].v),
+        memo: result.ref.list[i].memo
+            .cast<Utf8>()
+            .toDartString(length: result.ref.list[i].memoLength),
+        txHash: result.ref.list[i].txid.toUint8List(32),
+        serialContext: result.ref.list[i].serial_context
+            .toUint8List(result.ref.list[i].serial_contextLength),
+        diversifier: BigInt.from(result.ref.list[i].i),
+        encryptedDiversifier:
+            result.ref.list[i].d.toUint8List(result.ref.list[i].dLength),
+        serializedCoin: base64Encode(result.ref.list[i].serializedCoin
+            .toUint8List(result.ref.list[i].serializedCoinLength)),
+      );
+
+      ret.coins.add(coin);
+
+      malloc.free(result.ref.list[i].txid);
+      malloc.free(result.ref.list[i].d);
+      malloc.free(result.ref.list[i].k);
+      malloc.free(result.ref.list[i].memo);
+      malloc.free(result.ref.list[i].serial_context);
+      malloc.free(result.ref.list[i].serializedCoin);
+    }
+
+    malloc.free(result);
+
+    return ret;
   }
 }
 

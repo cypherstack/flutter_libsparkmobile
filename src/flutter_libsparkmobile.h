@@ -75,4 +75,11 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         int cover_set_data_allLength
 );
 
+FFI_PLUGIN_EXPORT
+struct SelectedSparkSpendCoins* getCoinsToSpend(
+        int64_t spendAmount,
+        struct CCSparkMintMeta* coins,
+        int coinLength
+);
+
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H

@@ -119,33 +119,32 @@ struct CCDataStream {
  *
  * CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
  */
-//struct CCSparkMintMeta {
-//    uint64_t height;
-//    const char *id;
-//    int isUsed;
-//    const char *txid;
-//    uint64_t i; // Diversifier.
-//    const unsigned char *d; // Encrypted diversifier.
-//    int dLength;
-//    uint64_t v; // Value.
-//    const unsigned char *k; // Nonce.
-//    int kLength;
-//    const char *memo;
-//    int memoLength;
-//    unsigned char *serial_context;
-//    int serial_contextLength;
-//    char type;
-//    struct CCDataStream coin;
-//
-//    CCSparkMintMeta(uint64_t height, const char *id, int isUsed,
-//                    const char *txid, uint64_t i, const unsigned char *d,
-//                    int dLength, uint64_t v, const unsigned char *k,
-//                    int kLength, const char *memo, int memoLength,
-//                    unsigned char *serial_context, int serial_contextLength,
-//                    char type, const CCDataStream &coinData);
-//
-//    ~CCSparkMintMeta();
-//};
+struct CCSparkMintMeta {
+    int height;
+    int id;
+    int isUsed;
+    unsigned char *txid;
+    uint64_t i; // Diversifier.
+    const unsigned char *d; // Encrypted diversifier.
+    int dLength;
+    uint64_t v; // Value.
+    const unsigned char *k; // Nonce.
+    int kLength;
+    const char *memo;
+    int memoLength;
+    unsigned char *serial_context;
+    int serial_contextLength;
+    char type;
+    unsigned char* serializedCoin;
+    int serializedCoinLength;
+};
+
+struct SelectedSparkSpendCoins {
+    struct CCSparkMintMeta* list;
+    int length;
+
+    int64_t changeToMint;
+};
 
 /*
  * FFI-friendly wrapper for a spark::CoverSetData.

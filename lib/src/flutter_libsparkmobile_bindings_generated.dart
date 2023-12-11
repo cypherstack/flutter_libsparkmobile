@@ -188,6 +188,26 @@ class FlutterLibsparkmobileBindings {
               int,
               ffi.Pointer<CCoverSetData>,
               int)>();
+
+  ffi.Pointer<SelectedSparkSpendCoins> getCoinsToSpend(
+    int spendAmount,
+    ffi.Pointer<CCSparkMintMeta> coins,
+    int coinLength,
+  ) {
+    return _getCoinsToSpend(
+      spendAmount,
+      coins,
+      coinLength,
+    );
+  }
+
+  late final _getCoinsToSpendPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SelectedSparkSpendCoins> Function(ffi.Int64,
+              ffi.Pointer<CCSparkMintMeta>, ffi.Int)>>('getCoinsToSpend');
+  late final _getCoinsToSpend = _getCoinsToSpendPtr.asFunction<
+      ffi.Pointer<SelectedSparkSpendCoins> Function(
+          int, ffi.Pointer<CCSparkMintMeta>, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.
@@ -328,6 +348,70 @@ final class CCDataStream extends ffi.Struct {
 
   @ffi.Int()
   external int length;
+}
+
+/// FFI-friendly wrapper for a spark::CSparkMintMeta.
+///
+/// CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
+final class CCSparkMintMeta extends ffi.Struct {
+  @ffi.Int()
+  external int height;
+
+  @ffi.Int()
+  external int id;
+
+  @ffi.Int()
+  external int isUsed;
+
+  external ffi.Pointer<ffi.UnsignedChar> txid;
+
+  /// Diversifier.
+  @ffi.Uint64()
+  external int i;
+
+  /// Encrypted diversifier.
+  external ffi.Pointer<ffi.UnsignedChar> d;
+
+  @ffi.Int()
+  external int dLength;
+
+  /// Value.
+  @ffi.Uint64()
+  external int v;
+
+  /// Nonce.
+  external ffi.Pointer<ffi.UnsignedChar> k;
+
+  @ffi.Int()
+  external int kLength;
+
+  external ffi.Pointer<ffi.Char> memo;
+
+  @ffi.Int()
+  external int memoLength;
+
+  external ffi.Pointer<ffi.UnsignedChar> serial_context;
+
+  @ffi.Int()
+  external int serial_contextLength;
+
+  @ffi.Char()
+  external int type;
+
+  external ffi.Pointer<ffi.UnsignedChar> serializedCoin;
+
+  @ffi.Int()
+  external int serializedCoinLength;
+}
+
+final class SelectedSparkSpendCoins extends ffi.Struct {
+  external ffi.Pointer<CCSparkMintMeta> list;
+
+  @ffi.Int()
+  external int length;
+
+  @ffi.Int64()
+  external int changeToMint;
 }
 
 /// FFI-friendly wrapper for a spark::CoverSetData.
