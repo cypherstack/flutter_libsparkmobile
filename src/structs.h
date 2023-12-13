@@ -14,11 +14,11 @@
  */
 struct CCoin {
     char type;
-    const unsigned char *k;
+    const char *kHex;
     int kLength;
     const char *address;
     uint64_t v;
-    const unsigned char *memo;
+    const char *memo;
     int memoLength;
     const unsigned char *serial_context;
     int serial_contextLength;
@@ -31,10 +31,10 @@ struct CCoin {
  */
 struct CIdentifiedCoinData {
     uint64_t i;
-    const unsigned char *d;
+    unsigned char *d;
     int dLength;
     uint64_t v;
-    const unsigned char *k;
+    const char *kHex;
     int kLength;
     const char *memo;
     int memoLength;
@@ -95,8 +95,10 @@ struct CRecip {
  */
 struct COutputCoinData {
     const char *address;
+    int addressLength;
     uint64_t value;
     const char *memo;
+    int memoLength;
 };
 
 /*
@@ -125,12 +127,12 @@ struct CCSparkMintMeta {
     int isUsed;
     unsigned char *txid;
     uint64_t i; // Diversifier.
-    const unsigned char *d; // Encrypted diversifier.
+    unsigned char *d; // Encrypted diversifier.
     int dLength;
     uint64_t v; // Value.
-    const unsigned char *k; // Nonce.
-    int kLength;
-    const char *memo;
+    char *nonceHex;
+    int nonceHexLength;
+    char *memo;
     int memoLength;
     unsigned char *serial_context;
     int serial_contextLength;
@@ -139,11 +141,24 @@ struct CCSparkMintMeta {
     int serializedCoinLength;
 };
 
-struct SelectedSparkSpendCoins {
+struct GetSparkCoinsResult {
     struct CCSparkMintMeta* list;
     int length;
 
     int64_t changeToMint;
+
+    char *errorMessage;
+    int errorMessageLength;
+};
+
+struct SelectSparkCoinsResult {
+    struct CCSparkMintMeta* list;
+    int length;
+
+    int64_t fee;
+
+    char *errorMessage;
+    int errorMessageLength;
 };
 
 /*
@@ -184,8 +199,8 @@ struct AggregateCoinData {
     unsigned char *serial;
     int serialLength;
 
-    unsigned char *nonce;
-    int nonceLength;
+    char *nonceHex;
+    int nonceHexLength;
 };
 
 /*

@@ -31,8 +31,8 @@ const char* createIncomingViewKey(const char* keyData, int index);
  *
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
  */
-FFI_PLUGIN_EXPORT
-struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
+//FFI_PLUGIN_EXPORT
+//struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
 
 FFI_PLUGIN_EXPORT
 struct AggregateCoinData* idAndRecoverCoin(
@@ -76,10 +76,19 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 );
 
 FFI_PLUGIN_EXPORT
-struct SelectedSparkSpendCoins* getCoinsToSpend(
+struct GetSparkCoinsResult* getCoinsToSpend(
         int64_t spendAmount,
         struct CCSparkMintMeta* coins,
         int coinLength
+);
+
+FFI_PLUGIN_EXPORT
+struct SelectSparkCoinsResult* selectSparkCoins(
+        int64_t required,
+        int subtractFeeFromAmount,
+        struct CCSparkMintMeta* coins,
+        int coinsLength,
+        int mintNum
 );
 
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H

@@ -23,46 +23,48 @@ spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index) {
         throw e;
     }
 }
+//
+///*
+// * CCoin factory.
+// *
+// * TODO manage the memory allocated by this function.
+// */
+//CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength) {
+//    CCoin coin;
+//    coin.type = type;
+//    Scalar k;
+//    k.SetHex(std::string(coins[i].nonceHex, coins[i].nonceHexLength))
+//    coin.k = copyBytes(k, kLength);
+//    coin.kLength = kLength;
+//    coin.address = address;
+//    coin.v = v;
+//    coin.memo = copyBytes(memo, memoLength);
+//    coin.memoLength = memoLength;
+//    coin.serial_context = copyBytes(serial_context, serial_contextLength);
+//    coin.serial_contextLength = serial_contextLength;
+//    return coin;
+//}
 
 /*
- * CCoin factory.
- *
- * TODO manage the memory allocated by this function.
- */
-CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength) {
-    CCoin coin;
-    coin.type = type;
-    coin.k = copyBytes(k, kLength);
-    coin.kLength = kLength;
-    coin.address = address;
-    coin.v = v;
-    coin.memo = copyBytes(memo, memoLength);
-    coin.memoLength = memoLength;
-    coin.serial_context = copyBytes(serial_context, serial_contextLength);
-    coin.serial_contextLength = serial_contextLength;
-    return coin;
-}
-
-/*
- * Utility function to convert an FFI-friendly C CCoin struct to a C++ Coin struct.
- */
-spark::Coin fromFFI(const CCoin& c_struct) {
-    spark::Coin cpp_struct(
-        // The test params are only used for unit tests.
-        spark::Params::get_default(),
-        c_struct.type,
-        spark::Scalar(c_struct.k),
-        decodeAddress(c_struct.address),
-        c_struct.v,
-        std::string(reinterpret_cast<const char*>(c_struct.memo), c_struct.memoLength),
-        std::vector<unsigned char>(c_struct.serial_context, c_struct.serial_context + c_struct.serial_contextLength)
-    );
-
-    return cpp_struct;
-}
+// * Utility function to convert an FFI-friendly C CCoin struct to a C++ Coin struct.
+// */
+//spark::Coin fromFFI(const CCoin& c_struct) {
+//    spark::Coin cpp_struct(
+//        // The test params are only used for unit tests.
+//        spark::Params::get_default(),
+//        c_struct.type,
+//        spark::Scalar(c_struct.k),
+//        decodeAddress(c_struct.address),
+//        c_struct.v,
+//        std::string(reinterpret_cast<const char*>(c_struct.memo), c_struct.memoLength),
+//        std::vector<unsigned char>(c_struct.serial_context, c_struct.serial_context + c_struct.serial_contextLength)
+//    );
+//
+//    return cpp_struct;
+//}
 
 
-spark::Coin fromFFI(CCDataStream& cdStream) {
+spark::Coin coinFromCCDataStream(CCDataStream& cdStream) {
     spark::Coin coin;
     std::vector<unsigned char> vec(cdStream.data, cdStream.data + cdStream.length);
     CDataStream coinStream(vec, SER_NETWORK, PROTOCOL_VERSION);
@@ -73,26 +75,26 @@ spark::Coin fromFFI(CCDataStream& cdStream) {
 /*
  * Utility function to convert a C++ IdentifiedCoinData struct to an FFI-friendly struct.
  */
-CIdentifiedCoinData toFFI(const spark::IdentifiedCoinData& cpp_struct) {
-    CIdentifiedCoinData c_struct;
-
-    c_struct.i = cpp_struct.i;
-    c_struct.d = copyBytes(cpp_struct.d.data(), cpp_struct.d.size());
-    c_struct.dLength = cpp_struct.d.size();
-    c_struct.v = cpp_struct.v;
-
-    // Serialize and copy the Scalar k.
-    std::vector<unsigned char> scalarBytes(32);
-    cpp_struct.k.serialize(scalarBytes.data());
-    c_struct.k = copyBytes(scalarBytes.data(), scalarBytes.size());
-    c_struct.kLength = scalarBytes.size();
-
-    // Copy the memo.
-    c_struct.memo = strdup(cpp_struct.memo.c_str());
-    c_struct.memoLength = cpp_struct.memo.size();
-
-    return c_struct;
-}
+//CIdentifiedCoinData toFFI(const spark::IdentifiedCoinData& cpp_struct) {
+//    CIdentifiedCoinData c_struct;
+//
+//    c_struct.i = cpp_struct.i;
+//    c_struct.d = copyBytes(cpp_struct.d.data(), cpp_struct.d.size());
+//    c_struct.dLength = cpp_struct.d.size();
+//    c_struct.v = cpp_struct.v;
+//
+//    // Serialize and copy the Scalar k.
+//    std::vector<unsigned char> scalarBytes(32);
+//    cpp_struct.k.serialize(scalarBytes.data());
+//    c_struct.k = copyBytes(scalarBytes.data(), scalarBytes.size());
+//    c_struct.kLength = scalarBytes.size();
+//
+//    // Copy the memo.
+//    c_struct.memo = strdup(cpp_struct.memo.c_str());
+//    c_struct.memoLength = cpp_struct.memo.size();
+//
+//    return c_struct;
+//}
 
 /*
  * Factory function to create a CScript from a byte array.
@@ -119,69 +121,69 @@ std::vector<unsigned char> serializeCScript(const CScript& script) {
     return std::vector<unsigned char>(script.begin(), script.end());
 }
 
-/*
- * Utility function to convert an FFI-friendly C CCRecipient struct to a C++ CRecipient struct.
- */
-CRecipient fromFFI(const CCRecipient& c_struct) {
-    // Use the factory function to create a CScript object.
-    CScript script = createCScriptFromBytes(c_struct.pubKey, c_struct.pubKeyLength);
-
-    CRecipient cpp_struct = createCRecipient(
-        script,
-        c_struct.cAmount,
-        static_cast<bool>(c_struct.subtractFee)
-    );
-
-    return cpp_struct;
-}
-
-/*
- * CCRecipient factory.
- *
- * TODO manage the memory allocated by this function.
- */
-CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee) {
-    CCRecipient recipient;
-    recipient.pubKey = copyBytes(pubKey, 32);
-    recipient.cAmount = amount;
-    recipient.subtractFee = subtractFee;
-    return recipient;
-}
-
-/*
- * Utility function to convert a C++ CRecipient struct to an FFI-friendly struct.
- */
-CCRecipient toFFI(const CRecipient& cpp_struct) {
-    CCRecipient c_struct;
-
-    // Serialize CScript and copy.
-    std::vector<unsigned char> scriptBytes = serializeCScript(cpp_struct.pubKey);
-    if (!scriptBytes.empty()) {
-        c_struct.pubKey = copyBytes(scriptBytes.data(), scriptBytes.size());
-        c_struct.pubKeyLength = static_cast<int>(scriptBytes.size());
-    } else {
-        c_struct.pubKey = nullptr;
-        c_struct.pubKeyLength = 0;
-    }
-
-    c_struct.cAmount = cpp_struct.amount;
-    c_struct.subtractFee = static_cast<int>(cpp_struct.subtractFeeFromAmount);
-
-    return c_struct;
-}
-
-/*
- * CRecipient factory.
- *
- * TODO manage the memory allocated by this function.
- */
-CRecipient createCRecipient(const CScript& script, CAmount amount, bool subtractFee) {
-    CRecipient recipient;
-    recipient.pubKey = script;
-    recipient.amount = amount;
-    recipient.subtractFeeFromAmount = subtractFee;
-    return recipient;
-}
+///*
+// * Utility function to convert an FFI-friendly C CCRecipient struct to a C++ CRecipient struct.
+// */
+//CRecipient fromFFI(const CCRecipient& c_struct) {
+//    // Use the factory function to create a CScript object.
+//    CScript script = createCScriptFromBytes(c_struct.pubKey, c_struct.pubKeyLength);
+//
+//    CRecipient cpp_struct = createCRecipient(
+//        script,
+//        c_struct.cAmount,
+//        static_cast<bool>(c_struct.subtractFee)
+//    );
+//
+//    return cpp_struct;
+//}
+//
+///*
+// * CCRecipient factory.
+// *
+// * TODO manage the memory allocated by this function.
+// */
+//CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee) {
+//    CCRecipient recipient;
+//    recipient.pubKey = copyBytes(pubKey, 32);
+//    recipient.cAmount = amount;
+//    recipient.subtractFee = subtractFee;
+//    return recipient;
+//}
+//
+///*
+// * Utility function to convert a C++ CRecipient struct to an FFI-friendly struct.
+// */
+//CCRecipient toFFI(const CRecipient& cpp_struct) {
+//    CCRecipient c_struct;
+//
+//    // Serialize CScript and copy.
+//    std::vector<unsigned char> scriptBytes = serializeCScript(cpp_struct.pubKey);
+//    if (!scriptBytes.empty()) {
+//        c_struct.pubKey = copyBytes(scriptBytes.data(), scriptBytes.size());
+//        c_struct.pubKeyLength = static_cast<int>(scriptBytes.size());
+//    } else {
+//        c_struct.pubKey = nullptr;
+//        c_struct.pubKeyLength = 0;
+//    }
+//
+//    c_struct.cAmount = cpp_struct.amount;
+//    c_struct.subtractFee = static_cast<int>(cpp_struct.subtractFeeFromAmount);
+//
+//    return c_struct;
+//}
+//
+///*
+// * CRecipient factory.
+// *
+// * TODO manage the memory allocated by this function.
+// */
+//CRecipient createCRecipient(const CScript& script, CAmount amount, bool subtractFee) {
+//    CRecipient recipient;
+//    recipient.pubKey = script;
+//    recipient.amount = amount;
+//    recipient.subtractFeeFromAmount = subtractFee;
+//    return recipient;
+//}
 
 /*
  * Utility function to decode an Address from a string.
@@ -192,150 +194,150 @@ spark::Address decodeAddress(const std::string& str) {
 
     return address;
 }
-
-/*
- * MintedCoinData factory.
- */
-spark::MintedCoinData createMintedCoinData(const char* address, uint64_t v, const char* memo) {
-    return {
-        decodeAddress(address),
-        v,
-        memo
-    };
-}
-
-/*
- * Utility function to convert an FFI-friendly C CMintedCoinData struct to a C++ MintedCoinData.
- */
-spark::MintedCoinData fromFFI(const CMintedCoinData& c_struct) {
-    return createMintedCoinData(
-        c_struct.address,
-        c_struct.value,
-        c_struct.memo
-    );
-}
-
-/*
- * CMintedCoinData factory.
- */
-CMintedCoinData createCMintedCoinData(const char* address, uint64_t value, const char* memo) {
-    CMintedCoinData c_struct;
-    c_struct.address = strdup(address);
-    c_struct.value = value;
-    c_struct.memo = strdup(memo);
-    return c_struct;
-}
-
-/*
- * Utility function to convert a C++ MintedCoinData struct to an FFI-friendly CMintedCoinData.
- */
-CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct, int isTestNet) {
-    CMintedCoinData c_struct;
-    c_struct.address = strdup(cpp_struct.address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET).c_str());
-    c_struct.value = cpp_struct.v;
-    c_struct.memo = strdup(cpp_struct.memo.c_str());
-    return c_struct;
-}
-
-/*
- * OutputCoinData factory.
- */
-spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, const char* memo) {
-    return {
-        decodeAddress(address),
-        v,
-        memo
-    };
-}
-
-/*
- * Utility function to convert an FFI-friendly C COutputCoinData struct to a C++ OutputCoinData.
- */
-spark::OutputCoinData fromFFI(const COutputCoinData& c_struct) {
-    return createOutputCoinData(
-        c_struct.address,
-        c_struct.value,
-        c_struct.memo
-    );
-}
-
-/*
- * COutputCoinData factory.
- */
-COutputCoinData createCOutputCoinData(const char* address, uint64_t value, const char* memo) {
-    COutputCoinData c_struct;
-    c_struct.address = strdup(address);
-    c_struct.value = value;
-    c_struct.memo = strdup(memo);
-    return c_struct;
-}
-
-/*
- * Utility function to convert a C++ OutputCoinData struct to an FFI-friendly COutputCoinData.
- */
-COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet) {
-    // Encode address for testnet
-    std::string address = cpp_struct.address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
-
-    return createCOutputCoinData(
-        address.c_str(),
-        cpp_struct.v,
-        cpp_struct.memo.c_str()
-    );
-}
-
-/*
- * CSparkMintMeta factory.
- *
- * A CSparkMintMeta is a C++ struct that contains a height, id, isUsed, txid, diversifier, encrypted
- * diversifier, value, nonce, memo, serial context, type, and coin.  We accept these as a
- * CCSparkMintMeta from the Dart interface and convert them to a C++ CSparkMintMeta struct.
- */
-CSparkMintMeta createCSparkMintMeta(
-    const uint64_t height, const uint64_t id, const int isUsed,
-    const char* txidStr, const uint64_t diversifier,
-    const char* encryptedDiversifierStr, const uint64_t value,
-    const char* nonceStr, const char* memoStr,
-    const unsigned char* serialContext,
-    const int serialContextLength, const char type, const CCoin coin
-) {
-    CSparkMintMeta cpp_struct;
-
-    cpp_struct.nHeight = height;
-    cpp_struct.nId = id;
-    cpp_struct.isUsed = isUsed != 0;
-
-    if (txidStr) {
-        cpp_struct.txid = uint256S(txidStr);
-    }
-
-    if (encryptedDiversifierStr) {
-        size_t edLen = std::strlen(encryptedDiversifierStr);
-        cpp_struct.d = std::vector<unsigned char>(encryptedDiversifierStr, encryptedDiversifierStr + edLen);
-    }
-
-    cpp_struct.i = diversifier;
-    cpp_struct.v = value;
-
-    if (nonceStr) {
-        size_t nonceLen = std::strlen(nonceStr);
-        std::vector<unsigned char> nonceBytes(nonceStr, nonceStr + nonceLen);
-        cpp_struct.k = Scalar(nonceBytes.data());
-    }
-
-    if (memoStr) {
-        cpp_struct.memo = std::string(memoStr);
-    }
-
-    if (serialContext && serialContextLength > 0) {
-        cpp_struct.serial_context = std::vector<unsigned char>(serialContext, serialContext + serialContextLength);
-    }
-
-    cpp_struct.type = type;
-    cpp_struct.coin = fromFFI(coin);
-
-    return cpp_struct;
-}
+//
+///*
+// * MintedCoinData factory.
+// */
+//spark::MintedCoinData createMintedCoinData(const char* address, uint64_t v, const char* memo) {
+//    return {
+//        decodeAddress(address),
+//        v,
+//        memo
+//    };
+//}
+//
+///*
+// * Utility function to convert an FFI-friendly C CMintedCoinData struct to a C++ MintedCoinData.
+// */
+//spark::MintedCoinData fromFFI(const CMintedCoinData& c_struct) {
+//    return createMintedCoinData(
+//        c_struct.address,
+//        c_struct.value,
+//        c_struct.memo
+//    );
+//}
+//
+///*
+// * CMintedCoinData factory.
+// */
+//CMintedCoinData createCMintedCoinData(const char* address, uint64_t value, const char* memo) {
+//    CMintedCoinData c_struct;
+//    c_struct.address = strdup(address);
+//    c_struct.value = value;
+//    c_struct.memo = strdup(memo);
+//    return c_struct;
+//}
+//
+///*
+// * Utility function to convert a C++ MintedCoinData struct to an FFI-friendly CMintedCoinData.
+// */
+//CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct, int isTestNet) {
+//    CMintedCoinData c_struct;
+//    c_struct.address = strdup(cpp_struct.address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET).c_str());
+//    c_struct.value = cpp_struct.v;
+//    c_struct.memo = strdup(cpp_struct.memo.c_str());
+//    return c_struct;
+//}
+//
+///*
+// * OutputCoinData factory.
+// */
+//spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, const char* memo) {
+//    return {
+//        decodeAddress(address),
+//        v,
+//        memo
+//    };
+//}
+//
+///*
+// * Utility function to convert an FFI-friendly C COutputCoinData struct to a C++ OutputCoinData.
+// */
+//spark::OutputCoinData fromFFI(const COutputCoinData& c_struct) {
+//    return createOutputCoinData(
+//        c_struct.address,
+//        c_struct.value,
+//        c_struct.memo
+//    );
+//}
+//
+///*
+// * COutputCoinData factory.
+// */
+//COutputCoinData createCOutputCoinData(const char* address, uint64_t value, const char* memo) {
+//    COutputCoinData c_struct;
+//    c_struct.address = strdup(address);
+//    c_struct.value = value;
+//    c_struct.memo = strdup(memo);
+//    return c_struct;
+//}
+//
+///*
+// * Utility function to convert a C++ OutputCoinData struct to an FFI-friendly COutputCoinData.
+// */
+//COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet) {
+//    // Encode address for testnet
+//    std::string address = cpp_struct.address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
+//
+//    return createCOutputCoinData(
+//        address.c_str(),
+//        cpp_struct.v,
+//        cpp_struct.memo.c_str()
+//    );
+//}
+//
+///*
+// * CSparkMintMeta factory.
+// *
+// * A CSparkMintMeta is a C++ struct that contains a height, id, isUsed, txid, diversifier, encrypted
+// * diversifier, value, nonce, memo, serial context, type, and coin.  We accept these as a
+// * CCSparkMintMeta from the Dart interface and convert them to a C++ CSparkMintMeta struct.
+// */
+//CSparkMintMeta createCSparkMintMeta(
+//    const uint64_t height, const uint64_t id, const int isUsed,
+//    const char* txidStr, const uint64_t diversifier,
+//    const char* encryptedDiversifierStr, const uint64_t value,
+//    const char* nonceStr, const char* memoStr,
+//    const unsigned char* serialContext,
+//    const int serialContextLength, const char type, const CCoin coin
+//) {
+//    CSparkMintMeta cpp_struct;
+//
+//    cpp_struct.nHeight = height;
+//    cpp_struct.nId = id;
+//    cpp_struct.isUsed = isUsed != 0;
+//
+//    if (txidStr) {
+//        cpp_struct.txid = uint256S(txidStr);
+//    }
+//
+//    if (encryptedDiversifierStr) {
+//        size_t edLen = std::strlen(encryptedDiversifierStr);
+//        cpp_struct.d = std::vector<unsigned char>(encryptedDiversifierStr, encryptedDiversifierStr + edLen);
+//    }
+//
+//    cpp_struct.i = diversifier;
+//    cpp_struct.v = value;
+//
+//    if (nonceStr) {
+//        size_t nonceLen = std::strlen(nonceStr);
+//        std::vector<unsigned char> nonceBytes(nonceStr, nonceStr + nonceLen);
+//        cpp_struct.k = Scalar(nonceBytes.data());
+//    }
+//
+//    if (memoStr) {
+//        cpp_struct.memo = std::string(memoStr);
+//    }
+//
+//    if (serialContext && serialContextLength > 0) {
+//        cpp_struct.serial_context = std::vector<unsigned char>(serialContext, serialContext + serialContextLength);
+//    }
+//
+//    cpp_struct.type = type;
+//    cpp_struct.coin = fromFFI(coin);
+//
+//    return cpp_struct;
+//}
 
 /*
  * Utility function to convert a C++ CSparkMintMeta struct to an FFI-friendly C CCSparkMintMeta.
@@ -586,21 +588,21 @@ CCoverSetData toFFI(const spark::CoverSetData& cpp_struct) {
 }
  */
 
-unsigned char* copyBytes(const unsigned char* source, int length) {
-    if (source == nullptr || length <= 0) return nullptr;
-
-    unsigned char* dest = new unsigned char[length];
-    std::memcpy(dest, source, length);
-    return dest;
-}
-
-Scalar bytesToScalar(const unsigned char* bytes, int size) {
-    if (bytes == nullptr || size <= 0) {
-        throw std::invalid_argument("Invalid byte array for Scalar conversion.");
-    }
-    // Assuming Scalar can be constructed from a byte array.
-    return Scalar(bytes);
-}
+//unsigned char* copyBytes(const unsigned char* source, int length) {
+//    if (source == nullptr || length <= 0) return nullptr;
+//
+//    unsigned char* dest = new unsigned char[length];
+//    std::memcpy(dest, source, length);
+//    return dest;
+//}
+//
+//Scalar bytesToScalar(const unsigned char* bytes, int size) {
+//    if (bytes == nullptr || size <= 0) {
+//        throw std::invalid_argument("Invalid byte array for Scalar conversion.");
+//    }
+//    // Assuming Scalar can be constructed from a byte array.
+//    return Scalar(bytes);
+//}
 
 unsigned char *hexToBytes(const char *hexstr) {
     size_t length = strlen(hexstr) / 2;

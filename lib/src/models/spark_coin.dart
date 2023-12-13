@@ -16,7 +16,7 @@ class LibSparkCoin {
 
   final bool? isUsed;
 
-  final Uint8List? nonce;
+  final String? nonceHex;
 
   final String? address;
 
@@ -43,7 +43,7 @@ class LibSparkCoin {
     this.id,
     this.height,
     this.isUsed,
-    this.nonce,
+    this.nonceHex,
     this.address,
     this.value,
     this.memo,
@@ -62,7 +62,7 @@ class LibSparkCoin {
     int? id,
     int? height,
     bool? isUsed,
-    Uint8List? nonce,
+    String? nonceHex,
     String? address,
     BigInt? value,
     String? memo,
@@ -80,7 +80,7 @@ class LibSparkCoin {
       id: id ?? this.id,
       height: height ?? this.height,
       isUsed: isUsed ?? this.isUsed,
-      nonce: nonce ?? this.nonce,
+      nonceHex: nonceHex ?? this.nonceHex,
       address: address ?? this.address,
       value: value ?? this.value,
       memo: memo ?? this.memo,
@@ -102,7 +102,7 @@ class LibSparkCoin {
         ', id: $id'
         ', height: $height'
         ', isUsed: $isUsed'
-        ', k: $nonce'
+        ', k: $nonceHex'
         ', address: $address'
         ', value: $value'
         ', memo: $memo'

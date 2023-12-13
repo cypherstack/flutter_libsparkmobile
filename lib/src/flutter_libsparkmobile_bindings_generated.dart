@@ -51,28 +51,9 @@ class FlutterLibsparkmobileBindings {
   /// FFI-friendly wrapper for spark::identifyCoin.
   ///
   /// identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
-  CIdentifiedCoinData identifyCoin(
-    ffi.Pointer<ffi.UnsignedChar> serializedCoin,
-    int serializedCoinLength,
-    ffi.Pointer<ffi.UnsignedChar> keyData,
-    int index,
-  ) {
-    return _identifyCoin(
-      serializedCoin,
-      serializedCoinLength,
-      keyData,
-      index,
-    );
-  }
-
-  late final _identifyCoinPtr = _lookup<
-      ffi.NativeFunction<
-          CIdentifiedCoinData Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int,
-              ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>>('identifyCoin');
-  late final _identifyCoin = _identifyCoinPtr.asFunction<
-      CIdentifiedCoinData Function(ffi.Pointer<ffi.UnsignedChar>, int,
-          ffi.Pointer<ffi.UnsignedChar>, int)>();
-
+  /// /
+  /// //FFI_PLUGIN_EXPORT
+  /// //struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
   ffi.Pointer<AggregateCoinData> idAndRecoverCoin(
     ffi.Pointer<ffi.UnsignedChar> serializedCoin,
     int serializedCoinLength,
@@ -189,7 +170,7 @@ class FlutterLibsparkmobileBindings {
               ffi.Pointer<CCoverSetData>,
               int)>();
 
-  ffi.Pointer<SelectedSparkSpendCoins> getCoinsToSpend(
+  ffi.Pointer<GetSparkCoinsResult> getCoinsToSpend(
     int spendAmount,
     ffi.Pointer<CCSparkMintMeta> coins,
     int coinLength,
@@ -203,11 +184,39 @@ class FlutterLibsparkmobileBindings {
 
   late final _getCoinsToSpendPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<SelectedSparkSpendCoins> Function(ffi.Int64,
+          ffi.Pointer<GetSparkCoinsResult> Function(ffi.Int64,
               ffi.Pointer<CCSparkMintMeta>, ffi.Int)>>('getCoinsToSpend');
   late final _getCoinsToSpend = _getCoinsToSpendPtr.asFunction<
-      ffi.Pointer<SelectedSparkSpendCoins> Function(
+      ffi.Pointer<GetSparkCoinsResult> Function(
           int, ffi.Pointer<CCSparkMintMeta>, int)>();
+
+  ffi.Pointer<SelectSparkCoinsResult> selectSparkCoins(
+    int required1,
+    int subtractFeeFromAmount,
+    ffi.Pointer<CCSparkMintMeta> coins,
+    int coinsLength,
+    int mintNum,
+  ) {
+    return _selectSparkCoins(
+      required1,
+      subtractFeeFromAmount,
+      coins,
+      coinsLength,
+      mintNum,
+    );
+  }
+
+  late final _selectSparkCoinsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SelectSparkCoinsResult> Function(
+              ffi.Int64,
+              ffi.Int,
+              ffi.Pointer<CCSparkMintMeta>,
+              ffi.Int,
+              ffi.Int)>>('selectSparkCoins');
+  late final _selectSparkCoins = _selectSparkCoinsPtr.asFunction<
+      ffi.Pointer<SelectSparkCoinsResult> Function(
+          int, int, ffi.Pointer<CCSparkMintMeta>, int, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.
@@ -217,7 +226,7 @@ final class CCoin extends ffi.Struct {
   @ffi.Char()
   external int type;
 
-  external ffi.Pointer<ffi.UnsignedChar> k;
+  external ffi.Pointer<ffi.Char> kHex;
 
   @ffi.Int()
   external int kLength;
@@ -227,7 +236,7 @@ final class CCoin extends ffi.Struct {
   @ffi.Uint64()
   external int v;
 
-  external ffi.Pointer<ffi.UnsignedChar> memo;
+  external ffi.Pointer<ffi.Char> memo;
 
   @ffi.Int()
   external int memoLength;
@@ -253,7 +262,7 @@ final class CIdentifiedCoinData extends ffi.Struct {
   @ffi.Uint64()
   external int v;
 
-  external ffi.Pointer<ffi.UnsignedChar> k;
+  external ffi.Pointer<ffi.Char> kHex;
 
   @ffi.Int()
   external int kLength;
@@ -327,10 +336,16 @@ final class CRecip extends ffi.Struct {
 final class COutputCoinData extends ffi.Struct {
   external ffi.Pointer<ffi.Char> address;
 
+  @ffi.Int()
+  external int addressLength;
+
   @ffi.Uint64()
   external int value;
 
   external ffi.Pointer<ffi.Char> memo;
+
+  @ffi.Int()
+  external int memoLength;
 }
 
 /// FFI-friendly wrapper for a <spark::OutputCoinData, bool>.
@@ -379,11 +394,10 @@ final class CCSparkMintMeta extends ffi.Struct {
   @ffi.Uint64()
   external int v;
 
-  /// Nonce.
-  external ffi.Pointer<ffi.UnsignedChar> k;
+  external ffi.Pointer<ffi.Char> nonceHex;
 
   @ffi.Int()
-  external int kLength;
+  external int nonceHexLength;
 
   external ffi.Pointer<ffi.Char> memo;
 
@@ -404,7 +418,7 @@ final class CCSparkMintMeta extends ffi.Struct {
   external int serializedCoinLength;
 }
 
-final class SelectedSparkSpendCoins extends ffi.Struct {
+final class GetSparkCoinsResult extends ffi.Struct {
   external ffi.Pointer<CCSparkMintMeta> list;
 
   @ffi.Int()
@@ -412,6 +426,26 @@ final class SelectedSparkSpendCoins extends ffi.Struct {
 
   @ffi.Int64()
   external int changeToMint;
+
+  external ffi.Pointer<ffi.Char> errorMessage;
+
+  @ffi.Int()
+  external int errorMessageLength;
+}
+
+final class SelectSparkCoinsResult extends ffi.Struct {
+  external ffi.Pointer<CCSparkMintMeta> list;
+
+  @ffi.Int()
+  external int length;
+
+  @ffi.Int64()
+  external int fee;
+
+  external ffi.Pointer<ffi.Char> errorMessage;
+
+  @ffi.Int()
+  external int errorMessageLength;
 }
 
 /// FFI-friendly wrapper for a spark::CoverSetData.
@@ -467,10 +501,10 @@ final class AggregateCoinData extends ffi.Struct {
   @ffi.Int()
   external int serialLength;
 
-  external ffi.Pointer<ffi.UnsignedChar> nonce;
+  external ffi.Pointer<ffi.Char> nonceHex;
 
   @ffi.Int()
-  external int nonceLength;
+  external int nonceHexLength;
 }
 
 /// Aggregate data structure to handle passing spark spend data across FFI.

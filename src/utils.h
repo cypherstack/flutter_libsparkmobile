@@ -11,45 +11,45 @@
 
 spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index);
 
-spark::Coin fromFFI(const CCoin& c_struct);
+//spark::Coin fromFFI(const CCoin& c_struct);
+//
+spark::Coin coinFromCCDataStream(CCDataStream& cdStream);
 
-spark::Coin fromFFI(CCDataStream& coinStream);
+//CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
 
-CCoin createCCoin(char type, const unsigned char* k, int kLength, const char* address, uint64_t v, const unsigned char* memo, int memoLength, const unsigned char* serial_context, int serial_contextLength);
-
-spark::IdentifiedCoinData fromFFI(const CIdentifiedCoinData& c_struct);
-
-CIdentifiedCoinData toFFI(const spark::IdentifiedCoinData& cpp_struct);
+//spark::IdentifiedCoinData fromFFI(const CIdentifiedCoinData& c_struct);
+//
+//CIdentifiedCoinData toFFI(const spark::IdentifiedCoinData& cpp_struct);
 
 CScript createCScriptFromBytes(const unsigned char* bytes, int length);
 
 std::vector<unsigned char> serializeCScript(const CScript& script);
 
-CRecipient createCRecipient(const CScript& script, CAmount amount, bool subtractFee);
+//CRecipient createCRecipient(const CScript& script, CAmount amount, bool subtractFee);
 
-CRecipient fromFFI(const CCRecipient& c_struct);
+//CRecipient fromFFI(const CCRecipient& c_struct);
 
-CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee);
+//CCRecipient createCCRecipient(const unsigned char* pubKey, uint64_t amount, int subtractFee);
 
-CCRecipient toFFI(const CRecipient& cpp_struct);
+//CCRecipient toFFI(const CRecipient& cpp_struct);
 
 spark::Address decodeAddress(const std::string& str);
 
-spark::MintedCoinData createMintedCoinData(const char* address, uint64_t v, const char* memo);
+//spark::MintedCoinData createMintedCoinData(const char* address, uint64_t v, const char* memo);
 
-spark::MintedCoinData fromFFI(const CMintedCoinData& c_struct);
+//spark::MintedCoinData fromFFI(const CMintedCoinData& c_struct);
 
-CMintedCoinData createCMintedCoinData(const char* address, uint64_t value, const char* memo);
+//CMintedCoinData createCMintedCoinData(const char* address, uint64_t value, const char* memo);
 
-CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct, int isTestNet);
+//CMintedCoinData toFFI(const spark::MintedCoinData& cpp_struct, int isTestNet);
 
-spark::OutputCoinData fromFFI(const COutputCoinData& c_struct);
+//spark::OutputCoinData fromFFI(const COutputCoinData& c_struct);
 
-spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, const char* memo);
+//spark::OutputCoinData createOutputCoinData(const char* address, uint64_t v, const char* memo);
+//
+//COutputCoinData createCOutputCoinData(const char* address, uint64_t value, const char* memo);
 
-COutputCoinData createCOutputCoinData(const char* address, uint64_t value, const char* memo);
-
-COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet);
+//COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet);
 
 //CSparkMintMeta createCSparkMintMeta(const uint64_t height, const uint64_t id, const int isUsed, const char* txid, const uint64_t diversifier, const char* encryptedDiversifier, const uint64_t value, const char* nonce, const char* memo, const unsigned char* serialContext, const int serialContextLength, const char type, const CCoin coin);
 //
@@ -68,9 +68,9 @@ COutputCoinData toFFI(const spark::OutputCoinData& cpp_struct, int isTestNet);
 char const hexArray[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
                            'e', 'f'};
 
-unsigned char* copyBytes(const unsigned char* source, int length);
+//unsigned char* copyBytes(const unsigned char* source, int length);
 
-Scalar bytesToScalar(const unsigned char* bytes, int size);
+//Scalar bytesToScalar(const unsigned char* bytes, int size);
 
 unsigned char *hexToBytes(const char *str);
 
