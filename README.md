@@ -9,6 +9,8 @@ cd flutter_libsparkmobile/scripts
 ./prebuild.sh
 ```
 
+For Windows builds, install MXE dependencies with `scripts/windows/mxedeps.sh`.
+
 2. Build the native library deps for your platform like:
 ```sh
 cd flutter_libsparkmobile/scripts/linux
