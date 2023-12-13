@@ -17,12 +17,28 @@ ADD_DEFINITIONS(-DUSE_FIELD_INV_BUILTIN=1)
 ADD_DEFINITIONS(-DUSE_SCALAR_INV_BUILTIN=1)
 ADD_DEFINITIONS(-fPIC)
 
-LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
+LINK_DIRECTORIES("${OPENSSL_LIBRARIES_DIR}")
 
 # TODO: change this to include when possible
-include_directories(. include src/modules/ecdh src)
+include_directories(
+	"${OPENSSL_INCLUDE_DIR}"
+	. include src/modules/ecdh src
+)
 
-add_library(secp256k1 src/secp256k1.c src/cpp/GroupElement.cpp src/cpp/MultiExponent.cpp src/cpp/Scalar.cpp src/modules/ecdh/main_impl.h include/secp256k1_ecdh.h src/scratch_impl.h src/scratch.h)
+# Source files.
+set(SOURCE_FILES
+	src/secp256k1.c
+	src/cpp/GroupElement.cpp
+	src/cpp/MultiExponent.cpp
+	src/cpp/Scalar.cpp
+	src/modules/ecdh/main_impl.h
+	include/secp256k1_ecdh.h
+	src/scratch_impl.h
+	src/scratch.h
+)
+
+# Create the shared library (DLL).
+add_library(secp256k1 SHARED ${SOURCE_FILES})
 
 # We need to link in GMP
 find_package(GMP)
@@ -74,6 +90,8 @@ endif()
 # TODO: emult static precomputation
 # TODO: ecdh module
 # TODO: RECOVERY module
-TARGET_INCLUDE_DIRECTORIES(secp256k1 PUBLIC "${OPENSSL_INCLUDE_DIR}")
-TARGET_LINK_LIBRARIES(secp256k1 crypt32 ws2_32 ${OPENSSL_LIBRARIES})
-#target_link_libraries(secp256k1 ${OPENSSL_LIBRARIES})
+
+# Windows-specific libraries.
+if(WIN32)
+    target_link_libraries(secp256k1 crypt32 ws2_32)
+endif()
