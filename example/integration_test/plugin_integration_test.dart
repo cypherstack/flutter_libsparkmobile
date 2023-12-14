@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 import 'package:flutter_libsparkmobile_example/util/address_generator.dart';
@@ -104,11 +106,15 @@ void main() {
     const serializedCoin =
         "AAYgxtq4T3i1KH5fgrtb/FjWK0v2TX2eDX9K0dQEJqzjAQCEFvHR39VYxiAeBSugNRfkLytkBwHkHnfbbYeVtPK7PAAAkjacXJtxgT/j5pYB+HBQBBEWvTlJwF+tQh7Q4HIQB9QBAFIuZMbFIWSzhuA+4sYx+uPB+6i1VTXG4VyuWDJM5eKxmkeZllxQMvx/s0JYBWPXW+4J9QDA233bR68p3TG4HYS7ZwF3kMyQoB9w/I8hVJUq5uKzEGXKxs615pqxwNHKCAgKUykguw58PkTRN1Gbdxk+LAydUW83BHj4vb8iPj/nDGNMI1TADs0dAAAAANOtj1IzocDaeSuwVRv4fxDNmMMS4k++Vy2ApRYASg5k";
 
+    // TODO: get test vector
+    final context = Uint8List(0);
+
     // Identify the coin.
     final coin = LibSpark.identifyAndRecoverCoin(
       serializedCoin,
       privateKeyHex: keyDataHex,
       index: index,
+      context: context,
       isTestNet: true,
     );
 

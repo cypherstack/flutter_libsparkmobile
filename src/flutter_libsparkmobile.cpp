@@ -68,9 +68,14 @@ AggregateCoinData* idAndRecoverCoin(
         int serializedCoinLength,
         unsigned char* keyData,
         int index,
+        unsigned char* context,
+        int contextLength,
         int isTestNet) {
     try {
         spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
+
+        std::vector<unsigned char> contextVec(context, context + contextLength);
+        coin.setSerialContext(contextVec);
 
         // Derive the incoming view key from the key data and index.
         spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
