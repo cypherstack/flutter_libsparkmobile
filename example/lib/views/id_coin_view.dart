@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 
@@ -12,6 +14,9 @@ class _IdCoinViewState extends State<IdCoinView> {
   final privateKeyController = TextEditingController();
   final indexController = TextEditingController();
   final coinController = TextEditingController();
+  final contextController = TextEditingController();
+
+  bool checked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +50,34 @@ class _IdCoinViewState extends State<IdCoinView> {
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: contextController,
+                decoration: const InputDecoration(labelText: 'base64 context'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(),
+                  Checkbox(
+                    value: checked,
+                    onChanged: (value) {
+                      if (value is bool) {
+                        setState(() {
+                          checked = value;
+                        });
+                      }
+                    },
+                  ),
+                  const Text("Testnet"),
+                  const Spacer(),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: TextButton(
                 child: const Text("GO"),
                 onPressed: () {
@@ -52,6 +85,8 @@ class _IdCoinViewState extends State<IdCoinView> {
                     coinController.text,
                     privateKeyHex: privateKeyController.text,
                     index: int.parse(indexController.text),
+                    context: base64Decode(contextController.text),
+                    isTestNet: checked,
                   );
 
                   debugPrint(coin?.toString());

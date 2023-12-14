@@ -59,6 +59,8 @@ class FlutterLibsparkmobileBindings {
     int serializedCoinLength,
     ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
+    ffi.Pointer<ffi.UnsignedChar> context,
+    int contextLength,
     int isTestNet,
   ) {
     return _idAndRecoverCoin(
@@ -66,6 +68,8 @@ class FlutterLibsparkmobileBindings {
       serializedCoinLength,
       keyData,
       index,
+      context,
+      contextLength,
       isTestNet,
     );
   }
@@ -77,10 +81,18 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Int,
               ffi.Int)>>('idAndRecoverCoin');
   late final _idAndRecoverCoin = _idAndRecoverCoinPtr.asFunction<
-      ffi.Pointer<AggregateCoinData> Function(ffi.Pointer<ffi.UnsignedChar>,
-          int, ffi.Pointer<ffi.UnsignedChar>, int, int)>();
+      ffi.Pointer<AggregateCoinData> Function(
+          ffi.Pointer<ffi.UnsignedChar>,
+          int,
+          ffi.Pointer<ffi.UnsignedChar>,
+          int,
+          ffi.Pointer<ffi.UnsignedChar>,
+          int,
+          int)>();
 
   /// FFI-friendly wrapper for spark::createSparkMintRecipients.
   ///

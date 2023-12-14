@@ -93,6 +93,7 @@ abstract final class LibSpark {
     final String serializedCoin, {
     required final String privateKeyHex,
     required final int index,
+    required final Uint8List context,
     final bool isTestNet = false,
   }) {
     // take sublist as tx hash is also appended here for some reason
@@ -101,17 +102,21 @@ abstract final class LibSpark {
     final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
     final privateKeyPtr =
         privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+    final contextPtr = context.unsignedCharPointer();
 
     final result = _bindings.idAndRecoverCoin(
       serializedCoinPtr,
       b64CoinDecoded.length,
       privateKeyPtr,
       index,
+      contextPtr,
+      context.length,
       isTestNet ? 1 : 0,
     );
 
     malloc.free(serializedCoinPtr);
     malloc.free(privateKeyPtr);
+    malloc.free(contextPtr);
 
     if (result.address == nullptr.address) {
       return null;

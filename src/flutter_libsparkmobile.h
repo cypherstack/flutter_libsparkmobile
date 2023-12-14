@@ -40,6 +40,8 @@ struct AggregateCoinData* idAndRecoverCoin(
         int serializedCoinLength,
         unsigned char* keyData,
         int index,
+        unsigned char* context,
+        int contextLength,
         int isTestNet
 );
 
