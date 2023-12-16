@@ -4,6 +4,8 @@
 #include "deps/sparkmobile/src/spark.h"
 #include "deps/sparkmobile/bitcoin/uint256.h"
 #include "structs.h"
+#include "transaction.h"
+#include "deps/sparkmobile/bitcoin/script.h"  // For CScript.
 
 #include <cstring>
 #include <iostream> // Just for printing.
@@ -475,4 +477,27 @@ SelectSparkCoinsResult* selectSparkCoins(
 
         return result;
     }
+}
+
+FFI_PLUGIN_EXPORT
+SerializedMintContextResult* serializeMintContext(
+        DartInputData* inputs,
+        int inputsLength
+) {
+    CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
+    for (int i = 0; i < inputsLength; i++) {
+        std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
+        CTxIn input(
+                uint256(vec),
+                inputs[i].vout,
+                CScript(),
+                std::numeric_limits<unsigned int>::max() - 1);
+        serialContextStream << input;
+    }
+
+    SerializedMintContextResult* result = (SerializedMintContextResult*)malloc(sizeof(SerializedMintContextResult));
+    result->contextLength = serialContextStream.size();
+    result->context = (unsigned char*) malloc(sizeof(unsigned char) * serialContextStream.size());
+    memcpy(result->context, serialContextStream.data(), sizeof(unsigned char) * serialContextStream.size());
+    return result;
 }

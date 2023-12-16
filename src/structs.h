@@ -220,6 +220,18 @@ struct SparkSpendTransactionResult {
     int isError;
 };
 
+struct DartInputData {
+    unsigned char *txHash;
+    int txHashLength;
+
+    int vout;
+};
+
+struct SerializedMintContextResult {
+    unsigned char *context;
+    int contextLength;
+};
+
 //#ifdef __cplusplus
 //}
 //#endif

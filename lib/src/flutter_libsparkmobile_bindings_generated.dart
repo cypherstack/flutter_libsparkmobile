@@ -229,6 +229,24 @@ class FlutterLibsparkmobileBindings {
   late final _selectSparkCoins = _selectSparkCoinsPtr.asFunction<
       ffi.Pointer<SelectSparkCoinsResult> Function(
           int, int, ffi.Pointer<CCSparkMintMeta>, int, int)>();
+
+  ffi.Pointer<SerializedMintContextResult> serializeMintContext(
+    ffi.Pointer<DartInputData> inputs,
+    int inputsLength,
+  ) {
+    return _serializeMintContext(
+      inputs,
+      inputsLength,
+    );
+  }
+
+  late final _serializeMintContextPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SerializedMintContextResult> Function(
+              ffi.Pointer<DartInputData>, ffi.Int)>>('serializeMintContext');
+  late final _serializeMintContext = _serializeMintContextPtr.asFunction<
+      ffi.Pointer<SerializedMintContextResult> Function(
+          ffi.Pointer<DartInputData>, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.
@@ -538,4 +556,21 @@ final class SparkSpendTransactionResult extends ffi.Struct {
 
   @ffi.Int()
   external int isError;
+}
+
+final class DartInputData extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> txHash;
+
+  @ffi.Int()
+  external int txHashLength;
+
+  @ffi.Int()
+  external int vout;
+}
+
+final class SerializedMintContextResult extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> context;
+
+  @ffi.Int()
+  external int contextLength;
 }

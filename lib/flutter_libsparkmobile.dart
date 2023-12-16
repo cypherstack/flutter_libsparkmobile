@@ -160,6 +160,28 @@ abstract final class LibSpark {
     return ret;
   }
 
+  static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
+    final inputsPtr =
+        malloc.allocate<DartInputData>(sizeOf<DartInputData>() * inputs.length);
+
+    for (int i = 0; i < inputs.length; i++) {
+      final hash =
+          Uint8List.fromList(inputs[i].$1.to32BytesFromHex().reversed.toList());
+
+      inputsPtr[i].txHashLength = hash.length;
+      inputsPtr[i].txHash = hash.unsignedCharPointer();
+      inputsPtr[i].vout = inputs[i].$2;
+    }
+
+    final result = _bindings.serializeMintContext(inputsPtr, inputs.length);
+
+    final serialized = result.ref.context.toUint8List(result.ref.contextLength);
+
+    // TODO frees
+
+    return serialized;
+  }
+
   ///
   /// Create spark mint recipients
   ///

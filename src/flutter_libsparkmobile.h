@@ -93,4 +93,10 @@ struct SelectSparkCoinsResult* selectSparkCoins(
         int mintNum
 );
 
+FFI_PLUGIN_EXPORT
+struct SerializedMintContextResult* serializeMintContext(
+        struct DartInputData* inputs,
+        int inputsLength
+);
+
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H
