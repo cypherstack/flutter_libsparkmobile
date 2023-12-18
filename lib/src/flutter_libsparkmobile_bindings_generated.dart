@@ -136,8 +136,9 @@ class FlutterLibsparkmobileBindings {
     int recipientsLength,
     ffi.Pointer<COutputRecipient> privateRecipients,
     int privateRecipientsLength,
-    ffi.Pointer<CCDataStream> serializedMintMetas,
-    int serializedMintMetasLength,
+    ffi.Pointer<CCDataStream> serializedCoins,
+    int serializedCoinsLength,
+    ffi.Pointer<CCDataStream> serializedCoinContexts,
     ffi.Pointer<CCoverSetData> cover_set_data_all,
     int cover_set_data_allLength,
   ) {
@@ -148,8 +149,9 @@ class FlutterLibsparkmobileBindings {
       recipientsLength,
       privateRecipients,
       privateRecipientsLength,
-      serializedMintMetas,
-      serializedMintMetasLength,
+      serializedCoins,
+      serializedCoinsLength,
+      serializedCoinContexts,
       cover_set_data_all,
       cover_set_data_allLength,
     );
@@ -166,6 +168,7 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<CCDataStream>,
               ffi.Int,
+              ffi.Pointer<CCDataStream>,
               ffi.Pointer<CCoverSetData>,
               ffi.Int)>>('cCreateSparkSpendTransaction');
   late final _cCreateSparkSpendTransaction =
@@ -179,6 +182,7 @@ class FlutterLibsparkmobileBindings {
               int,
               ffi.Pointer<CCDataStream>,
               int,
+              ffi.Pointer<CCDataStream>,
               ffi.Pointer<CCoverSetData>,
               int)>();
 

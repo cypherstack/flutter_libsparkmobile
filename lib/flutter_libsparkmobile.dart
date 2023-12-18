@@ -276,7 +276,7 @@ abstract final class LibSpark {
               String memo
             })>
         privateRecipients,
-    required List<Uint8List> serializedMintMetas,
+    required List<(String, String)> serializedCoins,
     required List<
             ({
               int setId,
@@ -315,12 +315,21 @@ abstract final class LibSpark {
           privateRecipients[i].sparkAddress.toNativeUtf8().cast<Char>();
     }
 
-    final serializedMintMetasPtr = malloc.allocate<CCDataStream>(
-        sizeOf<CCDataStream>() * serializedMintMetas.length);
-    for (int i = 0; i < serializedMintMetas.length; i++) {
-      serializedMintMetasPtr[i].data =
-          serializedMintMetas[i].unsignedCharPointer();
-      serializedMintMetasPtr[i].length = serializedMintMetas[i].length;
+    final serializedCoinsPtr = malloc.allocate<CCDataStream>(
+        sizeOf<CCDataStream>() * serializedCoins.length);
+    final serializedCoinContextsPtr = malloc.allocate<CCDataStream>(
+        sizeOf<CCDataStream>() * serializedCoins.length);
+    for (int i = 0; i < serializedCoins.length; i++) {
+      // take sublist as tx hash is also appended here for some reason
+      final b64CoinDecoded =
+          base64Decode(serializedCoins[i].$1).sublist(0, 244);
+      serializedCoinsPtr[i].data = b64CoinDecoded.unsignedCharPointer();
+      serializedCoinsPtr[i].length = b64CoinDecoded.length;
+
+      final b64ContextDecoded = base64Decode(serializedCoins[i].$2);
+      serializedCoinContextsPtr[i].data =
+          b64ContextDecoded.unsignedCharPointer();
+      serializedCoinContextsPtr[i].length = b64ContextDecoded.length;
     }
 
     final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
@@ -353,8 +362,9 @@ abstract final class LibSpark {
       recipients.length,
       privateRecipientsPtr,
       privateRecipients.length,
-      serializedMintMetasPtr,
-      serializedMintMetas.length,
+      serializedCoinsPtr,
+      serializedCoins.length,
+      serializedCoinContextsPtr,
       coverSetDataAllPtr,
       allAnonymitySets.length,
     );
@@ -363,7 +373,8 @@ abstract final class LibSpark {
     malloc.free(privateKeyPtr);
     malloc.free(recipientsPtr);
     malloc.free(privateRecipientsPtr);
-    malloc.free(serializedMintMetasPtr);
+    malloc.free(serializedCoinsPtr);
+    malloc.free(serializedCoinContextsPtr);
     malloc.free(coverSetDataAllPtr);
 
     if (result.address == nullptr.address) {

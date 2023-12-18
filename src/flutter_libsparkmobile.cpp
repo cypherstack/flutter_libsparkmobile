@@ -192,8 +192,9 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     int recipientsLength,
     struct COutputRecipient* privateRecipients,
     int privateRecipientsLength,
-    struct CCDataStream* serializedMintMetas,
-    int serializedMintMetasLength,
+    struct CCDataStream* serializedCoins,
+    int serializedCoinsLength,
+    struct CCDataStream* serializedCoinContexts,
     struct CCoverSetData* cover_set_data_all,
     int cover_set_data_allLength
 ) {
@@ -222,11 +223,14 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 
         // Convert CCSparkMintMeta* serializedMintMetas to std::list<CSparkMintMeta> cppCoins.
         std::list<CSparkMintMeta> cppCoins;
-        for (int i = 0; i < serializedMintMetasLength; i++) {
-            std::vector<unsigned char> vec(serializedMintMetas[i].data, serializedMintMetas[i].data + serializedMintMetas[i].length);
+        for (int i = 0; i < serializedCoinsLength; i++) {
+            std::vector<unsigned char> vec(serializedCoins[i].data, serializedCoins[i].data + serializedCoins[i].length);
             CDataStream stream(vec, SER_NETWORK, PROTOCOL_VERSION);
-            CSparkMintMeta meta;
-            stream >> meta;
+            spark::Coin coin;
+            stream >> coin;
+            std::vector<unsigned char> contextVec(serializedCoinContexts[i].data, serializedCoinContexts[i].data + serializedCoinContexts[i].length);
+            coin.setSerialContext(contextVec);
+            CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
             cppCoins.push_back(meta);
         }
 
@@ -492,6 +496,8 @@ SerializedMintContextResult* serializeMintContext(
                 inputs[i].vout,
                 CScript(),
                 std::numeric_limits<unsigned int>::max() - 1);
+        input.scriptSig = CScript();
+        input.scriptWitness.SetNull();
         serialContextStream << input;
     }
 

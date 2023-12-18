@@ -71,8 +71,9 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         int recipientsLength,
         struct COutputRecipient* privateRecipients,
         int privateRecipientsLength,
-        struct CCDataStream* serializedMintMetas,
-        int serializedMintMetasLength,
+        struct CCDataStream* serializedCoins,
+        int serializedCoinsLength,
+        struct CCDataStream* serializedCoinContexts,
         struct CCoverSetData* cover_set_data_all,
         int cover_set_data_allLength
 );
