@@ -251,6 +251,24 @@ class FlutterLibsparkmobileBindings {
   late final _serializeMintContext = _serializeMintContextPtr.asFunction<
       ffi.Pointer<SerializedMintContextResult> Function(
           ffi.Pointer<DartInputData>, int)>();
+
+  ffi.Pointer<ValidateAddressResult> isValidSparkAddress(
+    ffi.Pointer<ffi.Char> addressCStr,
+    int isTestNet,
+  ) {
+    return _isValidSparkAddress(
+      addressCStr,
+      isTestNet,
+    );
+  }
+
+  late final _isValidSparkAddressPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ValidateAddressResult> Function(
+              ffi.Pointer<ffi.Char>, ffi.Int)>>('isValidSparkAddress');
+  late final _isValidSparkAddress = _isValidSparkAddressPtr.asFunction<
+      ffi.Pointer<ValidateAddressResult> Function(
+          ffi.Pointer<ffi.Char>, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.
@@ -577,4 +595,11 @@ final class SerializedMintContextResult extends ffi.Struct {
 
   @ffi.Int()
   external int contextLength;
+}
+
+final class ValidateAddressResult extends ffi.Struct {
+  @ffi.Int()
+  external int isValid;
+
+  external ffi.Pointer<ffi.Char> errorMessage;
 }

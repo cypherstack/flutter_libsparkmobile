@@ -507,3 +507,24 @@ SerializedMintContextResult* serializeMintContext(
     memcpy(result->context, serialContextStream.data(), sizeof(unsigned char) * serialContextStream.size());
     return result;
 }
+
+FFI_PLUGIN_EXPORT
+ValidateAddressResult* isValidSparkAddress(
+        const char* addressCStr,
+        int isTestNet
+) {
+    spark::Address address;
+    ValidateAddressResult* result = (ValidateAddressResult*) malloc(sizeof(ValidateAddressResult));
+    result->isValid = false;
+    try {
+        std::string addressString(addressCStr);
+        unsigned char network = address.decode(addressString);
+        result->isValid = network == (isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
+        result->errorMessage = nullptr;
+        return result;
+    } catch (const std::exception& e) {
+        result->errorMessage = (char*) malloc(sizeof(char) * (strlen(e.what()) + 1));
+        strcpy(result->errorMessage, e.what());
+        return result;
+    }
+}

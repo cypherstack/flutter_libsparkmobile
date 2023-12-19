@@ -100,4 +100,9 @@ struct SerializedMintContextResult* serializeMintContext(
         int inputsLength
 );
 
+FFI_PLUGIN_EXPORT
+struct ValidateAddressResult* isValidSparkAddress(
+        const char* addressCStr,
+        int isTestNet
+);
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H

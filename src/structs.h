@@ -232,6 +232,11 @@ struct SerializedMintContextResult {
     int contextLength;
 };
 
+struct ValidateAddressResult {
+    int isValid;
+    char *errorMessage;
+};
+
 //#ifdef __cplusplus
 //}
 //#endif

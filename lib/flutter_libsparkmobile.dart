@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_libsparkmobile/src/extensions.dart';
 import 'package:flutter_libsparkmobile/src/models/spark_coin.dart';
 
@@ -639,6 +639,46 @@ abstract final class LibSpark {
     malloc.free(result);
 
     return ret;
+  }
+
+  static bool validateAddress({
+    required String address,
+    required bool isTestNet,
+  }) {
+    final addressPtr = address.toNativeUtf8().cast<Char>();
+
+    final result = _bindings.isValidSparkAddress(
+      addressPtr,
+      isTestNet ? 1 : 0,
+    );
+
+    malloc.free(addressPtr);
+
+    if (result.address != nullptr.address) {
+      final isValid = result.ref.isValid > 0;
+      final String message;
+
+      if (result.ref.errorMessage.address == nullptr.address) {
+        message = "";
+      } else {
+        message = result.ref.errorMessage.cast<Utf8>().toDartString();
+        malloc.free(result.ref.errorMessage);
+      }
+      malloc.free(result);
+
+      if (kDebugMode && message.isNotEmpty) {
+        debugPrint("validateAddress error message: $message");
+      }
+
+      return isValid;
+    } else {
+      // some error occurred result in null being returned which should happen
+      // but is checked anyways
+      if (kDebugMode) {
+        debugPrint("validateAddress ffi called returned nullptr");
+      }
+      return false;
+    }
   }
 }
 
