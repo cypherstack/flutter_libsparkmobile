@@ -273,6 +273,23 @@ class FlutterLibsparkmobileBindings {
   late final _isValidSparkAddress = _isValidSparkAddressPtr.asFunction<
       ffi.Pointer<ValidateAddressResult> Function(
           ffi.Pointer<ffi.Char>, int)>();
+
+  ffi.Pointer<ffi.Char> hashTags(
+    ffi.Pointer<ffi.UnsignedChar> tags,
+    int tagCount,
+  ) {
+    return _hashTags(
+      tags,
+      tagCount,
+    );
+  }
+
+  late final _hashTagsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>>('hashTags');
+  late final _hashTags = _hashTagsPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.

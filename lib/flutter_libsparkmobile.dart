@@ -713,6 +713,33 @@ abstract final class LibSpark {
       return false;
     }
   }
+
+  static Set<String> hashTags({required Set<String> base64Tags}) {
+    if (base64Tags.isEmpty) {
+      return {};
+    }
+
+    final bytes = Uint8List.fromList(
+      base64Tags.expand((e) => base64Decode(e)).toList(),
+    );
+
+    final result = _bindings.hashTags(
+      bytes.unsignedCharPointer(),
+      base64Tags.length,
+    );
+
+    final Set<String> hashes = {};
+
+    for (int i = 0; i < base64Tags.length; i++) {
+      final hash =
+          result.elementAt(i * 64).cast<Utf8>().toDartString(length: 64);
+      hashes.add(hash);
+    }
+
+    malloc.free(result);
+
+    return hashes;
+  }
 }
 
 extension on Pointer<UnsignedChar> {

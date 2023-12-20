@@ -106,4 +106,8 @@ struct ValidateAddressResult* isValidSparkAddress(
         const char* addressCStr,
         int isTestNet
 );
+
+FFI_PLUGIN_EXPORT
+const char* hashTags(unsigned char* tags, int tagCount);
+
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H

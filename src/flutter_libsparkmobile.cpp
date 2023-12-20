@@ -527,3 +527,17 @@ ValidateAddressResult* isValidSparkAddress(
         return result;
     }
 }
+
+
+FFI_PLUGIN_EXPORT
+const char* hashTags(unsigned char* tags, int tagCount) {
+    char* result = (char*) malloc(sizeof(char) * 64 * tagCount);
+    for (int i = 0; i < tagCount; i++) {
+        secp_primitives::GroupElement tag;
+        tag.deserialize(tags + (i * 34));
+        uint256 hash = primitives::GetLTagHash(tag);
+        std::string hex = hash.GetHex();
+        memcpy(result + (i * 64), hex.c_str(), 64);
+    }
+    return result;
+}
