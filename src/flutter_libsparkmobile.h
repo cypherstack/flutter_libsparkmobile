@@ -71,11 +71,12 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         int recipientsLength,
         struct COutputRecipient* privateRecipients,
         int privateRecipientsLength,
-        struct CCDataStream* serializedCoins,
-        int serializedCoinsLength,
-        struct CCDataStream* serializedCoinContexts,
+        struct DartSpendCoinData* coins,
+        int coinsLength,
         struct CCoverSetData* cover_set_data_all,
-        int cover_set_data_allLength
+        int cover_set_data_allLength,
+        struct BlockHashAndId* idAndBlockHashes,
+        int idAndBlockHashesLength
 );
 
 FFI_PLUGIN_EXPORT

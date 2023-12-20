@@ -192,11 +192,12 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     int recipientsLength,
     struct COutputRecipient* privateRecipients,
     int privateRecipientsLength,
-    struct CCDataStream* serializedCoins,
-    int serializedCoinsLength,
-    struct CCDataStream* serializedCoinContexts,
+    struct DartSpendCoinData* coins,
+    int coinsLength,
     struct CCoverSetData* cover_set_data_all,
-    int cover_set_data_allLength
+    int cover_set_data_allLength,
+    struct BlockHashAndId* idAndBlockHashes,
+    int idAndBlockHashesLength
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -223,37 +224,35 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 
         // Convert CCSparkMintMeta* serializedMintMetas to std::list<CSparkMintMeta> cppCoins.
         std::list<CSparkMintMeta> cppCoins;
-        for (int i = 0; i < serializedCoinsLength; i++) {
-            std::vector<unsigned char> vec(serializedCoins[i].data, serializedCoins[i].data + serializedCoins[i].length);
-            CDataStream stream(vec, SER_NETWORK, PROTOCOL_VERSION);
-            spark::Coin coin;
-            stream >> coin;
-            std::vector<unsigned char> contextVec(serializedCoinContexts[i].data, serializedCoinContexts[i].data + serializedCoinContexts[i].length);
+        for (int i = 0; i < coinsLength; i++) {
+            spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
+            std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
             coin.setSerialContext(contextVec);
             CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
+            meta.nId = coins[i].groupId;
+            meta.nHeight = coins[i].height;
+            meta.coin = coin;
             cppCoins.push_back(meta);
         }
 
-        // Convert CCoverSets* cover_set_data_all to a std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll
-        // TODO verify correctness.
         std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll;
         for (int i = 0; i < cover_set_data_allLength; i++) {
+            spark::CoverSetData cppCoverSetData;
             for (int j = 0; j < cover_set_data_all[i].cover_setLength; j++) {
-                std::vector<spark::Coin> cppCoverSetCoins;
-                spark::Coin coin = coinFromCCDataStream(cover_set_data_all[i].cover_set[j]);
-                cppCoverSetCoins.push_back(coin);
-
-                // Construct spark::CoverSetData.
-                spark::CoverSetData cppCoverSetData;
-                cppCoverSetData.cover_set = cppCoverSetCoins;
-                cppCoverSetData.cover_set_representation = std::vector<unsigned char>(cover_set_data_all[i].cover_set_representation, cover_set_data_all[i].cover_set_representation + cover_set_data_all[i].cover_set_representationLength);
-
-                cppCoverSetDataAll[cover_set_data_all[i].setId] = cppCoverSetData;
+                spark::Coin coin = deserializeCoin(cover_set_data_all[i].cover_set[j].data, cover_set_data_all[i].cover_set[j].length);
+                cppCoverSetData.cover_set.push_back(coin);
             }
+            cppCoverSetData.cover_set_representation = std::vector<unsigned char>(cover_set_data_all[i].cover_set_representation, cover_set_data_all[i].cover_set_representation + cover_set_data_all[i].cover_set_representationLength);
+            cppCoverSetDataAll[cover_set_data_all[i].setId] = cppCoverSetData;
+        }
+
+        std::map<uint64_t, uint256> cppIdAndBlockHashesAll;
+        for (int i = 0; i < idAndBlockHashesLength; i++) {
+            std::vector<unsigned char> vec(idAndBlockHashes[i].hash, idAndBlockHashes[i].hash + 32);
+            cppIdAndBlockHashesAll[idAndBlockHashes[i].id] = uint256(vec);
         }
 
         // Required but unused params.
-        std::map<uint64_t, uint256> cppIdAndBlockHashesAll;
         uint256 cppTxHashSig;
 
         // Output data

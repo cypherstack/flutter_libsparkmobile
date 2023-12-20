@@ -65,10 +65,7 @@ spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index) {
 
 
 spark::Coin coinFromCCDataStream(CCDataStream& cdStream) {
-    spark::Coin coin;
-    std::vector<unsigned char> vec(cdStream.data, cdStream.data + cdStream.length);
-    CDataStream coinStream(vec, SER_NETWORK, PROTOCOL_VERSION);
-    coinStream >> coin;
+    spark::Coin coin = deserializeCoin(cdStream.data, cdStream.length);
     return coin;
 }
 

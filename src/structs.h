@@ -237,6 +237,18 @@ struct ValidateAddressResult {
     char *errorMessage;
 };
 
+struct BlockHashAndId {
+    unsigned char* hash;
+    int id;
+};
+
+struct DartSpendCoinData {
+    struct CCDataStream* serializedCoin;
+    struct CCDataStream* serializedCoinContext;
+    int groupId;
+    int height;
+};
+
 //#ifdef __cplusplus
 //}
 //#endif

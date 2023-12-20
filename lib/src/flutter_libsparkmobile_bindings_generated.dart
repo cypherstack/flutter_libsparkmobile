@@ -136,11 +136,12 @@ class FlutterLibsparkmobileBindings {
     int recipientsLength,
     ffi.Pointer<COutputRecipient> privateRecipients,
     int privateRecipientsLength,
-    ffi.Pointer<CCDataStream> serializedCoins,
-    int serializedCoinsLength,
-    ffi.Pointer<CCDataStream> serializedCoinContexts,
+    ffi.Pointer<DartSpendCoinData> coins,
+    int coinsLength,
     ffi.Pointer<CCoverSetData> cover_set_data_all,
     int cover_set_data_allLength,
+    ffi.Pointer<BlockHashAndId> idAndBlockHashes,
+    int idAndBlockHashesLength,
   ) {
     return _cCreateSparkSpendTransaction(
       keyData,
@@ -149,11 +150,12 @@ class FlutterLibsparkmobileBindings {
       recipientsLength,
       privateRecipients,
       privateRecipientsLength,
-      serializedCoins,
-      serializedCoinsLength,
-      serializedCoinContexts,
+      coins,
+      coinsLength,
       cover_set_data_all,
       cover_set_data_allLength,
+      idAndBlockHashes,
+      idAndBlockHashesLength,
     );
   }
 
@@ -166,10 +168,11 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<COutputRecipient>,
               ffi.Int,
-              ffi.Pointer<CCDataStream>,
+              ffi.Pointer<DartSpendCoinData>,
               ffi.Int,
-              ffi.Pointer<CCDataStream>,
               ffi.Pointer<CCoverSetData>,
+              ffi.Int,
+              ffi.Pointer<BlockHashAndId>,
               ffi.Int)>>('cCreateSparkSpendTransaction');
   late final _cCreateSparkSpendTransaction =
       _cCreateSparkSpendTransactionPtr.asFunction<
@@ -180,10 +183,11 @@ class FlutterLibsparkmobileBindings {
               int,
               ffi.Pointer<COutputRecipient>,
               int,
-              ffi.Pointer<CCDataStream>,
+              ffi.Pointer<DartSpendCoinData>,
               int,
-              ffi.Pointer<CCDataStream>,
               ffi.Pointer<CCoverSetData>,
+              int,
+              ffi.Pointer<BlockHashAndId>,
               int)>();
 
   ffi.Pointer<GetSparkCoinsResult> getCoinsToSpend(
@@ -602,4 +606,23 @@ final class ValidateAddressResult extends ffi.Struct {
   external int isValid;
 
   external ffi.Pointer<ffi.Char> errorMessage;
+}
+
+final class BlockHashAndId extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> hash;
+
+  @ffi.Int()
+  external int id;
+}
+
+final class DartSpendCoinData extends ffi.Struct {
+  external ffi.Pointer<CCDataStream> serializedCoin;
+
+  external ffi.Pointer<CCDataStream> serializedCoinContext;
+
+  @ffi.Int()
+  external int groupId;
+
+  @ffi.Int()
+  external int height;
 }
