@@ -215,7 +215,7 @@ struct SparkSpendTransactionResult {
     struct OutputScript* outputScripts;
     int outputScriptsLength;
 
-    int fee;
+    int64_t fee;
 
     int isError;
 };
@@ -251,7 +251,7 @@ struct DartSpendCoinData {
 
 struct SparkFeeResult {
     char *error;
-    int fee;
+    int64_t fee;
 };
 
 //#ifdef __cplusplus

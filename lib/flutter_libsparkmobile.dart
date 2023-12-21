@@ -761,9 +761,8 @@ abstract final class LibSpark {
         serializedCoins,
     required int privateRecipientsCount,
   }) {
-
     final privateKeyPtr =
-    privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
     final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
         sizeOf<DartSpendCoinData>() * serializedCoins.length);
@@ -812,13 +811,11 @@ abstract final class LibSpark {
       malloc.free(result.ref.error);
       malloc.free(result);
       throw ex;
+    } else {
+      final fee = result.ref.fee;
+      malloc.free(result);
+      return fee;
     }
-
-    final fee = result.ref.fee;
-
-    malloc.free(result);
-
-    return fee;
   }
 }
 

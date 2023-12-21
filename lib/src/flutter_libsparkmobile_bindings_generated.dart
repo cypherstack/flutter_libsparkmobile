@@ -320,7 +320,7 @@ class FlutterLibsparkmobileBindings {
           ffi.Pointer<SparkFeeResult> Function(
               ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
-              ffi.Int,
+              ffi.Int64,
               ffi.Int,
               ffi.Pointer<DartSpendCoinData>,
               ffi.Int,
@@ -632,7 +632,7 @@ final class SparkSpendTransactionResult extends ffi.Struct {
   @ffi.Int()
   external int outputScriptsLength;
 
-  @ffi.Int()
+  @ffi.Int64()
   external int fee;
 
   @ffi.Int()
@@ -685,6 +685,6 @@ final class DartSpendCoinData extends ffi.Struct {
 final class SparkFeeResult extends ffi.Struct {
   external ffi.Pointer<ffi.Char> error;
 
-  @ffi.Int()
+  @ffi.Int64()
   external int fee;
 }

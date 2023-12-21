@@ -19,14 +19,6 @@ FFI_PLUGIN_EXPORT
 const char* getAddress(unsigned char* keyData, int index, int diversifier, int isTestNet);
 
 /*
-FFI_PLUGIN_EXPORT
-const char *createFullViewKey(const char* keyData, int index);
-
-FFI_PLUGIN_EXPORT
-const char* createIncomingViewKey(const char* keyData, int index);
-*/
-
-/*
  * FFI-friendly wrapper for spark::identifyCoin.
  *
  * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
@@ -115,7 +107,7 @@ FFI_PLUGIN_EXPORT
 struct SparkFeeResult* estimateSparkFee(
         unsigned char* keyData,
         int index,
-        int sendAmount,
+        int64_t sendAmount,
         int subtractFeeFromAmount,
         struct DartSpendCoinData* coins,
         int coinsLength,

@@ -547,7 +547,7 @@ FFI_PLUGIN_EXPORT
 SparkFeeResult* estimateSparkFee(
         unsigned char* keyData,
         int index,
-        int sendAmount,
+        int64_t sendAmount,
         int subtractFeeFromAmount,
         struct DartSpendCoinData* coins,
         int coinsLength,
@@ -573,7 +573,7 @@ SparkFeeResult* estimateSparkFee(
 
         std::pair<CAmount, std::vector<CSparkMintMeta>> estimated = SelectSparkCoins(
                 sendAmount,
-                subtractFeeFromAmount,
+                subtractFeeFromAmount > 0,
                 cppCoins,
                 privateRecipientsLength
         );
