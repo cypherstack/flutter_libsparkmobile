@@ -142,6 +142,7 @@ class FlutterLibsparkmobileBindings {
     int cover_set_data_allLength,
     ffi.Pointer<BlockHashAndId> idAndBlockHashes,
     int idAndBlockHashesLength,
+    ffi.Pointer<ffi.UnsignedChar> txHashSig,
   ) {
     return _cCreateSparkSpendTransaction(
       keyData,
@@ -156,6 +157,7 @@ class FlutterLibsparkmobileBindings {
       cover_set_data_allLength,
       idAndBlockHashes,
       idAndBlockHashesLength,
+      txHashSig,
     );
   }
 
@@ -173,7 +175,8 @@ class FlutterLibsparkmobileBindings {
               ffi.Pointer<CCoverSetData>,
               ffi.Int,
               ffi.Pointer<BlockHashAndId>,
-              ffi.Int)>>('cCreateSparkSpendTransaction');
+              ffi.Int,
+              ffi.Pointer<ffi.UnsignedChar>)>>('cCreateSparkSpendTransaction');
   late final _cCreateSparkSpendTransaction =
       _cCreateSparkSpendTransactionPtr.asFunction<
           ffi.Pointer<SparkSpendTransactionResult> Function(
@@ -188,7 +191,8 @@ class FlutterLibsparkmobileBindings {
               ffi.Pointer<CCoverSetData>,
               int,
               ffi.Pointer<BlockHashAndId>,
-              int)>();
+              int,
+              ffi.Pointer<ffi.UnsignedChar>)>();
 
   ffi.Pointer<GetSparkCoinsResult> getCoinsToSpend(
     int spendAmount,

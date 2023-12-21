@@ -197,7 +197,8 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     struct CCoverSetData* cover_set_data_all,
     int cover_set_data_allLength,
     struct BlockHashAndId* idAndBlockHashes,
-    int idAndBlockHashesLength
+    int idAndBlockHashesLength,
+    unsigned char* txHashSig
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -252,8 +253,8 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             cppIdAndBlockHashesAll[idAndBlockHashes[i].id] = uint256(vec);
         }
 
-        // Required but unused params.
-        uint256 cppTxHashSig;
+        std::vector<unsigned char> vec(txHashSig, txHashSig + 32);
+        uint256 cppTxHashSig = uint256(vec);
 
         // Output data
         std::vector<uint8_t> cppSerializedSpend;

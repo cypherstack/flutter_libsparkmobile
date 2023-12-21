@@ -297,6 +297,7 @@ abstract final class LibSpark {
               Uint8List blockHash,
             })>
         idAndBlockHashes,
+    required Uint8List txHash,
   }) {
     final privateKeyPtr =
         privateKeyHex.to32BytesFromHex().unsignedCharPointer();
@@ -383,6 +384,8 @@ abstract final class LibSpark {
           idAndBlockHashes[i].blockHash.unsignedCharPointer();
     }
 
+    final txHashPtr = txHash.unsignedCharPointer();
+
     final result = _bindings.cCreateSparkSpendTransaction(
       privateKeyPtr,
       index,
@@ -396,6 +399,7 @@ abstract final class LibSpark {
       allAnonymitySets.length,
       idAndBlockHashesPtr,
       idAndBlockHashes.length,
+      txHashPtr,
     );
 
     // todo: more comprehensive frees
@@ -404,6 +408,7 @@ abstract final class LibSpark {
     malloc.free(privateRecipientsPtr);
     malloc.free(serializedCoinsPtr);
     malloc.free(coverSetDataAllPtr);
+    malloc.free(txHashPtr);
 
     if (result.address == nullptr.address) {
       throw Exception(

@@ -76,7 +76,8 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         struct CCoverSetData* cover_set_data_all,
         int cover_set_data_allLength,
         struct BlockHashAndId* idAndBlockHashes,
-        int idAndBlockHashesLength
+        int idAndBlockHashesLength,
+        unsigned char* txHashSig
 );
 
 FFI_PLUGIN_EXPORT
