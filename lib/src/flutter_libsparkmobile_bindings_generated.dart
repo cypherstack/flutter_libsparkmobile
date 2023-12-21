@@ -136,10 +136,13 @@ class FlutterLibsparkmobileBindings {
     int recipientsLength,
     ffi.Pointer<COutputRecipient> privateRecipients,
     int privateRecipientsLength,
-    ffi.Pointer<CCDataStream> serializedMintMetas,
-    int serializedMintMetasLength,
+    ffi.Pointer<DartSpendCoinData> coins,
+    int coinsLength,
     ffi.Pointer<CCoverSetData> cover_set_data_all,
     int cover_set_data_allLength,
+    ffi.Pointer<BlockHashAndId> idAndBlockHashes,
+    int idAndBlockHashesLength,
+    ffi.Pointer<ffi.UnsignedChar> txHashSig,
   ) {
     return _cCreateSparkSpendTransaction(
       keyData,
@@ -148,10 +151,13 @@ class FlutterLibsparkmobileBindings {
       recipientsLength,
       privateRecipients,
       privateRecipientsLength,
-      serializedMintMetas,
-      serializedMintMetasLength,
+      coins,
+      coinsLength,
       cover_set_data_all,
       cover_set_data_allLength,
+      idAndBlockHashes,
+      idAndBlockHashesLength,
+      txHashSig,
     );
   }
 
@@ -164,10 +170,13 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<COutputRecipient>,
               ffi.Int,
-              ffi.Pointer<CCDataStream>,
+              ffi.Pointer<DartSpendCoinData>,
               ffi.Int,
               ffi.Pointer<CCoverSetData>,
-              ffi.Int)>>('cCreateSparkSpendTransaction');
+              ffi.Int,
+              ffi.Pointer<BlockHashAndId>,
+              ffi.Int,
+              ffi.Pointer<ffi.UnsignedChar>)>>('cCreateSparkSpendTransaction');
   late final _cCreateSparkSpendTransaction =
       _cCreateSparkSpendTransactionPtr.asFunction<
           ffi.Pointer<SparkSpendTransactionResult> Function(
@@ -177,10 +186,13 @@ class FlutterLibsparkmobileBindings {
               int,
               ffi.Pointer<COutputRecipient>,
               int,
-              ffi.Pointer<CCDataStream>,
+              ffi.Pointer<DartSpendCoinData>,
               int,
               ffi.Pointer<CCoverSetData>,
-              int)>();
+              int,
+              ffi.Pointer<BlockHashAndId>,
+              int,
+              ffi.Pointer<ffi.UnsignedChar>)>();
 
   ffi.Pointer<GetSparkCoinsResult> getCoinsToSpend(
     int spendAmount,
@@ -229,6 +241,59 @@ class FlutterLibsparkmobileBindings {
   late final _selectSparkCoins = _selectSparkCoinsPtr.asFunction<
       ffi.Pointer<SelectSparkCoinsResult> Function(
           int, int, ffi.Pointer<CCSparkMintMeta>, int, int)>();
+
+  ffi.Pointer<SerializedMintContextResult> serializeMintContext(
+    ffi.Pointer<DartInputData> inputs,
+    int inputsLength,
+  ) {
+    return _serializeMintContext(
+      inputs,
+      inputsLength,
+    );
+  }
+
+  late final _serializeMintContextPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SerializedMintContextResult> Function(
+              ffi.Pointer<DartInputData>, ffi.Int)>>('serializeMintContext');
+  late final _serializeMintContext = _serializeMintContextPtr.asFunction<
+      ffi.Pointer<SerializedMintContextResult> Function(
+          ffi.Pointer<DartInputData>, int)>();
+
+  ffi.Pointer<ValidateAddressResult> isValidSparkAddress(
+    ffi.Pointer<ffi.Char> addressCStr,
+    int isTestNet,
+  ) {
+    return _isValidSparkAddress(
+      addressCStr,
+      isTestNet,
+    );
+  }
+
+  late final _isValidSparkAddressPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ValidateAddressResult> Function(
+              ffi.Pointer<ffi.Char>, ffi.Int)>>('isValidSparkAddress');
+  late final _isValidSparkAddress = _isValidSparkAddressPtr.asFunction<
+      ffi.Pointer<ValidateAddressResult> Function(
+          ffi.Pointer<ffi.Char>, int)>();
+
+  ffi.Pointer<ffi.Char> hashTags(
+    ffi.Pointer<ffi.UnsignedChar> tags,
+    int tagCount,
+  ) {
+    return _hashTags(
+      tags,
+      tagCount,
+    );
+  }
+
+  late final _hashTagsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>>('hashTags');
+  late final _hashTags = _hashTagsPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.
@@ -538,4 +603,47 @@ final class SparkSpendTransactionResult extends ffi.Struct {
 
   @ffi.Int()
   external int isError;
+}
+
+final class DartInputData extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> txHash;
+
+  @ffi.Int()
+  external int txHashLength;
+
+  @ffi.Int()
+  external int vout;
+}
+
+final class SerializedMintContextResult extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> context;
+
+  @ffi.Int()
+  external int contextLength;
+}
+
+final class ValidateAddressResult extends ffi.Struct {
+  @ffi.Int()
+  external int isValid;
+
+  external ffi.Pointer<ffi.Char> errorMessage;
+}
+
+final class BlockHashAndId extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> hash;
+
+  @ffi.Int()
+  external int id;
+}
+
+final class DartSpendCoinData extends ffi.Struct {
+  external ffi.Pointer<CCDataStream> serializedCoin;
+
+  external ffi.Pointer<CCDataStream> serializedCoinContext;
+
+  @ffi.Int()
+  external int groupId;
+
+  @ffi.Int()
+  external int height;
 }

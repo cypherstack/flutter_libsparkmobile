@@ -17,6 +17,7 @@ endif()
 add_library(flutter_libsparkmobile SHARED
     "flutter_libsparkmobile.cpp"
     "utils.cpp"
+    "transaction.cpp"
 )
 
 add_subdirectory(deps/boost-cmake)

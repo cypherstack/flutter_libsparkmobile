@@ -4,6 +4,8 @@
 #include "deps/sparkmobile/src/spark.h"
 #include "deps/sparkmobile/bitcoin/uint256.h"
 #include "structs.h"
+#include "transaction.h"
+#include "deps/sparkmobile/bitcoin/script.h"  // For CScript.
 
 #include <cstring>
 #include <iostream> // Just for printing.
@@ -190,10 +192,13 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     int recipientsLength,
     struct COutputRecipient* privateRecipients,
     int privateRecipientsLength,
-    struct CCDataStream* serializedMintMetas,
-    int serializedMintMetasLength,
+    struct DartSpendCoinData* coins,
+    int coinsLength,
     struct CCoverSetData* cover_set_data_all,
-    int cover_set_data_allLength
+    int cover_set_data_allLength,
+    struct BlockHashAndId* idAndBlockHashes,
+    int idAndBlockHashesLength,
+    unsigned char* txHashSig
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -220,35 +225,36 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 
         // Convert CCSparkMintMeta* serializedMintMetas to std::list<CSparkMintMeta> cppCoins.
         std::list<CSparkMintMeta> cppCoins;
-        for (int i = 0; i < serializedMintMetasLength; i++) {
-            std::vector<unsigned char> vec(serializedMintMetas[i].data, serializedMintMetas[i].data + serializedMintMetas[i].length);
-            CDataStream stream(vec, SER_NETWORK, PROTOCOL_VERSION);
-            CSparkMintMeta meta;
-            stream >> meta;
+        for (int i = 0; i < coinsLength; i++) {
+            spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
+            std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
+            coin.setSerialContext(contextVec);
+            CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
+            meta.nId = coins[i].groupId;
+            meta.nHeight = coins[i].height;
+            meta.coin = coin;
             cppCoins.push_back(meta);
         }
 
-        // Convert CCoverSets* cover_set_data_all to a std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll
-        // TODO verify correctness.
         std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll;
         for (int i = 0; i < cover_set_data_allLength; i++) {
+            spark::CoverSetData cppCoverSetData;
             for (int j = 0; j < cover_set_data_all[i].cover_setLength; j++) {
-                std::vector<spark::Coin> cppCoverSetCoins;
-                spark::Coin coin = coinFromCCDataStream(cover_set_data_all[i].cover_set[j]);
-                cppCoverSetCoins.push_back(coin);
-
-                // Construct spark::CoverSetData.
-                spark::CoverSetData cppCoverSetData;
-                cppCoverSetData.cover_set = cppCoverSetCoins;
-                cppCoverSetData.cover_set_representation = std::vector<unsigned char>(cover_set_data_all[i].cover_set_representation, cover_set_data_all[i].cover_set_representation + cover_set_data_all[i].cover_set_representationLength);
-
-                cppCoverSetDataAll[cover_set_data_all[i].setId] = cppCoverSetData;
+                spark::Coin coin = deserializeCoin(cover_set_data_all[i].cover_set[j].data, cover_set_data_all[i].cover_set[j].length);
+                cppCoverSetData.cover_set.push_back(coin);
             }
+            cppCoverSetData.cover_set_representation = std::vector<unsigned char>(cover_set_data_all[i].cover_set_representation, cover_set_data_all[i].cover_set_representation + cover_set_data_all[i].cover_set_representationLength);
+            cppCoverSetDataAll[cover_set_data_all[i].setId] = cppCoverSetData;
         }
 
-        // Required but unused params.
         std::map<uint64_t, uint256> cppIdAndBlockHashesAll;
-        uint256 cppTxHashSig;
+        for (int i = 0; i < idAndBlockHashesLength; i++) {
+            std::vector<unsigned char> vec(idAndBlockHashes[i].hash, idAndBlockHashes[i].hash + 32);
+            cppIdAndBlockHashesAll[idAndBlockHashes[i].id] = uint256(vec);
+        }
+
+        std::vector<unsigned char> vec(txHashSig, txHashSig + 32);
+        uint256 cppTxHashSig = uint256(vec);
 
         // Output data
         std::vector<uint8_t> cppSerializedSpend;
@@ -475,4 +481,64 @@ SelectSparkCoinsResult* selectSparkCoins(
 
         return result;
     }
+}
+
+FFI_PLUGIN_EXPORT
+SerializedMintContextResult* serializeMintContext(
+        DartInputData* inputs,
+        int inputsLength
+) {
+    CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
+    for (int i = 0; i < inputsLength; i++) {
+        std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
+        CTxIn input(
+                uint256(vec),
+                inputs[i].vout,
+                CScript(),
+                std::numeric_limits<unsigned int>::max() - 1);
+        input.scriptSig = CScript();
+        input.scriptWitness.SetNull();
+        serialContextStream << input;
+    }
+
+    SerializedMintContextResult* result = (SerializedMintContextResult*)malloc(sizeof(SerializedMintContextResult));
+    result->contextLength = serialContextStream.size();
+    result->context = (unsigned char*) malloc(sizeof(unsigned char) * serialContextStream.size());
+    memcpy(result->context, serialContextStream.data(), sizeof(unsigned char) * serialContextStream.size());
+    return result;
+}
+
+FFI_PLUGIN_EXPORT
+ValidateAddressResult* isValidSparkAddress(
+        const char* addressCStr,
+        int isTestNet
+) {
+    spark::Address address;
+    ValidateAddressResult* result = (ValidateAddressResult*) malloc(sizeof(ValidateAddressResult));
+    result->isValid = false;
+    try {
+        std::string addressString(addressCStr);
+        unsigned char network = address.decode(addressString);
+        result->isValid = network == (isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
+        result->errorMessage = nullptr;
+        return result;
+    } catch (const std::exception& e) {
+        result->errorMessage = (char*) malloc(sizeof(char) * (strlen(e.what()) + 1));
+        strcpy(result->errorMessage, e.what());
+        return result;
+    }
+}
+
+
+FFI_PLUGIN_EXPORT
+const char* hashTags(unsigned char* tags, int tagCount) {
+    char* result = (char*) malloc(sizeof(char) * 64 * tagCount);
+    for (int i = 0; i < tagCount; i++) {
+        secp_primitives::GroupElement tag;
+        tag.deserialize(tags + (i * 34));
+        uint256 hash = primitives::GetLTagHash(tag);
+        std::string hex = hash.GetHex();
+        memcpy(result + (i * 64), hex.c_str(), 64);
+    }
+    return result;
 }

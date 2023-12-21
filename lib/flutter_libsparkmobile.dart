@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_libsparkmobile/src/extensions.dart';
 import 'package:flutter_libsparkmobile/src/models/spark_coin.dart';
 
@@ -160,6 +160,28 @@ abstract final class LibSpark {
     return ret;
   }
 
+  static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
+    final inputsPtr =
+        malloc.allocate<DartInputData>(sizeOf<DartInputData>() * inputs.length);
+
+    for (int i = 0; i < inputs.length; i++) {
+      final hash =
+          Uint8List.fromList(inputs[i].$1.to32BytesFromHex().reversed.toList());
+
+      inputsPtr[i].txHashLength = hash.length;
+      inputsPtr[i].txHash = hash.unsignedCharPointer();
+      inputsPtr[i].vout = inputs[i].$2;
+    }
+
+    final result = _bindings.serializeMintContext(inputsPtr, inputs.length);
+
+    final serialized = result.ref.context.toUint8List(result.ref.contextLength);
+
+    // TODO frees
+
+    return serialized;
+  }
+
   ///
   /// Create spark mint recipients
   ///
@@ -238,7 +260,7 @@ abstract final class LibSpark {
   /// Returns the serialized spark spend.
   ///
   static ({
-    String serializedSpendPayload,
+    Uint8List serializedSpendPayload,
     List<Uint8List> outputScripts,
     int fee,
   }) createSparkSendTransaction({
@@ -254,7 +276,14 @@ abstract final class LibSpark {
               String memo
             })>
         privateRecipients,
-    required List<Uint8List> serializedMintMetas,
+    required List<
+            ({
+              String serializedCoin,
+              String serializedCoinContext,
+              int groupId,
+              int height,
+            })>
+        serializedCoins,
     required List<
             ({
               int setId,
@@ -262,6 +291,13 @@ abstract final class LibSpark {
               List<({String serializedCoin, String txHash})> set
             })>
         allAnonymitySets,
+    required List<
+            ({
+              int setId,
+              Uint8List blockHash,
+            })>
+        idAndBlockHashes,
+    required Uint8List txHash,
   }) {
     final privateKeyPtr =
         privateKeyHex.to32BytesFromHex().unsignedCharPointer();
@@ -293,12 +329,27 @@ abstract final class LibSpark {
           privateRecipients[i].sparkAddress.toNativeUtf8().cast<Char>();
     }
 
-    final serializedMintMetasPtr = malloc.allocate<CCDataStream>(
-        sizeOf<CCDataStream>() * serializedMintMetas.length);
-    for (int i = 0; i < serializedMintMetas.length; i++) {
-      serializedMintMetasPtr[i].data =
-          serializedMintMetas[i].unsignedCharPointer();
-      serializedMintMetasPtr[i].length = serializedMintMetas[i].length;
+    final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
+        sizeOf<DartSpendCoinData>() * serializedCoins.length);
+    for (int i = 0; i < serializedCoins.length; i++) {
+      final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
+      serializedCoinsPtr[i].serializedCoin =
+          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+      serializedCoinsPtr[i].serializedCoin.ref.data =
+          b64CoinDecoded.unsignedCharPointer();
+      serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
+
+      final b64ContextDecoded =
+          base64Decode(serializedCoins[i].serializedCoinContext);
+      serializedCoinsPtr[i].serializedCoinContext =
+          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+      serializedCoinsPtr[i].serializedCoinContext.ref.data =
+          b64ContextDecoded.unsignedCharPointer();
+      serializedCoinsPtr[i].serializedCoinContext.ref.length =
+          b64ContextDecoded.length;
+
+      serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
+      serializedCoinsPtr[i].height = serializedCoins[i].height;
     }
 
     final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
@@ -324,6 +375,17 @@ abstract final class LibSpark {
       coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
     }
 
+    final idAndBlockHashesPtr = malloc.allocate<BlockHashAndId>(
+        sizeOf<BlockHashAndId>() * idAndBlockHashes.length);
+    for (int i = 0; i < idAndBlockHashes.length; i++) {
+      assert(idAndBlockHashes[i].blockHash.length == 32);
+      idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
+      idAndBlockHashesPtr[i].hash =
+          idAndBlockHashes[i].blockHash.unsignedCharPointer();
+    }
+
+    final txHashPtr = txHash.unsignedCharPointer();
+
     final result = _bindings.cCreateSparkSpendTransaction(
       privateKeyPtr,
       index,
@@ -331,18 +393,22 @@ abstract final class LibSpark {
       recipients.length,
       privateRecipientsPtr,
       privateRecipients.length,
-      serializedMintMetasPtr,
-      serializedMintMetas.length,
+      serializedCoinsPtr,
+      serializedCoins.length,
       coverSetDataAllPtr,
       allAnonymitySets.length,
+      idAndBlockHashesPtr,
+      idAndBlockHashes.length,
+      txHashPtr,
     );
 
     // todo: more comprehensive frees
     malloc.free(privateKeyPtr);
     malloc.free(recipientsPtr);
     malloc.free(privateRecipientsPtr);
-    malloc.free(serializedMintMetasPtr);
+    malloc.free(serializedCoinsPtr);
     malloc.free(coverSetDataAllPtr);
+    malloc.free(txHashPtr);
 
     if (result.address == nullptr.address) {
       throw Exception(
@@ -351,10 +417,11 @@ abstract final class LibSpark {
     }
 
     final messageBytes = result.ref.data.toUint8List(result.ref.dataLength);
-    final message = utf8.decode(messageBytes);
+
     malloc.free(result.ref.data);
 
     if (result.ref.isError > 0) {
+      final message = utf8.decode(messageBytes);
       throw Exception(message);
     }
 
@@ -370,7 +437,11 @@ abstract final class LibSpark {
 
     malloc.free(result.ref.outputScripts);
 
-    return (serializedSpendPayload: message, fee: fee, outputScripts: scripts);
+    return (
+      serializedSpendPayload: messageBytes,
+      fee: fee,
+      outputScripts: scripts
+    );
   }
 
   static ({int changeToMint, List<LibSparkCoin> coins}) getCoinsToSpend({
@@ -606,6 +677,73 @@ abstract final class LibSpark {
     malloc.free(result);
 
     return ret;
+  }
+
+  static bool validateAddress({
+    required String address,
+    required bool isTestNet,
+  }) {
+    final addressPtr = address.toNativeUtf8().cast<Char>();
+
+    final result = _bindings.isValidSparkAddress(
+      addressPtr,
+      isTestNet ? 1 : 0,
+    );
+
+    malloc.free(addressPtr);
+
+    if (result.address != nullptr.address) {
+      final isValid = result.ref.isValid > 0;
+      final String message;
+
+      if (result.ref.errorMessage.address == nullptr.address) {
+        message = "";
+      } else {
+        message = result.ref.errorMessage.cast<Utf8>().toDartString();
+        malloc.free(result.ref.errorMessage);
+      }
+      malloc.free(result);
+
+      if (kDebugMode && message.isNotEmpty) {
+        debugPrint("validateAddress error message: $message");
+      }
+
+      return isValid;
+    } else {
+      // some error occurred result in null being returned which should happen
+      // but is checked anyways
+      if (kDebugMode) {
+        debugPrint("validateAddress ffi called returned nullptr");
+      }
+      return false;
+    }
+  }
+
+  static Set<String> hashTags({required Set<String> base64Tags}) {
+    if (base64Tags.isEmpty) {
+      return {};
+    }
+
+    final bytes = Uint8List.fromList(
+      base64Tags.expand((e) => base64Decode(e)).toList(),
+    );
+
+    final result = _bindings.hashTags(
+      bytes.unsignedCharPointer(),
+      base64Tags.length,
+    );
+
+    final Set<String> hashes = {};
+
+    for (int i = 0; i < base64Tags.length; i++) {
+      final hash =
+          result.elementAt(i * 64).cast<Utf8>().toDartString(length: 64);
+      hashes.add(hash);
+    }
+
+    malloc.free(result);
+
+    return hashes;
   }
 }
 

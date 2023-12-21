@@ -220,6 +220,35 @@ struct SparkSpendTransactionResult {
     int isError;
 };
 
+struct DartInputData {
+    unsigned char *txHash;
+    int txHashLength;
+
+    int vout;
+};
+
+struct SerializedMintContextResult {
+    unsigned char *context;
+    int contextLength;
+};
+
+struct ValidateAddressResult {
+    int isValid;
+    char *errorMessage;
+};
+
+struct BlockHashAndId {
+    unsigned char* hash;
+    int id;
+};
+
+struct DartSpendCoinData {
+    struct CCDataStream* serializedCoin;
+    struct CCDataStream* serializedCoinContext;
+    int groupId;
+    int height;
+};
+
 //#ifdef __cplusplus
 //}
 //#endif

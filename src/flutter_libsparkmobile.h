@@ -71,10 +71,13 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         int recipientsLength,
         struct COutputRecipient* privateRecipients,
         int privateRecipientsLength,
-        struct CCDataStream* serializedMintMetas,
-        int serializedMintMetasLength,
+        struct DartSpendCoinData* coins,
+        int coinsLength,
         struct CCoverSetData* cover_set_data_all,
-        int cover_set_data_allLength
+        int cover_set_data_allLength,
+        struct BlockHashAndId* idAndBlockHashes,
+        int idAndBlockHashesLength,
+        unsigned char* txHashSig
 );
 
 FFI_PLUGIN_EXPORT
@@ -92,5 +95,20 @@ struct SelectSparkCoinsResult* selectSparkCoins(
         int coinsLength,
         int mintNum
 );
+
+FFI_PLUGIN_EXPORT
+struct SerializedMintContextResult* serializeMintContext(
+        struct DartInputData* inputs,
+        int inputsLength
+);
+
+FFI_PLUGIN_EXPORT
+struct ValidateAddressResult* isValidSparkAddress(
+        const char* addressCStr,
+        int isTestNet
+);
+
+FFI_PLUGIN_EXPORT
+const char* hashTags(unsigned char* tags, int tagCount);
 
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H
