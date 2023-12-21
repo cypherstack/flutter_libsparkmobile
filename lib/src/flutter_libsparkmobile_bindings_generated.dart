@@ -294,6 +294,40 @@ class FlutterLibsparkmobileBindings {
               ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>>('hashTags');
   late final _hashTags = _hashTagsPtr.asFunction<
       ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, int)>();
+
+  ffi.Pointer<SparkFeeResult> estimateSparkFee(
+    ffi.Pointer<ffi.UnsignedChar> keyData,
+    int index,
+    int sendAmount,
+    int subtractFeeFromAmount,
+    ffi.Pointer<DartSpendCoinData> coins,
+    int coinsLength,
+    int privateRecipientsLength,
+  ) {
+    return _estimateSparkFee(
+      keyData,
+      index,
+      sendAmount,
+      subtractFeeFromAmount,
+      coins,
+      coinsLength,
+      privateRecipientsLength,
+    );
+  }
+
+  late final _estimateSparkFeePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SparkFeeResult> Function(
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Int,
+              ffi.Int,
+              ffi.Int,
+              ffi.Pointer<DartSpendCoinData>,
+              ffi.Int,
+              ffi.Int)>>('estimateSparkFee');
+  late final _estimateSparkFee = _estimateSparkFeePtr.asFunction<
+      ffi.Pointer<SparkFeeResult> Function(ffi.Pointer<ffi.UnsignedChar>, int,
+          int, int, ffi.Pointer<DartSpendCoinData>, int, int)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.
@@ -646,4 +680,11 @@ final class DartSpendCoinData extends ffi.Struct {
 
   @ffi.Int()
   external int height;
+}
+
+final class SparkFeeResult extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> error;
+
+  @ffi.Int()
+  external int fee;
 }

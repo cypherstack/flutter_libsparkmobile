@@ -249,6 +249,11 @@ struct DartSpendCoinData {
     int height;
 };
 
+struct SparkFeeResult {
+    char *error;
+    int fee;
+};
+
 //#ifdef __cplusplus
 //}
 //#endif

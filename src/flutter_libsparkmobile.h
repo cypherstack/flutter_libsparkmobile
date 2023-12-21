@@ -111,4 +111,15 @@ struct ValidateAddressResult* isValidSparkAddress(
 FFI_PLUGIN_EXPORT
 const char* hashTags(unsigned char* tags, int tagCount);
 
+FFI_PLUGIN_EXPORT
+struct SparkFeeResult* estimateSparkFee(
+        unsigned char* keyData,
+        int index,
+        int sendAmount,
+        int subtractFeeFromAmount,
+        struct DartSpendCoinData* coins,
+        int coinsLength,
+        int privateRecipientsLength
+);
+
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H

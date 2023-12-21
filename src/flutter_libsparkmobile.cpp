@@ -542,3 +542,53 @@ const char* hashTags(unsigned char* tags, int tagCount) {
     }
     return result;
 }
+
+FFI_PLUGIN_EXPORT
+SparkFeeResult* estimateSparkFee(
+        unsigned char* keyData,
+        int index,
+        int sendAmount,
+        int subtractFeeFromAmount,
+        struct DartSpendCoinData* coins,
+        int coinsLength,
+        int privateRecipientsLength
+) {
+    try {
+        // Derive the keys from the key data and index.
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
+        spark::FullViewKey fullViewKey(spendKey);
+        spark::IncomingViewKey incomingViewKey(fullViewKey);
+
+        std::list<CSparkMintMeta> cppCoins;
+        for (int i = 0; i < coinsLength; i++) {
+            spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
+            std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
+            coin.setSerialContext(contextVec);
+            CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
+            meta.nId = coins[i].groupId;
+            meta.nHeight = coins[i].height;
+            meta.coin = coin;
+            cppCoins.push_back(meta);
+        }
+
+        std::pair<CAmount, std::vector<CSparkMintMeta>> estimated = SelectSparkCoins(
+                sendAmount,
+                subtractFeeFromAmount,
+                cppCoins,
+                privateRecipientsLength
+        );
+
+        SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
+        result->error = nullptr;
+        result->fee = estimated.first;
+
+        return result;
+    } catch (const std::exception& e) {
+        SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
+        result->fee = 0;
+        result->error = (char*)malloc(sizeof(char) * (strlen(e.what()) + 1));
+        strcpy(result->error, e.what());
+
+        return result;
+    }
+}
