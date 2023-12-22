@@ -36,8 +36,8 @@ CROSS_COMPILE="x86_64-w64-mingw32.static-"
 	no-shared \
 	--with-zlib-include=${WORKDIR}/include \
 	--with-zlib-lib=${WORKDIR}/lib \
-	--prefix=${WORKDIR}/openssl \
-	--openssldir=${WORKDIR}/openssl \
+	--prefix=${WORKDIR} \
+	--openssldir=${WORKDIR} \
 	OPENSSL_LIBS="-lcrypt32 -lws2_32 -lwsock32"
 make -j$THREADS
 make -j$THREADS install_sw
