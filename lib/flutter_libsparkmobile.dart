@@ -745,6 +745,78 @@ abstract final class LibSpark {
 
     return hashes;
   }
+
+  static int estimateSparkFee({
+    required String privateKeyHex,
+    int index = 1,
+    required int sendAmount,
+    required bool subtractFeeFromAmount,
+    required List<
+            ({
+              String serializedCoin,
+              String serializedCoinContext,
+              int groupId,
+              int height,
+            })>
+        serializedCoins,
+    required int privateRecipientsCount,
+  }) {
+    final privateKeyPtr =
+        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+
+    final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
+        sizeOf<DartSpendCoinData>() * serializedCoins.length);
+    for (int i = 0; i < serializedCoins.length; i++) {
+      final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
+      serializedCoinsPtr[i].serializedCoin =
+          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+      serializedCoinsPtr[i].serializedCoin.ref.data =
+          b64CoinDecoded.unsignedCharPointer();
+      serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
+
+      final b64ContextDecoded =
+          base64Decode(serializedCoins[i].serializedCoinContext);
+      serializedCoinsPtr[i].serializedCoinContext =
+          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+      serializedCoinsPtr[i].serializedCoinContext.ref.data =
+          b64ContextDecoded.unsignedCharPointer();
+      serializedCoinsPtr[i].serializedCoinContext.ref.length =
+          b64ContextDecoded.length;
+
+      serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
+      serializedCoinsPtr[i].height = serializedCoins[i].height;
+    }
+
+    final result = _bindings.estimateSparkFee(
+      privateKeyPtr,
+      index,
+      sendAmount,
+      subtractFeeFromAmount ? 1 : 0,
+      serializedCoinsPtr,
+      serializedCoins.length,
+      privateRecipientsCount,
+    );
+
+    for (int i = 0; i < serializedCoins.length; i++) {
+      malloc.free(serializedCoinsPtr[i].serializedCoinContext);
+      malloc.free(serializedCoinsPtr[i].serializedCoin);
+    }
+    malloc.free(serializedCoinsPtr);
+    malloc.free(privateKeyPtr);
+
+    if (result.ref.error.address != nullptr.address) {
+      final ex = Exception(
+        result.ref.error.cast<Utf8>().toDartString(),
+      );
+      malloc.free(result.ref.error);
+      malloc.free(result);
+      throw ex;
+    } else {
+      final fee = result.ref.fee;
+      malloc.free(result);
+      return fee;
+    }
+  }
 }
 
 extension on Pointer<UnsignedChar> {
