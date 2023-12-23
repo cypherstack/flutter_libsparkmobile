@@ -71,10 +71,8 @@ else()
 	target_compile_definitions(secp256k1_spark PUBLIC USE_FIELD_10X26)
 endif()
 
-
 # TODO: emult static precomputation
 # TODO: ecdh module
 # TODO: RECOVERY module
 TARGET_INCLUDE_DIRECTORIES(secp256k1_spark PUBLIC ${OPENSSL_INCLUDE_DIR})
 TARGET_LINK_LIBRARIES(secp256k1_spark ${OPENSSL_LIBRARIES})
-#target_link_libraries(secp256k1_spark ${OPENSSL_LIBRARIES})

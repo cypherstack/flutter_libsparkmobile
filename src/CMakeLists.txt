@@ -13,7 +13,6 @@ elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
-
 add_library(flutter_libsparkmobile SHARED
     "flutter_libsparkmobile.cpp"
     "utils.cpp"

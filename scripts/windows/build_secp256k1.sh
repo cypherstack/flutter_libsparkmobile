@@ -7,7 +7,7 @@ mkdir -p "$WORKDIR/secp256k1"
 mkdir -p "$WORKDIR/secp256k1/include"
 cp -r ../../src/deps/sparkmobile/secp256k1/* "$WORKDIR/secp256k1"
 
-cp $SCRIPTDIR/CMakeLists/missingheader/endian.h	$WORKDIR/secp256k1/include/endian.h
+cp $SCRIPTDIR/missingheader/endian.h	$WORKDIR/secp256k1/include/endian.h
 
 cd $WORKDIR/secp256k1
 rm -f CMakeCache.txt

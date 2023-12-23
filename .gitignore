@@ -47,3 +47,5 @@ src/build
 scripts/windows/CMakeLists/secp256k1/CMakeLists.txt
 
 scripts/windows/cache/
+
+src/cache/
