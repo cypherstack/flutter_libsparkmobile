@@ -13,10 +13,7 @@ cd $WORKDIR/secp256k1
 rm -f CMakeCache.txt
 x86_64-w64-mingw32.static-cmake . \
 	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-	-DCMAKE_INSTALL_PREFIX="${WORKDIR}" \
-	-lcrypt32 \
-	-lws2_32 \
-	-lwsock32
+	-DCMAKE_INSTALL_PREFIX="${WORKDIR}"
 make -j$(nproc)
 # make -j$(nproc) all install # Doesn't respect our CMAKE_INSTALL_PREFIX passed above, so we'll just copy it manually.
 cp libsecp256k1_spark.a ../lib/
