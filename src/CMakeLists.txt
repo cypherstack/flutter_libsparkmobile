@@ -19,7 +19,7 @@ add_library(flutter_libsparkmobile SHARED
     "transaction.cpp"
 )
 
-add_subdirectory(deps/boost-cmake)
+add_subdirectory("deps/boost-cmake")
 add_subdirectory("deps/sparkmobile")
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
