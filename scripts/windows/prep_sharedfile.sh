@@ -20,5 +20,6 @@ cp -r ../../src/deps/sparkmobile/* "$WORKDIR/sparkmobile"
 cd $WORKDIR/sparkmobile
 rm -f CMakeCache.txt
 x86_64-w64-mingw32.static-cmake . \
-	-DCMAKE_BUILD_TYPE=RelWithDebInfo
+	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+	-DBUILD_FOR_SYSTEM_NAME="windows"
 make -j$(nproc)
