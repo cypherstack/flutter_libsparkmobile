@@ -61,7 +61,7 @@ endif()
 
 # Detect if we are on a 32 or 64 bits plateform and chose
 # scalar and filed implementation accordingly
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
 	# 64 bits implementationr require either __int128 or asm support.
 	# TODO: support asm.
 	if(NOT SIZEOF___INT128 EQUAL 16)
