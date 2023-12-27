@@ -19,7 +19,9 @@ add_library(flutter_libsparkmobile SHARED
     "transaction.cpp"
 )
 
-add_subdirectory(deps/boost-cmake)
+set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz"2)
+set(BOOST_URL_SHA256 "8681f175d4bdb26c52222665793eef08490d7758529330f98d3b29dd0735bccc")
+add_subdirectory("deps/boost-cmake")
 add_subdirectory("deps/sparkmobile")
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
