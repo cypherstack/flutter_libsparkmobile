@@ -46,7 +46,7 @@ dependencies:
     git:
       url: https://github.com/cypherstack/coinlib.git
       path: coinlib_flutter
-      ref: windows-testing # TODO change to main.  TODO update to windows-2.0 branch.
+      ref: windows # TODO change to main.  TODO update to windows-2.0 branch.
       # TODO pin to specific commit to reduce supply chain attack surface.  
   bip39: ^1.0.6
 
