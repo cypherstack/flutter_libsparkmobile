@@ -4,26 +4,16 @@ project(sparkmobile)
 
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
-    SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}")
-else()
-    SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}/prefix_${ANDROID_ABI}")
-endif()
-
 SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 list(APPEND CMAKE_FIND_ROOT_PATH "${OPENSSL_ROOT_DIR}")
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR WIN32)
-    SET(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/../")
-    SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}lib")
-    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}include")
+    #    SET(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/../")
+    #    SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}lib")
+    #    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}include")
     SET(OPENSSL_LIBRARIES "ssl" "crypto")
-
-    LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
-
-    include_directories(. include)
 else()
     find_package(OpenSSL REQUIRED)
 endif()
@@ -123,8 +113,8 @@ endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
-    target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${CMAKE_SOURCE_DIR}/deps/missing_headers")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+    target_include_directories(sparkmobile PUBLIC secp256k1_spark ${SPARK_MISSING_HEADERS_DIR} "${CMAKE_SOURCE_DIR}")
 else()
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
 endif()
