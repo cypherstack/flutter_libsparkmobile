@@ -73,22 +73,6 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 );
 
 FFI_PLUGIN_EXPORT
-struct GetSparkCoinsResult* getCoinsToSpend(
-        int64_t spendAmount,
-        struct CCSparkMintMeta* coins,
-        int coinLength
-);
-
-FFI_PLUGIN_EXPORT
-struct SelectSparkCoinsResult* selectSparkCoins(
-        int64_t required,
-        int subtractFeeFromAmount,
-        struct CCSparkMintMeta* coins,
-        int coinsLength,
-        int mintNum
-);
-
-FFI_PLUGIN_EXPORT
 struct SerializedMintContextResult* serializeMintContext(
         struct DartInputData* inputs,
         int inputsLength

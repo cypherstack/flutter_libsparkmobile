@@ -407,12 +407,38 @@ abstract final class LibSpark {
       txHashPtr,
     );
 
-    // todo: more comprehensive frees
     malloc.free(privateKeyPtr);
     malloc.free(recipientsPtr);
+
+    for (int i = 0; i < privateRecipients.length; i++) {
+      malloc.free(privateRecipientsPtr[i].output.ref.memo);
+      malloc.free(privateRecipientsPtr[i].output.ref.address);
+      malloc.free(privateRecipientsPtr[i].output);
+    }
     malloc.free(privateRecipientsPtr);
+
+    for (int i = 0; i < serializedCoins.length; i++) {
+      malloc.free(serializedCoinsPtr[i].serializedCoinContext.ref.data);
+      malloc.free(serializedCoinsPtr[i].serializedCoinContext);
+      malloc.free(serializedCoinsPtr[i].serializedCoin.ref.data);
+      malloc.free(serializedCoinsPtr[i].serializedCoin);
+    }
     malloc.free(serializedCoinsPtr);
+
+    for (int i = 0; i < allAnonymitySets.length; i++) {
+      for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
+        malloc.free(coverSetDataAllPtr[i].cover_set[j].data);
+      }
+      malloc.free(coverSetDataAllPtr[i].cover_set);
+      malloc.free(coverSetDataAllPtr[i].cover_set_representation);
+    }
     malloc.free(coverSetDataAllPtr);
+
+    for (int i = 0; i < idAndBlockHashes.length; i++) {
+      malloc.free(idAndBlockHashesPtr[i].hash);
+    }
+    malloc.free(idAndBlockHashesPtr);
+
     malloc.free(txHashPtr);
 
     if (result.address == nullptr.address) {
@@ -447,241 +473,6 @@ abstract final class LibSpark {
       fee: fee,
       outputScripts: scripts
     );
-  }
-
-  static ({int changeToMint, List<LibSparkCoin> coins}) getCoinsToSpend({
-    required int sendAmount,
-    required int recipientsToSubtractFee,
-    required List<LibSparkCoin> coins,
-    required int privateRecipientsCount,
-    required int recipientsCount,
-  }) {
-    final coinsPtr = malloc.allocate<CCSparkMintMeta>(
-      sizeOf<CCSparkMintMeta>() * coins.length,
-    );
-
-    for (int i = 0; i < coins.length; i++) {
-      coinsPtr[i].height = coins[i].height!;
-      coinsPtr[i].id = coins[i].id!;
-      coinsPtr[i].isUsed = coins[i].isUsed! ? 1 : 0;
-      coinsPtr[i].txid = coins[i].txHash!.unsignedCharPointer();
-      coinsPtr[i].i = coins[i].diversifier!.toInt();
-      coinsPtr[i].d = coins[i].encryptedDiversifier!.unsignedCharPointer();
-      coinsPtr[i].dLength = coins[i].encryptedDiversifier!.length;
-      coinsPtr[i].nonceHex = coins[i].nonceHex!.toNativeUtf8().cast<Char>();
-      coinsPtr[i].nonceHexLength = coins[i].nonceHex!.length;
-      coinsPtr[i].memo = coins[i].memo!.toNativeUtf8().cast<Char>();
-      coinsPtr[i].memoLength = coins[i].memo!.length;
-      coinsPtr[i].serial_context =
-          coins[i].serialContext!.unsignedCharPointer();
-      coinsPtr[i].serial_contextLength = coins[i].serialContext!.length;
-      coinsPtr[i].type = coins[i].type.value;
-
-      final serCoin = base64Decode(coins[i].serializedCoin!);
-      coinsPtr[i].serializedCoin = serCoin.unsignedCharPointer();
-      coinsPtr[i].serializedCoinLength = serCoin.length;
-    }
-
-    final result = _bindings.getCoinsToSpend(
-      sendAmount,
-      coinsPtr,
-      coins.length,
-    );
-
-    for (int i = 0; i < coins.length; i++) {
-      malloc.free(coinsPtr[i].txid);
-      malloc.free(coinsPtr[i].d);
-      malloc.free(coinsPtr[i].nonceHex);
-      malloc.free(coinsPtr[i].memo);
-      malloc.free(coinsPtr[i].serial_context);
-      malloc.free(coinsPtr[i].serializedCoin);
-    }
-    malloc.free(coinsPtr);
-
-    if (result.ref.errorMessageLength > 0) {
-      final ex = Exception(
-        result.ref.errorMessage.cast<Utf8>().toDartString(
-              length: result.ref.errorMessageLength,
-            ),
-      );
-      malloc.free(result.ref.errorMessage);
-      malloc.free(result);
-      throw ex;
-    }
-
-    final ({int changeToMint, List<LibSparkCoin> coins}) ret = (
-      changeToMint: result.ref.changeToMint,
-      coins: <LibSparkCoin>[],
-    );
-
-    for (int i = 0; i < result.ref.length; i++) {
-      final LibSparkCoinType coinType;
-      switch (result.ref.list[i].type) {
-        case 0:
-          coinType = LibSparkCoinType.mint;
-          break;
-        case 1:
-          coinType = LibSparkCoinType.mint;
-          break;
-        default:
-          throw Exception(
-            "Unknown coin type \"${result.ref.list[i].type}\" found.",
-          );
-      }
-
-      final coin = LibSparkCoin(
-        type: coinType,
-        id: result.ref.list[i].id,
-        height: result.ref.list[i].height,
-        isUsed: result.ref.list[i].isUsed > 0,
-        nonceHex: result.ref.list[i].nonceHex
-            .cast<Utf8>()
-            .toDartString(length: result.ref.list[i].nonceHexLength),
-        value: BigInt.from(result.ref.list[i].v),
-        memo: result.ref.list[i].memo
-            .cast<Utf8>()
-            .toDartString(length: result.ref.list[i].memoLength),
-        txHash: result.ref.list[i].txid.toUint8List(32),
-        serialContext: result.ref.list[i].serial_context
-            .toUint8List(result.ref.list[i].serial_contextLength),
-        diversifier: BigInt.from(result.ref.list[i].i),
-        encryptedDiversifier:
-            result.ref.list[i].d.toUint8List(result.ref.list[i].dLength),
-        serializedCoin: base64Encode(result.ref.list[i].serializedCoin
-            .toUint8List(result.ref.list[i].serializedCoinLength)),
-      );
-
-      ret.coins.add(coin);
-
-      malloc.free(result.ref.list[i].txid);
-      malloc.free(result.ref.list[i].d);
-      malloc.free(result.ref.list[i].nonceHex);
-      malloc.free(result.ref.list[i].memo);
-      malloc.free(result.ref.list[i].serial_context);
-      malloc.free(result.ref.list[i].serializedCoin);
-    }
-
-    malloc.free(result);
-
-    return ret;
-  }
-
-  static ({int fee, List<LibSparkCoin> coins}) selectSparkCoins({
-    required int requiredAmount,
-    required bool subtractFeeFromAmount,
-    required List<LibSparkCoin> coins,
-    required int privateRecipientsCount,
-  }) {
-    final coinsPtr = malloc.allocate<CCSparkMintMeta>(
-      sizeOf<CCSparkMintMeta>() * coins.length,
-    );
-
-    for (int i = 0; i < coins.length; i++) {
-      coinsPtr[i].height = coins[i].height!;
-      coinsPtr[i].id = coins[i].id!;
-      coinsPtr[i].isUsed = coins[i].isUsed! ? 1 : 0;
-      coinsPtr[i].txid = coins[i].txHash!.unsignedCharPointer();
-      coinsPtr[i].i = coins[i].diversifier!.toInt();
-      coinsPtr[i].d = coins[i].encryptedDiversifier!.unsignedCharPointer();
-      coinsPtr[i].dLength = coins[i].encryptedDiversifier!.length;
-      coinsPtr[i].nonceHex = coins[i].nonceHex!.toNativeUtf8().cast<Char>();
-      coinsPtr[i].nonceHexLength = coins[i].nonceHex!.length;
-      coinsPtr[i].memo = coins[i].memo!.toNativeUtf8().cast<Char>();
-      coinsPtr[i].memoLength = coins[i].memo!.length;
-      coinsPtr[i].serial_context =
-          coins[i].serialContext!.unsignedCharPointer();
-      coinsPtr[i].serial_contextLength = coins[i].serialContext!.length;
-      coinsPtr[i].type = coins[i].type.value;
-
-      final serCoin = base64Decode(coins[i].serializedCoin!);
-      coinsPtr[i].serializedCoin = serCoin.unsignedCharPointer();
-      coinsPtr[i].serializedCoinLength = serCoin.length;
-    }
-
-    final result = _bindings.selectSparkCoins(
-      requiredAmount,
-      subtractFeeFromAmount ? 1 : 0,
-      coinsPtr,
-      coins.length,
-      privateRecipientsCount,
-    );
-
-    for (int i = 0; i < coins.length; i++) {
-      malloc.free(coinsPtr[i].txid);
-      malloc.free(coinsPtr[i].d);
-      malloc.free(coinsPtr[i].nonceHex);
-      malloc.free(coinsPtr[i].memo);
-      malloc.free(coinsPtr[i].serial_context);
-      malloc.free(coinsPtr[i].serializedCoin);
-    }
-    malloc.free(coinsPtr);
-
-    if (result.ref.errorMessageLength > 0) {
-      final ex = Exception(
-        result.ref.errorMessage.cast<Utf8>().toDartString(
-              length: result.ref.errorMessageLength,
-            ),
-      );
-      malloc.free(result.ref.errorMessage);
-      malloc.free(result);
-      throw ex;
-    }
-
-    final ({int fee, List<LibSparkCoin> coins}) ret = (
-      fee: result.ref.fee,
-      coins: <LibSparkCoin>[],
-    );
-
-    for (int i = 0; i < result.ref.length; i++) {
-      final LibSparkCoinType coinType;
-      switch (result.ref.list[i].type) {
-        case 0:
-          coinType = LibSparkCoinType.mint;
-          break;
-        case 1:
-          coinType = LibSparkCoinType.mint;
-          break;
-        default:
-          throw Exception(
-            "Unknown coin type \"${result.ref.list[i].type}\" found.",
-          );
-      }
-
-      final coin = LibSparkCoin(
-        type: coinType,
-        id: result.ref.list[i].id,
-        height: result.ref.list[i].height,
-        isUsed: result.ref.list[i].isUsed > 0,
-        nonceHex: result.ref.list[i].nonceHex
-            .cast<Utf8>()
-            .toDartString(length: result.ref.list[i].nonceHexLength),
-        value: BigInt.from(result.ref.list[i].v),
-        memo: result.ref.list[i].memo
-            .cast<Utf8>()
-            .toDartString(length: result.ref.list[i].memoLength),
-        txHash: result.ref.list[i].txid.toUint8List(32),
-        serialContext: result.ref.list[i].serial_context
-            .toUint8List(result.ref.list[i].serial_contextLength),
-        diversifier: BigInt.from(result.ref.list[i].i),
-        encryptedDiversifier:
-            result.ref.list[i].d.toUint8List(result.ref.list[i].dLength),
-        serializedCoin: base64Encode(result.ref.list[i].serializedCoin
-            .toUint8List(result.ref.list[i].serializedCoinLength)),
-      );
-
-      ret.coins.add(coin);
-
-      malloc.free(result.ref.list[i].txid);
-      malloc.free(result.ref.list[i].d);
-      malloc.free(result.ref.list[i].nonceHex);
-      malloc.free(result.ref.list[i].memo);
-      malloc.free(result.ref.list[i].serial_context);
-      malloc.free(result.ref.list[i].serializedCoin);
-    }
-
-    malloc.free(result);
-
-    return ret;
   }
 
   static bool validateAddress({

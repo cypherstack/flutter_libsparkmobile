@@ -11,7 +11,7 @@ import 'dart:ffi' as ffi;
 ///
 /// Regenerate bindings with `flutter pub run ffigen --config ffigen.yaml`.
 ///
-class FlutterLibsparkmobileBindings {
+final class FlutterLibsparkmobileBindings {
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
       _lookup;
@@ -193,54 +193,6 @@ class FlutterLibsparkmobileBindings {
               ffi.Pointer<BlockHashAndId>,
               int,
               ffi.Pointer<ffi.UnsignedChar>)>();
-
-  ffi.Pointer<GetSparkCoinsResult> getCoinsToSpend(
-    int spendAmount,
-    ffi.Pointer<CCSparkMintMeta> coins,
-    int coinLength,
-  ) {
-    return _getCoinsToSpend(
-      spendAmount,
-      coins,
-      coinLength,
-    );
-  }
-
-  late final _getCoinsToSpendPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<GetSparkCoinsResult> Function(ffi.Int64,
-              ffi.Pointer<CCSparkMintMeta>, ffi.Int)>>('getCoinsToSpend');
-  late final _getCoinsToSpend = _getCoinsToSpendPtr.asFunction<
-      ffi.Pointer<GetSparkCoinsResult> Function(
-          int, ffi.Pointer<CCSparkMintMeta>, int)>();
-
-  ffi.Pointer<SelectSparkCoinsResult> selectSparkCoins(
-    int required1,
-    int subtractFeeFromAmount,
-    ffi.Pointer<CCSparkMintMeta> coins,
-    int coinsLength,
-    int mintNum,
-  ) {
-    return _selectSparkCoins(
-      required1,
-      subtractFeeFromAmount,
-      coins,
-      coinsLength,
-      mintNum,
-    );
-  }
-
-  late final _selectSparkCoinsPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<SelectSparkCoinsResult> Function(
-              ffi.Int64,
-              ffi.Int,
-              ffi.Pointer<CCSparkMintMeta>,
-              ffi.Int,
-              ffi.Int)>>('selectSparkCoins');
-  late final _selectSparkCoins = _selectSparkCoinsPtr.asFunction<
-      ffi.Pointer<SelectSparkCoinsResult> Function(
-          int, int, ffi.Pointer<CCSparkMintMeta>, int, int)>();
 
   ffi.Pointer<SerializedMintContextResult> serializeMintContext(
     ffi.Pointer<DartInputData> inputs,
@@ -545,36 +497,6 @@ final class CCSparkMintMeta extends ffi.Struct {
 
   @ffi.Int()
   external int serializedCoinLength;
-}
-
-final class GetSparkCoinsResult extends ffi.Struct {
-  external ffi.Pointer<CCSparkMintMeta> list;
-
-  @ffi.Int()
-  external int length;
-
-  @ffi.Int64()
-  external int changeToMint;
-
-  external ffi.Pointer<ffi.Char> errorMessage;
-
-  @ffi.Int()
-  external int errorMessageLength;
-}
-
-final class SelectSparkCoinsResult extends ffi.Struct {
-  external ffi.Pointer<CCSparkMintMeta> list;
-
-  @ffi.Int()
-  external int length;
-
-  @ffi.Int64()
-  external int fee;
-
-  external ffi.Pointer<ffi.Char> errorMessage;
-
-  @ffi.Int()
-  external int errorMessageLength;
 }
 
 /// FFI-friendly wrapper for a spark::CoverSetData.
