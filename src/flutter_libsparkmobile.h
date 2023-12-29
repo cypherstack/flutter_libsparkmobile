@@ -104,6 +104,9 @@ FFI_PLUGIN_EXPORT
 const char* hashTags(unsigned char* tags, int tagCount);
 
 FFI_PLUGIN_EXPORT
+const char* hashTag(const char* x, const char* y);
+
+FFI_PLUGIN_EXPORT
 struct SparkFeeResult* estimateSparkFee(
         unsigned char* keyData,
         int index,

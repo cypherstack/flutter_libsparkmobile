@@ -529,7 +529,6 @@ ValidateAddressResult* isValidSparkAddress(
     }
 }
 
-
 FFI_PLUGIN_EXPORT
 const char* hashTags(unsigned char* tags, int tagCount) {
     char* result = (char*) malloc(sizeof(char) * 64 * tagCount);
@@ -540,6 +539,16 @@ const char* hashTags(unsigned char* tags, int tagCount) {
         std::string hex = hash.GetHex();
         memcpy(result + (i * 64), hex.c_str(), 64);
     }
+    return result;
+}
+
+FFI_PLUGIN_EXPORT
+const char* hashTag(const char* x, const char* y) {
+    secp_primitives::GroupElement tag = secp_primitives::GroupElement(x, y, 16);
+    uint256 hash = primitives::GetLTagHash(tag);
+    std::string hex = hash.GetHex();
+    char* result = (char*) malloc(sizeof(char) * hex.length());
+    strcpy(result, hex.c_str());
     return result;
 }
 

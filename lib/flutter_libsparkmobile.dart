@@ -746,6 +746,20 @@ abstract final class LibSpark {
     return hashes;
   }
 
+  static String hashTag(String x, String y) {
+    final xPtr = x.toNativeUtf8().cast<Char>();
+    final yPtr = y.toNativeUtf8().cast<Char>();
+
+    final result = _bindings.hashTag(xPtr, yPtr);
+    final hash = result.cast<Utf8>().toDartString();
+
+    malloc.free(xPtr);
+    malloc.free(yPtr);
+    malloc.free(result);
+
+    return hash;
+  }
+
   static int estimateSparkFee({
     required String privateKeyHex,
     int index = 1,

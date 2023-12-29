@@ -295,6 +295,24 @@ class FlutterLibsparkmobileBindings {
   late final _hashTags = _hashTagsPtr.asFunction<
       ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, int)>();
 
+  ffi.Pointer<ffi.Char> hashTag(
+    ffi.Pointer<ffi.Char> x,
+    ffi.Pointer<ffi.Char> y,
+  ) {
+    return _hashTag(
+      x,
+      y,
+    );
+  }
+
+  late final _hashTagPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>>('hashTag');
+  late final _hashTag = _hashTagPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>();
+
   ffi.Pointer<SparkFeeResult> estimateSparkFee(
     ffi.Pointer<ffi.UnsignedChar> keyData,
     int index,
