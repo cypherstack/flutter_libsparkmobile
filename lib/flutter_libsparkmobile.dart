@@ -143,8 +143,8 @@ abstract final class LibSpark {
       value: BigInt.from(result.ref.value),
       memo: result.ref.memo.cast<Utf8>().toDartString(),
       diversifier: BigInt.from(result.ref.diversifier),
-      encryptedDiversifier:
-          result.ref.serial.toUint8List(result.ref.encryptedDiversifierLength),
+      encryptedDiversifier: result.ref.encryptedDiversifier
+          .toUint8List(result.ref.encryptedDiversifierLength),
       serial: result.ref.serial.toUint8List(result.ref.serialLength),
       lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
     );
@@ -542,7 +542,11 @@ abstract final class LibSpark {
     return hashes;
   }
 
+  /// [x] and [y] must be of length 64
   static String hashTag(String x, String y) {
+    assert(x.length == 64);
+    assert(y.length == 64);
+
     final xPtr = x.toNativeUtf8().cast<Char>();
     final yPtr = y.toNativeUtf8().cast<Char>();
 
