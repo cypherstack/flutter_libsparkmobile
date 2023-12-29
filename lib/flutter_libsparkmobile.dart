@@ -542,11 +542,7 @@ abstract final class LibSpark {
     return hashes;
   }
 
-  /// [x] and [y] must be of length 64
   static String hashTag(String x, String y) {
-    assert(x.length == 64);
-    assert(y.length == 64);
-
     final xPtr = x.toNativeUtf8().cast<Char>();
     final yPtr = y.toNativeUtf8().cast<Char>();
 

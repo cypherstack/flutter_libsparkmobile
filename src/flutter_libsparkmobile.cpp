@@ -369,7 +369,7 @@ const char* hashTag(const char* x, const char* y) {
     secp_primitives::GroupElement tag = secp_primitives::GroupElement(x, y, 16);
     uint256 hash = primitives::GetLTagHash(tag);
     std::string hex = hash.GetHex();
-    char* result = (char*) malloc(sizeof(char) * hex.length());
+    char* result = (char*) malloc(sizeof(char) * (hex.length() + 1));
     strcpy(result, hex.c_str());
     return result;
 }
