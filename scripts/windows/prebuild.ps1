@@ -8,8 +8,8 @@ Push-Location ../..
 git submodule update --init --recursive
 
 # Copy CMakeLists.
-Copy-Item CMakeLists.txt -Destination src/deps/sparkmobile/CMakeLists.txt
-Copy-Item CMakeLists.txt -Destination src/deps/sparkmobile/secp256k1/CMakeLists.txt
+Copy-Item -Path src/deps/CMakeLists/sparkmobile/CMakeLists.txt -Destination src/deps/sparkmobile/
+Copy-Item -Path src/deps/CMakeLists/secp256k1/CMakeLists.txt -Destination src/deps/sparkmobile/secp256k1/
 
 # Return to scripts/windows.
 Pop-Location
