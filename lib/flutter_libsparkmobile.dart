@@ -177,7 +177,12 @@ abstract final class LibSpark {
 
     final serialized = result.ref.context.toUint8List(result.ref.contextLength);
 
-    // TODO frees
+    for (int i = 0; i < inputs.length; i++) {
+      malloc.free(inputsPtr[i].txHash);
+    }
+    malloc.free(inputsPtr);
+    malloc.free(result.ref.context);
+    malloc.free(result);
 
     return serialized;
   }
