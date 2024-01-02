@@ -4,15 +4,16 @@
 #include <stdint.h>
 #include "structs.h"
 
-#ifndef FFI_PLUGIN_EXPORT
 #ifdef __cplusplus
-#define FFI_PLUGIN_EXPORT extern "C" __attribute__((visibility("default"))) __attribute__((used))
-#else
-#define FFI_PLUGIN_EXPORT __attribute__((visibility("default"))) __attribute__((used))
+extern "C" {
 #endif
-#ifdef _WIN32
-#define FFI_PLUGIN_EXPORT __declspec(dllexport)
-#endif
+
+#ifndef FFI_PLUGIN_EXPORT
+    #ifdef _WIN32
+        #define FFI_PLUGIN_EXPORT __declspec(dllexport)
+    #else
+        #define FFI_PLUGIN_EXPORT __attribute__((visibility("default"))) __attribute__((used))
+    #endif
 #endif
 
 FFI_PLUGIN_EXPORT
@@ -100,5 +101,9 @@ struct SparkFeeResult* estimateSparkFee(
         int coinsLength,
         int privateRecipientsLength
 );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //ORG_FIRO_SPARK_DART_INTERFACE_H
