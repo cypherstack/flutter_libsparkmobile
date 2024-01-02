@@ -12,6 +12,10 @@
 
 using namespace spark;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * FFI-friendly wrapper for spark::getAddress.
  *
@@ -423,3 +427,7 @@ SparkFeeResult* estimateSparkFee(
         return result;
     }
 }
+
+#ifdef __cplusplus
+}
+#endif
