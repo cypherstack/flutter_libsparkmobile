@@ -36,7 +36,7 @@ set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717
 add_subdirectory("deps/boost-cmake")
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
-    add_subdirectory("deps/openssl-cmake")
+    add_subdirectory("deps/openssl-cmake" EXCLUDE_FROM_ALL)
 endif()
 
 add_subdirectory("deps/sparkmobile")
