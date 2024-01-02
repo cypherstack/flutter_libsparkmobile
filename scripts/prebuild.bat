@@ -13,7 +13,7 @@ copy src\deps\CMakeLists\secp256k1\CMakeLists.txt src\deps\sparkmobile\secp256k1
 
 :: apply win specific patch
 cd src\deps\sparkmobile
-git apply ..\patches\windows\windows_no_static.patch
+git apply ..\patches\windows\windows_patch.patch
 
 :: Navigate back to scripts.
 cd ..\..\..\scripts
