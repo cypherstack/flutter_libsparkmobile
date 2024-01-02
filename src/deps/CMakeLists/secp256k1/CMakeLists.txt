@@ -16,7 +16,11 @@ else()
 	ADD_DEFINITIONS(-fPIC)
 endif()
 
-LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+	#nothing
+else()
+	LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
+endif()
 
 # TODO: change this to include when possible
 include_directories(. include src/modules/ecdh src)
@@ -73,5 +77,9 @@ endif()
 # TODO: emult static precomputation
 # TODO: ecdh module
 # TODO: RECOVERY module
-TARGET_INCLUDE_DIRECTORIES(secp256k1_spark PUBLIC ${OPENSSL_INCLUDE_DIR})
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+	TARGET_INCLUDE_DIRECTORIES(secp256k1_spark PUBLIC)
+else()
+	TARGET_INCLUDE_DIRECTORIES(secp256k1_spark PUBLIC ${OPENSSL_INCLUDE_DIR})
+endif()
 TARGET_LINK_LIBRARIES(secp256k1_spark ${OPENSSL_LIBRARIES})

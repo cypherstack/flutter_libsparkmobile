@@ -7,11 +7,7 @@ if(BUILD_FOR_SYSTEM_NAME STREQUAL "linux")
 endif()
 
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
-
-SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
-
 set(OPENSSL_USE_STATIC_LIBS TRUE)
-list(APPEND CMAKE_FIND_ROOT_PATH "${OPENSSL_ROOT_DIR}")
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR WIN32)
     #    SET(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/../")
@@ -19,12 +15,14 @@ if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR WIN32)
     #    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}include")
     SET(OPENSSL_LIBRARIES "ssl" "crypto")
 else()
+    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
+    list(APPEND CMAKE_FIND_ROOT_PATH "${OPENSSL_ROOT_DIR}")
+
     find_package(OpenSSL REQUIRED)
+
+    SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
+    LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 endif()
-
-SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
-
-LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
 add_subdirectory(secp256k1)
 
@@ -71,7 +69,11 @@ set_property(SOURCE src/spark.cpp
     src/util.cpp
     PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
 
-LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+    #nothing
+else()
+    LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
+endif()
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "linux" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
     SET(CUSTOM_LIB_TYPE STATIC)
@@ -111,14 +113,18 @@ add_library(sparkmobile ${CUSTOM_LIB_TYPE}
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
     target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark Boost::thread ${log-lib})
+elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+    target_link_libraries(sparkmobile secp256k1_spark Boost::thread ${log-lib})
 else()
     target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark Boost::thread)
 endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${SPARK_MISSING_HEADERS_DIR}")
+elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+    target_include_directories(sparkmobile PUBLIC secp256k1_spark "${SPARK_MISSING_HEADERS_DIR}")
 else()
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
 endif()
