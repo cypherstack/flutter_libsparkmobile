@@ -4,12 +4,16 @@
 @echo on
 
 :: Initialize submodules.
-cd ../..
+cd ..
 git submodule update --init --recursive
 
 :: Copy CMakeLists.
 copy src\deps\CMakeLists\sparkmobile\CMakeLists.txt src\deps\sparkmobile\
 copy src\deps\CMakeLists\secp256k1\CMakeLists.txt src\deps\sparkmobile\secp256k1\
 
-:: Navigate back to scripts/windows.
-cd scripts/windows
+:: apply win specific patch
+cd src\deps\sparkmobile
+git apply ..\patches\windows\windows_no_static.patch
+
+:: Navigate back to scripts.
+cd ..\..\..\scripts
