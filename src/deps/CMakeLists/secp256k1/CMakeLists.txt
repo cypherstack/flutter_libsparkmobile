@@ -16,7 +16,6 @@ else()
 	ADD_DEFINITIONS(-fPIC)
 endif()
 
-
 LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
 
 # TODO: change this to include when possible
@@ -57,7 +56,7 @@ endif()
 
 # Detect if we are on a 32 or 64 bits plateform and chose
 # scalar and filed implementation accordingly
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
 	# 64 bits implementationr require either __int128 or asm support.
 	# TODO: support asm.
 	if(NOT SIZEOF___INT128 EQUAL 16)
@@ -71,10 +70,8 @@ else()
 	target_compile_definitions(secp256k1_spark PUBLIC USE_FIELD_10X26)
 endif()
 
-
 # TODO: emult static precomputation
 # TODO: ecdh module
 # TODO: RECOVERY module
 TARGET_INCLUDE_DIRECTORIES(secp256k1_spark PUBLIC ${OPENSSL_INCLUDE_DIR})
 TARGET_LINK_LIBRARIES(secp256k1_spark ${OPENSSL_LIBRARIES})
-#target_link_libraries(secp256k1_spark ${OPENSSL_LIBRARIES})
