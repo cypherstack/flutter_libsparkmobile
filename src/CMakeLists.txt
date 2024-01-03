@@ -5,8 +5,14 @@ cmake_minimum_required(VERSION 3.10)
 
 project(flutter_libsparkmobile_library VERSION 0.0.1)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos"
+        OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios"
+        OR BUILD_FOR_SYSTEM_NAME STREQUAL "linux"
+        OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
     set(SPARK_USE_OPENSSL_CMAKE TRUE)
+    if(BUILD_FOR_SYSTEM_NAME STREQUAL "linux")
+        ADD_DEFINITIONS(-fPIC)
+    endif()
 else()
     set(SPARK_USE_OPENSSL_CMAKE FALSE)
 endif()
