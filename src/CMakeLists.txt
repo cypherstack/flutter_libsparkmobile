@@ -7,9 +7,7 @@ project(flutter_libsparkmobile_library VERSION 0.0.1)
 
 SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
-    set(CMAKE_CXX_STANDARD 17)
-elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
@@ -37,8 +35,9 @@ set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/
 set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717e47a69")
 add_subdirectory("deps/boost-cmake")
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install CACHE PATH comment FORCE)
-add_subdirectory("deps/openssl-cmake")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+    add_subdirectory("deps/openssl-cmake" EXCLUDE_FROM_ALL)
+endif()
 
 add_subdirectory("deps/sparkmobile")
 

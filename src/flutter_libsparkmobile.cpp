@@ -12,6 +12,10 @@
 
 using namespace spark;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * FFI-friendly wrapper for spark::getAddress.
  *
@@ -305,184 +309,6 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     }
 }
 
-
-FFI_PLUGIN_EXPORT
-GetSparkCoinsResult* getCoinsToSpend(int64_t spendAmount, CCSparkMintMeta* coins, int coinsLength) {
-    try {
-        std::vector<CSparkMintMeta> coinsToSpend_out;
-        int64_t change;
-
-        std::list<CSparkMintMeta> _coins;
-
-        for (int i = 0; i < coinsLength; i++) {
-            CSparkMintMeta meta;
-            meta.nHeight = coins[i].height;
-            meta.nId = coins[i].id;
-            meta.isUsed = coins[i].isUsed > 0;
-            meta.txid = uint256S((const char*)coins[i].txid);
-            meta.i = coins[i].i;
-            meta.d = std::vector<unsigned char>(coins[i].d, coins[i].d + coins[i].dLength);
-            meta.v = coins[i].v;
-            Scalar k;
-            k.SetHex(std::string(coins[i].nonceHex, coins[i].nonceHexLength));
-            meta.k = k;
-            meta.memo = std::string(coins[i].memo, coins[i].memoLength);
-            meta.serial_context = std::vector<unsigned char>(coins[i].serial_context, coins[i].serial_context + coins[i].serial_contextLength);
-            meta.type = coins[i].type;
-            meta.coin = deserializeCoin(coins[i].serializedCoin, coins[i].serializedCoinLength);
-
-            _coins.push_back(meta);
-        }
-
-        CAmount _amount = spendAmount;
-        GetCoinsToSpend(_amount, coinsToSpend_out, _coins, change);
-
-        GetSparkCoinsResult* result = (GetSparkCoinsResult*)malloc(sizeof(GetSparkCoinsResult));
-        result->changeToMint = change;
-        result->length = coinsToSpend_out.size();
-        result->list = (CCSparkMintMeta*)malloc(sizeof(CCSparkMintMeta) * result->length);
-
-        for (int i = 0; i < coinsToSpend_out.size(); i++) {
-            result->list[i].height = coinsToSpend_out[i].nHeight;
-
-            result->list[i].id = coinsToSpend_out[i].nId;
-
-            result->list[i].isUsed = coinsToSpend_out[i].isUsed;
-
-            result->list[i].txid = (unsigned char*)malloc(sizeof(unsigned char*) * coinsToSpend_out[i].txid.size());
-            memcpy(result->list[i].txid, coinsToSpend_out[i].txid.begin(), sizeof(unsigned char) * coinsToSpend_out[i].txid.size());
-
-            result->list[i].i = coinsToSpend_out[i].i;
-
-            result->list[i].dLength = coinsToSpend_out[i].d.size();
-            result->list[i].d = (unsigned char*)malloc(sizeof(unsigned char) * coinsToSpend_out[i].d.size());
-            memcpy(result->list[i].d, coinsToSpend_out[i].d.data(), sizeof(unsigned char) * coinsToSpend_out[i].d.size());
-
-            result->list[i].v = coinsToSpend_out[i].v;
-
-            result->list[i].nonceHexLength = coinsToSpend_out[i].k.GetHex().length();
-            result->list[i].nonceHex = (char*)malloc(sizeof(char) * result->list[i].nonceHexLength);
-            memcpy(result->list[i].nonceHex, coinsToSpend_out[i].k.GetHex().c_str(), sizeof(char) * result->list[i].nonceHexLength);
-
-            result->list[i].memoLength = coinsToSpend_out[i].memo.length();
-            result->list[i].memo = (char*)malloc(sizeof(char) * result->list[i].memoLength);
-            memcpy(result->list[i].memo, coinsToSpend_out[i].memo.c_str(), sizeof(char) * result->list[i].memoLength);
-
-
-            result->list[i].serial_context = (unsigned char*)malloc(sizeof(unsigned char) * coinsToSpend_out[i].serial_context.size());
-            memcpy(result->list[i].serial_context, coinsToSpend_out[i].serial_context.data(), sizeof(unsigned char) * coinsToSpend_out[i].serial_context.size());
-            result->list[i].serial_contextLength = coinsToSpend_out[i].serial_context.size();
-
-            CDataStream coinStream(SER_NETWORK, PROTOCOL_VERSION);
-            coinStream << coinsToSpend_out[i].coin;
-            result->list[i].serializedCoinLength = coinStream.size();
-            result->list[i].serializedCoin = (unsigned char*)malloc(sizeof(unsigned char) * coinStream.size());
-            memcpy(result->list[i].serializedCoin, coinStream.data(), coinStream.size());
-
-            result->list[i].type = coinsToSpend_out[i].type;
-        }
-        result->errorMessageLength = 0; // false/no error
-        return result;
-    } catch (const std::exception& e) {
-        GetSparkCoinsResult *result = (GetSparkCoinsResult*)malloc(sizeof(GetSparkCoinsResult));
-        result->errorMessageLength = strlen(e.what());
-        result->errorMessage = (char*)malloc(sizeof(char) * result->errorMessageLength);
-        memcpy(result->errorMessage, e.what(), result->errorMessageLength);
-
-        return result;
-    }
-}
-
-FFI_PLUGIN_EXPORT
-SelectSparkCoinsResult* selectSparkCoins(
-        int64_t required,
-        int subtractFeeFromAmount,
-        CCSparkMintMeta* coins,
-        int coinsLength,
-        int mintNum
-) {
-    try {
-        std::list<CSparkMintMeta> _coins;
-        for (int i = 0; i < coinsLength; i++) {
-            for (int i = 0; i < coinsLength; i++) {
-                CSparkMintMeta meta;
-                meta.nHeight = coins[i].height;
-                meta.nId = coins[i].id;
-                meta.isUsed = coins[i].isUsed > 0;
-                meta.txid = uint256S((const char*)coins[i].txid);
-                meta.i = coins[i].i;
-                meta.d = std::vector<unsigned char>(coins[i].d, coins[i].d + coins[i].dLength);
-                meta.v = coins[i].v;
-                Scalar k;
-                k.SetHex(std::string(coins[i].nonceHex, coins[i].nonceHexLength));
-                meta.k = k;
-                meta.memo = std::string(coins[i].memo, coins[i].memoLength);
-                meta.serial_context = std::vector<unsigned char>(coins[i].serial_context, coins[i].serial_context + coins[i].serial_contextLength);
-                meta.type = coins[i].type;
-                meta.coin = deserializeCoin(coins[i].serializedCoin, coins[i].serializedCoinLength);
-
-                _coins.push_back(meta);
-            }
-        }
-
-        std::pair<CAmount, std::vector<CSparkMintMeta>> estimated = SelectSparkCoins(required, subtractFeeFromAmount > 0, _coins, mintNum);
-
-        SelectSparkCoinsResult* result = (SelectSparkCoinsResult*)malloc(sizeof(SelectSparkCoinsResult));
-        result->length = estimated.second.size();
-        result->fee = estimated.first;
-        result->list = (CCSparkMintMeta*)malloc(sizeof(CCSparkMintMeta) * result->length);
-
-        for (int i = 0; i < estimated.second.size(); i++) {
-            result->list[i].height = estimated.second[i].nHeight;
-
-            result->list[i].id = estimated.second[i].nId;
-
-            result->list[i].isUsed = estimated.second[i].isUsed;
-
-            result->list[i].txid = (unsigned char*)malloc(sizeof(unsigned char) * estimated.second[i].txid.size());
-            memcpy(result->list[i].txid, estimated.second[i].txid.begin(), sizeof(unsigned char) * estimated.second[i].txid.size());
-
-            result->list[i].i = estimated.second[i].i;
-
-            result->list[i].dLength = estimated.second[i].d.size();
-            result->list[i].d = (unsigned char*)malloc(sizeof(unsigned char) * estimated.second[i].d.size());
-            memcpy(result->list[i].d, estimated.second[i].d.data(), sizeof(unsigned char) * estimated.second[i].d.size());
-
-            result->list[i].v = estimated.second[i].v;
-
-            result->list[i].nonceHexLength = estimated.second[i].k.GetHex().length();
-            result->list[i].nonceHex = (char*)malloc(sizeof(char) * result->list[i].nonceHexLength);
-            memcpy(result->list[i].nonceHex, estimated.second[i].k.GetHex().c_str(), sizeof(char) * result->list[i].nonceHexLength);
-
-            result->list[i].memoLength = estimated.second[i].memo.length();
-            result->list[i].memo = (char*)malloc(sizeof(char) * result->list[i].memoLength);
-            memcpy(result->list[i].memo, estimated.second[i].memo.c_str(), sizeof(char) * result->list[i].memoLength);
-
-
-            result->list[i].serial_context = (unsigned char*)malloc(sizeof(unsigned char) * estimated.second[i].serial_context.size());
-            memcpy(result->list[i].serial_context, estimated.second[i].serial_context.data(), sizeof(unsigned char) * estimated.second[i].serial_context.size());
-            result->list[i].serial_contextLength = estimated.second[i].serial_context.size();
-
-            CDataStream coinStream(SER_NETWORK, PROTOCOL_VERSION);
-            coinStream << estimated.second[i].coin;
-            result->list[i].serializedCoinLength = coinStream.size();
-            result->list[i].serializedCoin = (unsigned char*)malloc(sizeof(unsigned char) * coinStream.size());
-            memcpy(result->list[i].serializedCoin, coinStream.data(), coinStream.size());
-
-            result->list[i].type = estimated.second[i].type;
-        }
-        result->errorMessageLength = 0; // false/no error
-        return result;
-    } catch (const std::exception& e) {
-        SelectSparkCoinsResult *result = (SelectSparkCoinsResult*)malloc(sizeof(SelectSparkCoinsResult));
-        result->errorMessageLength = strlen(e.what());
-        result->errorMessage = (char*)malloc(sizeof(char) * result->errorMessageLength);
-        memcpy(result->errorMessage, e.what(), result->errorMessageLength);
-
-        return result;
-    }
-}
-
 FFI_PLUGIN_EXPORT
 SerializedMintContextResult* serializeMintContext(
         DartInputData* inputs,
@@ -529,7 +355,6 @@ ValidateAddressResult* isValidSparkAddress(
     }
 }
 
-
 FFI_PLUGIN_EXPORT
 const char* hashTags(unsigned char* tags, int tagCount) {
     char* result = (char*) malloc(sizeof(char) * 64 * tagCount);
@@ -540,6 +365,16 @@ const char* hashTags(unsigned char* tags, int tagCount) {
         std::string hex = hash.GetHex();
         memcpy(result + (i * 64), hex.c_str(), 64);
     }
+    return result;
+}
+
+FFI_PLUGIN_EXPORT
+const char* hashTag(const char* x, const char* y) {
+    secp_primitives::GroupElement tag = secp_primitives::GroupElement(x, y, 16);
+    uint256 hash = primitives::GetLTagHash(tag);
+    std::string hex = hash.GetHex();
+    char* result = (char*) malloc(sizeof(char) * (hex.length() + 1));
+    strcpy(result, hex.c_str());
     return result;
 }
 
@@ -592,3 +427,7 @@ SparkFeeResult* estimateSparkFee(
         return result;
     }
 }
+
+#ifdef __cplusplus
+}
+#endif

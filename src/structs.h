@@ -141,26 +141,6 @@ struct CCSparkMintMeta {
     int serializedCoinLength;
 };
 
-struct GetSparkCoinsResult {
-    struct CCSparkMintMeta* list;
-    int length;
-
-    int64_t changeToMint;
-
-    char *errorMessage;
-    int errorMessageLength;
-};
-
-struct SelectSparkCoinsResult {
-    struct CCSparkMintMeta* list;
-    int length;
-
-    int64_t fee;
-
-    char *errorMessage;
-    int errorMessageLength;
-};
-
 /*
  * FFI-friendly wrapper for a spark::CoverSetData.
  *
@@ -174,8 +154,6 @@ struct CCoverSetData {
 
     int setId;
 };
-
-
 
 struct OutputScript {
     unsigned char *bytes;

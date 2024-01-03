@@ -180,4 +180,16 @@ void main() {
       );
     });
   });
+
+  test('hash tag from x and y', () async {
+    const x =
+        '805f27cb4b6b8958587772011606a1fe264eb5cab0140dfc79d53f041d179647';
+    const y =
+        '52e22e74a5b57de0bb661a8116b06de8c3e70dc15a3865dea9a56a0288771c0d';
+
+    expect(
+      LibSpark.hashTag(x, y),
+      '875a3d3fe398ba1084ef68679baa81980ba3448c145afad725a9588c2f7fcfcf',
+    );
+  });
 }
