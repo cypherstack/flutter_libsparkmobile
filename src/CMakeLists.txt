@@ -44,7 +44,7 @@ set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/
 set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717e47a69")
 add_subdirectory("deps/boost-cmake")
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
     add_subdirectory("deps/openssl-cmake" EXCLUDE_FROM_ALL)
 endif()
 
