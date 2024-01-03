@@ -5,6 +5,12 @@ cmake_minimum_required(VERSION 3.10)
 
 project(flutter_libsparkmobile_library VERSION 0.0.1)
 
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+    set(SPARK_USE_OPENSSL_CMAKE TRUE)
+else()
+    set(SPARK_USE_OPENSSL_CMAKE FALSE)
+endif()
+
 SET(SPARK_SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../scripts")
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
     SET(SPARK_PREBUILD_SCRIPT "prebuild.bat")
@@ -20,10 +26,8 @@ if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
-    SET(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}")
-elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
-    SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}")
+if(SPARK_USE_OPENSSL_CMAKE)
+    # nothing
 else()
     SET(OPENSSL_ROOT_DIR "${CMAKE_SOURCE_DIR}/build/${BUILD_FOR_SYSTEM_NAME}/prefix_${ANDROID_ABI}")
 endif()
@@ -44,7 +48,7 @@ set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/
 set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717e47a69")
 add_subdirectory("deps/boost-cmake")
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+if(SPARK_USE_OPENSSL_CMAKE)
     add_subdirectory("deps/openssl-cmake" EXCLUDE_FROM_ALL)
 endif()
 

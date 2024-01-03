@@ -9,10 +9,7 @@ endif()
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR WIN32 OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
-    #    SET(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/../")
-    #    SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}lib")
-    #    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}include")
+if(SPARK_USE_OPENSSL_CMAKE)
     SET(OPENSSL_LIBRARIES "ssl" "crypto")
 else()
     SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
@@ -69,7 +66,7 @@ set_property(SOURCE src/spark.cpp
     src/util.cpp
     PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+if(SPARK_USE_OPENSSL_CMAKE)
     #nothing
 else()
     LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
@@ -121,12 +118,19 @@ endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
-#if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
-    target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${SPARK_MISSING_HEADERS_DIR}")
-elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
-    target_include_directories(sparkmobile PUBLIC secp256k1_spark "${SPARK_MISSING_HEADERS_DIR}")
+if(SPARK_USE_OPENSSL_CMAKE)
+    if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+        target_include_directories(sparkmobile PUBLIC secp256k1_spark "${SPARK_MISSING_HEADERS_DIR}")
+    else()
+        target_include_directories(sparkmobile PUBLIC secp256k1_spark)
+    endif()
 else()
-    target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
+    if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+        target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${SPARK_MISSING_HEADERS_DIR}")
+    else()
+        target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
+    endif()
 endif()
+
+
 
