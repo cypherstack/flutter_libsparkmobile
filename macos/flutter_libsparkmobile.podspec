@@ -18,6 +18,10 @@ A new Flutter project.
   # paths, so Classes contains a forwarder C file that relatively imports
   # `../src/*` so that the C sources can be shared among all target platforms.
   s.source           = { :path => '.' }
+  s.prepare_command = <<-CMD
+    # Add your build script here
+    "./run_build.sh"
+  CMD
   s.vendored_frameworks = 'flutter_libsparkmobile.framework'
   s.dependency 'FlutterMacOS'
 
