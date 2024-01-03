@@ -9,7 +9,7 @@ endif()
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR WIN32)
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR WIN32 OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
     #    SET(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/../")
     #    SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}lib")
     #    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}include")
@@ -69,7 +69,7 @@ set_property(SOURCE src/spark.cpp
     src/util.cpp
     PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
     #nothing
 else()
     LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
@@ -113,7 +113,7 @@ add_library(sparkmobile ${CUSTOM_LIB_TYPE}
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
     target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark Boost::thread ${log-lib})
-elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
     target_link_libraries(sparkmobile secp256k1_spark Boost::thread ${log-lib})
 else()
     target_link_libraries(sparkmobile ${OPENSSL_LIBRARIES} secp256k1_spark Boost::thread)
@@ -121,9 +121,10 @@ endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+#if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${SPARK_MISSING_HEADERS_DIR}")
-elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
+elseif(BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
     target_include_directories(sparkmobile PUBLIC secp256k1_spark "${SPARK_MISSING_HEADERS_DIR}")
 else()
     target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
