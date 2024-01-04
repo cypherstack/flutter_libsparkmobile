@@ -9,17 +9,7 @@ endif()
 set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 
-if(SPARK_USE_OPENSSL_CMAKE)
-    SET(OPENSSL_LIBRARIES "ssl" "crypto")
-else()
-    SET(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
-    list(APPEND CMAKE_FIND_ROOT_PATH "${OPENSSL_ROOT_DIR}")
-
-    find_package(OpenSSL REQUIRED)
-
-    SET(OPENSSL_LIBRARIES_DIR "${OPENSSL_ROOT_DIR}/lib")
-    LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
-endif()
+SET(OPENSSL_LIBRARIES "ssl" "crypto")
 
 add_subdirectory(secp256k1)
 
@@ -65,12 +55,6 @@ set_property(SOURCE src/spark.cpp
     src/transcript.cpp
     src/util.cpp
     PROPERTY COMPILE_FLAGS ${MY_CUSTOM_COMPILE_FLAGS} )
-
-if(SPARK_USE_OPENSSL_CMAKE)
-    #nothing
-else()
-    LINK_DIRECTORIES(${OPENSSL_LIBRARIES_DIR})
-endif()
 
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "linux" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows")
     SET(CUSTOM_LIB_TYPE STATIC)
@@ -118,18 +102,10 @@ endif()
 
 add_dependencies(sparkmobile secp256k1_spark)
 
-if(SPARK_USE_OPENSSL_CMAKE)
-    if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
-        target_include_directories(sparkmobile PUBLIC secp256k1_spark "${SPARK_MISSING_HEADERS_DIR}")
-    else()
-        target_include_directories(sparkmobile PUBLIC secp256k1_spark)
-    endif()
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
+    target_include_directories(sparkmobile PUBLIC secp256k1_spark "${SPARK_MISSING_HEADERS_DIR}")
 else()
-    if(BUILD_FOR_SYSTEM_NAME STREQUAL "ios" OR BUILD_FOR_SYSTEM_NAME STREQUAL "windows" OR BUILD_FOR_SYSTEM_NAME STREQUAL "macos")
-        target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR} "${SPARK_MISSING_HEADERS_DIR}")
-    else()
-        target_include_directories(sparkmobile PUBLIC secp256k1_spark ${OPENSSL_INCLUDE_DIR})
-    endif()
+    target_include_directories(sparkmobile PUBLIC secp256k1_spark)
 endif()
 
 
