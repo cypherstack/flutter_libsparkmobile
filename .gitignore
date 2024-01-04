@@ -25,3 +25,21 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+example/ios/Podfile.lock
+example/macos/Podfile.lock
+
+# Ignore build artifacts.
+macos/flutter_libsparkmobile.framework
+scripts/macos/build
+ios/flutter_libsparkmobile.framework
+scripts/ios/build
+src/deps/sparkmobile/CMakeLists.txt
+src/deps/sparkmobile/secp256k1/CMakeLists.txt
+src/build
