@@ -36,7 +36,8 @@ add_library(flutter_libsparkmobile SHARED
     "transaction.cpp"
 )
 
-set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.zip")
+#set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.zip")
+set(BOOST_URL "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.zip")
 set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717e47a69")
 add_subdirectory("deps/boost-cmake")
 
