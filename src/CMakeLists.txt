@@ -48,7 +48,7 @@ add_subdirectory("deps/sparkmobile")
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     set_target_properties(flutter_libsparkmobile PROPERTIES FRAMEWORK TRUE
         FRAMEWORK_VERSION C
-        MACOSX_FRAMEWORK_IDENTIFIER com.cypherstack.flutter_libsparkmobile
+        MACOSX_FRAMEWORK_IDENTIFIER com.cypherstack.flutterLibsparkmobile
         # "current version" in semantic format in Mach-O binary file
         VERSION 16.4.0
         # "compatibility version" in semantic format in Mach-O binary file
