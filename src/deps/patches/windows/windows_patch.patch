@@ -1,41 +1,48 @@
-Index: src/keys.cpp
+Subject: [PATCH] windows patch
+---
+Index: secp256k1/src/scratch.h
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
-diff --git a/src/keys.cpp b/src/keys.cpp
---- a/src/keys.cpp	(revision 13348a6212b4b20615549e3757a54528460b6c21)
-+++ b/src/keys.cpp	(date 1704235237389)
-@@ -24,8 +24,8 @@
-     std::string prefix1 = "s1_generation";
-     hash256.Write(reinterpret_cast<const unsigned char*>(prefix1.c_str()), prefix1.size());
-     hash256.Write(data.data(), data.size());
--    hash256.Finalize(&result[0]);
--    this->s1.memberFromSeed(&result[0]);
-+    hash256.Finalize(result.data());
-+    this->s1.memberFromSeed(result.data());
+diff --git a/secp256k1/src/scratch.h b/secp256k1/src/scratch.h
+--- a/secp256k1/src/scratch.h	(revision c6297b57ecb63c2f2bddf9f74f7ab9f21e51b453)
++++ b/secp256k1/src/scratch.h	(date 1705352799881)
+@@ -20,20 +20,20 @@
+     const secp256k1_callback* error_callback;
+ } secp256k1_scratch;
  
-     data.clear();
-     result.clear();
-@@ -35,8 +35,8 @@
-     std::string prefix2 = "s2_generation";
-     hash256.Write(reinterpret_cast<const unsigned char*>(prefix2.c_str()), prefix2.size());
-     hash256.Write(data.data(), data.size());
--    hash256.Finalize(&result[0]);
--    this->s2.memberFromSeed(&result[0]);
-+    hash256.Finalize(result.data());
-+    this->s2.memberFromSeed(result.data());
- }
+-static secp256k1_scratch* secp256k1_scratch_create(const secp256k1_callback* error_callback, size_t max_size);
++secp256k1_scratch* secp256k1_scratch_create(const secp256k1_callback* error_callback, size_t max_size);
  
- const Params* SpendKey::get_params() const {
+-static void secp256k1_scratch_destroy(secp256k1_scratch* scratch);
++void secp256k1_scratch_destroy(secp256k1_scratch* scratch);
+ 
+ /** Attempts to allocate a new stack frame with `n` available bytes. Returns 1 on success, 0 on failure */
+-static int secp256k1_scratch_allocate_frame(secp256k1_scratch* scratch, size_t n, size_t objects);
++int secp256k1_scratch_allocate_frame(secp256k1_scratch* scratch, size_t n, size_t objects);
+ 
+ /** Deallocates a stack frame */
+-static void secp256k1_scratch_deallocate_frame(secp256k1_scratch* scratch);
++void secp256k1_scratch_deallocate_frame(secp256k1_scratch* scratch);
+ 
+ /** Returns the maximum allocation the scratch space will allow */
+-static size_t secp256k1_scratch_max_allocation(const secp256k1_scratch* scratch, size_t n_objects);
++size_t secp256k1_scratch_max_allocation(const secp256k1_scratch* scratch, size_t n_objects);
+ 
+ /** Returns a pointer into the most recently allocated frame, or NULL if there is insufficient available space */
+-static void *secp256k1_scratch_alloc(secp256k1_scratch* scratch, size_t n);
++void *secp256k1_scratch_alloc(secp256k1_scratch* scratch, size_t n);
+ 
+ #endif
 Index: secp256k1/src/scratch_impl.h
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/secp256k1/src/scratch_impl.h b/secp256k1/src/scratch_impl.h
---- a/secp256k1/src/scratch_impl.h	(revision 13348a6212b4b20615549e3757a54528460b6c21)
-+++ b/secp256k1/src/scratch_impl.h	(date 1704228680925)
+--- a/secp256k1/src/scratch_impl.h	(revision c6297b57ecb63c2f2bddf9f74f7ab9f21e51b453)
++++ b/secp256k1/src/scratch_impl.h	(date 1705352799897)
 @@ -15,7 +15,7 @@
   * TODO: Determine this at configure time. */
  #define ALIGNMENT 16
@@ -87,38 +94,33 @@ diff --git a/secp256k1/src/scratch_impl.h b/secp256k1/src/scratch_impl.h
      void *ret;
      size_t frame = scratch->frame - 1;
      size = ((size + ALIGNMENT - 1) / ALIGNMENT) * ALIGNMENT;
-Index: secp256k1/src/scratch.h
+Index: src/keys.cpp
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
-diff --git a/secp256k1/src/scratch.h b/secp256k1/src/scratch.h
---- a/secp256k1/src/scratch.h	(revision 13348a6212b4b20615549e3757a54528460b6c21)
-+++ b/secp256k1/src/scratch.h	(date 1704228680925)
-@@ -20,20 +20,20 @@
-     const secp256k1_callback* error_callback;
- } secp256k1_scratch;
+diff --git a/src/keys.cpp b/src/keys.cpp
+--- a/src/keys.cpp	(revision c6297b57ecb63c2f2bddf9f74f7ab9f21e51b453)
++++ b/src/keys.cpp	(date 1705352799893)
+@@ -24,8 +24,8 @@
+     std::string prefix1 = "s1_generation";
+     hash256.Write(reinterpret_cast<const unsigned char*>(prefix1.c_str()), prefix1.size());
+     hash256.Write(data.data(), data.size());
+-    hash256.Finalize(&result[0]);
+-    this->s1.memberFromSeed(&result[0]);
++    hash256.Finalize(result.data());
++    this->s1.memberFromSeed(result.data());
  
--static secp256k1_scratch* secp256k1_scratch_create(const secp256k1_callback* error_callback, size_t max_size);
-+secp256k1_scratch* secp256k1_scratch_create(const secp256k1_callback* error_callback, size_t max_size);
+     data.clear();
+     result.clear();
+@@ -35,8 +35,8 @@
+     std::string prefix2 = "s2_generation";
+     hash256.Write(reinterpret_cast<const unsigned char*>(prefix2.c_str()), prefix2.size());
+     hash256.Write(data.data(), data.size());
+-    hash256.Finalize(&result[0]);
+-    this->s2.memberFromSeed(&result[0]);
++    hash256.Finalize(result.data());
++    this->s2.memberFromSeed(result.data());
+ }
  
--static void secp256k1_scratch_destroy(secp256k1_scratch* scratch);
-+void secp256k1_scratch_destroy(secp256k1_scratch* scratch);
- 
- /** Attempts to allocate a new stack frame with `n` available bytes. Returns 1 on success, 0 on failure */
--static int secp256k1_scratch_allocate_frame(secp256k1_scratch* scratch, size_t n, size_t objects);
-+int secp256k1_scratch_allocate_frame(secp256k1_scratch* scratch, size_t n, size_t objects);
- 
- /** Deallocates a stack frame */
--static void secp256k1_scratch_deallocate_frame(secp256k1_scratch* scratch);
-+void secp256k1_scratch_deallocate_frame(secp256k1_scratch* scratch);
- 
- /** Returns the maximum allocation the scratch space will allow */
--static size_t secp256k1_scratch_max_allocation(const secp256k1_scratch* scratch, size_t n_objects);
-+size_t secp256k1_scratch_max_allocation(const secp256k1_scratch* scratch, size_t n_objects);
- 
- /** Returns a pointer into the most recently allocated frame, or NULL if there is insufficient available space */
--static void *secp256k1_scratch_alloc(secp256k1_scratch* scratch, size_t n);
-+void *secp256k1_scratch_alloc(secp256k1_scratch* scratch, size_t n);
- 
- #endif
+ const Params* SpendKey::get_params() const {
