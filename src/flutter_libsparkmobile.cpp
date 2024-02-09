@@ -265,6 +265,9 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         CAmount cppFee;
         std::vector<std::vector<unsigned char>> cppOutputScripts;
 
+        // used coins
+        std::vector<CSparkMintMeta> spentCoinsOut;
+
         // Call spark::createSparkSpendTransaction.
         createSparkSpendTransaction(
             spendKey,
@@ -278,12 +281,32 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             cppTxHashSig,
             cppFee,
             cppSerializedSpend,
-            cppOutputScripts
+            cppOutputScripts,
+            spentCoinsOut
         );
 
         SparkSpendTransactionResult *result = (SparkSpendTransactionResult*)malloc(sizeof(SparkSpendTransactionResult));
         result->isError = false;
         result->fee = cppFee;
+
+        result->usedCoinsLength = spentCoinsOut.size();
+        result->usedCoins = (UsedCoin*)malloc(sizeof(UsedCoin) * result->usedCoinsLength);
+        for (int i = 0; i < result->usedCoinsLength; i++) {
+            result->usedCoins[i].height = spentCoinsOut[i].nHeight;
+            result->usedCoins[i].groupId = spentCoinsOut[i].nId;
+
+            CDataStream coinStream(SER_NETWORK, PROTOCOL_VERSION);
+            coinStream << spentCoinsOut[i].coin;
+            result->usedCoins[i].serializedCoin = (CCDataStream*)malloc(sizeof(CCDataStream));
+            result->usedCoins[i].serializedCoin->length = coinStream.size();
+            result->usedCoins[i].serializedCoin->data = (unsigned char*)malloc(result->usedCoins[i].serializedCoin->length);
+            memcpy(result->usedCoins[i].serializedCoin->data, coinStream.data(), result->usedCoins[i].serializedCoin->length);
+
+            result->usedCoins[i].serializedCoinContext = (CCDataStream*)malloc(sizeof(CCDataStream));
+            result->usedCoins[i].serializedCoinContext->length = spentCoinsOut[i].serial_context.size();
+            result->usedCoins[i].serializedCoinContext->data = (unsigned char*)malloc(result->usedCoins[i].serializedCoinContext->length);
+            memcpy(result->usedCoins[i].serializedCoinContext->data, spentCoinsOut[i].serial_context.data(), result->usedCoins[i].serializedCoinContext->length);
+        }
 
         result->outputScriptsLength = cppOutputScripts.size();
         result->outputScripts = (OutputScript*)malloc(sizeof(OutputScript) * result->outputScriptsLength);

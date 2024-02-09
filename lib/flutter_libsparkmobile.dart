@@ -268,6 +268,13 @@ abstract final class LibSpark {
     Uint8List serializedSpendPayload,
     List<Uint8List> outputScripts,
     int fee,
+    List<
+        ({
+          String serializedCoin,
+          String serializedCoinContext,
+          int groupId,
+          int height,
+        })> usedCoins,
   }) createSparkSendTransaction({
     required String privateKeyHex,
     int index = 1,
@@ -468,10 +475,41 @@ abstract final class LibSpark {
 
     malloc.free(result.ref.outputScripts);
 
+    final List<
+        ({
+          String serializedCoin,
+          String serializedCoinContext,
+          int groupId,
+          int height,
+        })> usedCoins = [];
+
+    for (int i = 0; i < result.ref.usedCoinsLength; i++) {
+      final coinRef = result.ref.usedCoins[i].serializedCoin.ref;
+      final contextRef = result.ref.usedCoins[i].serializedCoinContext.ref;
+
+      usedCoins.add((
+        serializedCoin:
+            coinRef.data.cast<Utf8>().toDartString(length: coinRef.length),
+        serializedCoinContext: contextRef.data
+            .cast<Utf8>()
+            .toDartString(length: contextRef.length),
+        groupId: result.ref.usedCoins[i].groupId,
+        height: result.ref.usedCoins[i].height,
+      ));
+
+      malloc.free(result.ref.usedCoins[i].serializedCoin.ref.data);
+      malloc.free(result.ref.usedCoins[i].serializedCoin);
+      malloc.free(result.ref.usedCoins[i].serializedCoinContext.ref.data);
+      malloc.free(result.ref.usedCoins[i].serializedCoinContext);
+    }
+
+    malloc.free(result.ref.usedCoins);
+
     return (
       serializedSpendPayload: messageBytes,
       fee: fee,
-      outputScripts: scripts
+      outputScripts: scripts,
+      usedCoins: usedCoins,
     );
   }
 
