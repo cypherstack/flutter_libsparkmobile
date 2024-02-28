@@ -488,11 +488,8 @@ abstract final class LibSpark {
       final contextRef = result.ref.usedCoins[i].serializedCoinContext.ref;
 
       usedCoins.add((
-        serializedCoin:
-            coinRef.data.cast<Utf8>().toDartString(length: coinRef.length),
-        serializedCoinContext: contextRef.data
-            .cast<Utf8>()
-            .toDartString(length: contextRef.length),
+        serializedCoin: coinRef.data.toBase64(coinRef.length),
+        serializedCoinContext: contextRef.data.toBase64(contextRef.length),
         groupId: result.ref.usedCoins[i].groupId,
         height: result.ref.usedCoins[i].height,
       ));
@@ -671,6 +668,11 @@ extension on Pointer<UnsignedChar> {
   Uint8List toUint8List(int length) {
     // TODO needs free?
     return Uint8List.fromList(cast<Uint8>().asTypedList(length));
+  }
+
+  String toBase64(int length) {
+    Uint8List data = this.toUint8List(length);
+    return base64.encode(data);
   }
 }
 
