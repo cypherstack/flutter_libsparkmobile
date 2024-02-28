@@ -572,11 +572,28 @@ final class SparkSpendTransactionResult extends ffi.Struct {
   @ffi.Int()
   external int outputScriptsLength;
 
+  external ffi.Pointer<UsedCoin> usedCoins;
+
+  @ffi.Int()
+  external int usedCoinsLength;
+
   @ffi.Int64()
   external int fee;
 
   @ffi.Int()
   external int isError;
+}
+
+final class UsedCoin extends ffi.Struct {
+  external ffi.Pointer<CCDataStream> serializedCoin;
+
+  external ffi.Pointer<CCDataStream> serializedCoinContext;
+
+  @ffi.Int()
+  external int groupId;
+
+  @ffi.Int()
+  external int height;
 }
 
 final class DartInputData extends ffi.Struct {
