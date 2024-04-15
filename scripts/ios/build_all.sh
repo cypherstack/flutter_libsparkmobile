@@ -21,7 +21,8 @@ cmake ../../../src \
   -G Xcode \
   -DPLATFORM=OS64COMBINED \
 -DBUILD_FOR_SYSTEM_NAME="ios" \
--DCMAKE_TOOLCHAIN_FILE=${IOS_TOOLCHAIN_ROOT}/ios.toolchain.cmake
+-DCMAKE_TOOLCHAIN_FILE=${IOS_TOOLCHAIN_ROOT}/ios.toolchain.cmake \
+-DCMAKE_CXX_FLAGS="--std=c++17 -D_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES"
 cmake --build . --config Debug
 cmake --install . --config Debug
 cd Debug-iphoneos
