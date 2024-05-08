@@ -27,4 +27,6 @@ cmake --build . --config Debug
 cmake --install . --config Debug
 cd Debug-iphoneos
 
+plutil -replace CFBundleShortVersionString -string "0.0.1" ./flutter_libsparkmobile.framework/Info.plist
+plutil -replace CFBundleVersion -string "1" ./flutter_libsparkmobile.framework/Info.plist
 cp -R flutter_libsparkmobile.framework "${PROJECT_ROOT_DIR}/ios/"
