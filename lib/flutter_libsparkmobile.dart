@@ -550,9 +550,9 @@ abstract final class LibSpark {
     }
   }
 
-  static Set<String> hashTags({required Set<String> base64Tags}) {
+  static List<String> hashTags({required Iterable<String> base64Tags}) {
     if (base64Tags.isEmpty) {
-      return {};
+      return [];
     }
 
     final bytes = Uint8List.fromList(
@@ -564,11 +564,17 @@ abstract final class LibSpark {
       base64Tags.length,
     );
 
-    final Set<String> hashes = {};
+    final List<String> hashes = [];
 
     for (int i = 0; i < base64Tags.length; i++) {
-      final hash =
-          result.elementAt(i * 64).cast<Utf8>().toDartString(length: 64);
+      final hash = result
+          .elementAt(
+            i * 64,
+          )
+          .cast<Utf8>()
+          .toDartString(
+            length: 64,
+          );
       hashes.add(hash);
     }
 

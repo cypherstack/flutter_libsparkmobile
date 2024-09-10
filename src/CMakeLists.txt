@@ -38,8 +38,9 @@ add_library(flutter_libsparkmobile SHARED
 )
 
 #set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.zip" CACHE STRING "Boost download URL")
-set(BOOST_URL "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.zip" CACHE STRING "Boost download URL")
-set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717e47a69" CACHE STRING "Boost download URL SHA256 checksum")
+set(BOOST_URL "https://static.mrcyjanek.net/stack_wallet/boost_1_71_0-patched.zip" CACHE STRING "Boost download URL")
+set(BOOST_URL_SHA256 "146c53f3c1d73f18f3958bd008016d071ccd9b546922dc6b682bdf9b60460934" CACHE STRING "Boost download URL SHA256 checksum")
+add_definitions(-DBOOST_THREAD_USES_GETPAGESIZE)
 add_subdirectory("deps/boost-cmake")
 
 add_subdirectory("deps/openssl-cmake" EXCLUDE_FROM_ALL)
