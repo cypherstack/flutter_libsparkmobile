@@ -4,30 +4,35 @@ group 'com.cypherstack.flutter_libsparkmobile'
 version '1.0'
 
 buildscript {
+    ext.kotlin_version = "1.8.22"
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        // The Android Gradle Plugin knows how to build native code with the NDK.
-        classpath 'com.android.tools.build:gradle:7.3.0'
+        classpath("com.android.tools.build:gradle:8.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }
 
-rootProject.allprojects {
+allprojects {
     repositories {
         google()
         mavenCentral()
     }
 }
 
-apply plugin: 'com.android.library'
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
 
 android {
-    // Bumping the plugin compileSdkVersion requires all clients of this plugin
-    // to bump the version in their app.
-    compileSdkVersion 31
+    if (project.android.hasProperty("namespace")) {
+        namespace = "com.cypherstack.flutter_libsparkmobile"
+    }
+
+    compileSdk = 34
 
     // Bumping the plugin ndkVersion requires all clients of this plugin to bump
     // the version in their app and to download a newer version of the NDK.
@@ -50,12 +55,21 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
     }
 
     defaultConfig {
-        minSdkVersion 21
+        minSdk = 21
         ndkVersion = "21.1.6352462"
 
         externalNativeBuild {
@@ -63,6 +77,23 @@ android {
                 arguments "-DBUILD_FOR_SYSTEM_NAME=android", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang -v"
                 cppFlags "-frtti -fexceptions -v -DANDROID -std=c++17"
                 abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+    }
+
+    dependencies {
+        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.mockito:mockito-core:5.0.0")
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+
+            testLogging {
+                events "passed", "skipped", "failed", "standardOut", "standardError"
+                outputs.upToDateWhen {false}
+                showStandardStreams = true
             }
         }
     }
