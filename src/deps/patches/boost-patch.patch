@@ -1,0 +1,27 @@
+Subject: [PATCH] boost-patch
+---
+Index: CMakeLists.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	(revision 40cb41d86eab0d7fdc18af4b04b733f8cc852d2a)
++++ b/CMakeLists.txt	(date 1732142456631)
+@@ -21,6 +21,16 @@
+   set(BOOST_SOURCE ${boost_SOURCE_DIR})
+ endif()
+ 
++set(SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../thread_data.hpp")
++set(DESTINATION_DIR "${BOOST_SOURCE}/boost/thread/pthread")
++set(DESTINATION_FILE "${BOOST_SOURCE}/boost/thread/pthread/thread_data.hpp")
++if(EXISTS "${DESTINATION_FILE}")
++  message(STATUS "Removing: ${DESTINATION_FILE}")
++  file(REMOVE "${DESTINATION_FILE}")
++endif()
++message(STATUS "Copying: ${SOURCE_FILE} to ${DESTINATION_DIR}")
++file(COPY ${SOURCE_FILE} DESTINATION ${DESTINATION_DIR})
++
+ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+ include(CheckBoostVersion)
+ 
