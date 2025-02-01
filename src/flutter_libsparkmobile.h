@@ -102,6 +102,9 @@ struct SparkFeeResult* estimateSparkFee(
         int privateRecipientsLength
 );
 
+FFI_PLUGIN_EXPORT
+void native_free(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

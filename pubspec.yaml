@@ -1,11 +1,11 @@
 name: flutter_libsparkmobile
 description: Flutter Sparkmobile ffi wrapper
-version: 0.0.1
-homepage:
+version: 0.0.2
+homepage: none
 
 environment:
-  sdk: '>=3.0.6 <4.0.0'
-  flutter: ">=3.3.0"
+  sdk: '>=3.6.1 <4.0.0'
+  flutter: ">=3.27.3"
 
 dependencies:
   ffi: ^2.1.0
