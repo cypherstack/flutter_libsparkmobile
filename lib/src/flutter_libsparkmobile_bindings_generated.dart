@@ -298,6 +298,20 @@ final class FlutterLibsparkmobileBindings {
   late final _estimateSparkFee = _estimateSparkFeePtr.asFunction<
       ffi.Pointer<SparkFeeResult> Function(ffi.Pointer<ffi.UnsignedChar>, int,
           int, int, ffi.Pointer<DartSpendCoinData>, int, int)>();
+
+  void native_free(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _native_free(
+      ptr,
+    );
+  }
+
+  late final _native_freePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'native_free');
+  late final _native_free =
+      _native_freePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 }
 
 /// FFI-friendly wrapper for a spark::Coin.

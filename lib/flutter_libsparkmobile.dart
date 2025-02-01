@@ -2,14 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_libsparkmobile/src/extensions.dart';
+import 'package:flutter_libsparkmobile/src/logging.dart';
 import 'package:flutter_libsparkmobile/src/models/spark_coin.dart';
 
 import 'src/flutter_libsparkmobile_bindings_generated.dart';
 
+export 'src/logging.dart';
 export 'src/models/spark_coin.dart';
 
 const kSparkChain = 0x6;
@@ -35,9 +37,14 @@ final DynamicLibrary _dylib = () {
   throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
 }();
 
+bool get enableTraceLogging =>
+    Log.onLog != null && Log.levels.contains(LoggingLevel.trace);
+
 abstract final class LibSpark {
   static final FlutterLibsparkmobileBindings _bindings =
       FlutterLibsparkmobileBindings(_dylib);
+
+  static int _id = 0;
 
   // SparkMobileBindings methods:
 
@@ -48,39 +55,51 @@ abstract final class LibSpark {
     required int diversifier,
     bool isTestNet = false,
   }) async {
-    if (index < 0) {
-      throw Exception("Index must not be negative.");
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
+    try {
+      if (index < 0) {
+        throw Exception("Index must not be negative.");
+      }
 
-    if (diversifier < 0) {
-      throw Exception("Diversifier must not be negative.");
-    }
+      if (diversifier < 0) {
+        throw Exception("Diversifier must not be negative.");
+      }
 
-    if (privateKey.length != 32) {
-      throw Exception(
-        "Invalid private key length: ${privateKey.length}. Must be 32 bytes.",
+      if (privateKey.length != 32) {
+        throw Exception(
+          "Invalid private key length: ${privateKey.length}. Must be 32 bytes.",
+        );
+      }
+
+      final keyDataPointer = privateKey.unsignedCharPointer();
+
+      final addressPointer = _bindings.getAddress(
+        keyDataPointer,
+        index,
+        diversifier,
+        isTestNet ? 1 : 0,
       );
+
+      final addressString = addressPointer.cast<Utf8>().toDartString();
+
+      freeDart(keyDataPointer);
+      freeNative(addressPointer);
+
+      return addressString;
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
-
-    // Allocate memory for the hex string on the native heap.
-    final keyDataPointer = privateKey.unsignedCharPointer();
-
-    // Call the native method with the pointer.
-    final addressPointer = _bindings.getAddress(
-      keyDataPointer,
-      index,
-      diversifier,
-      isTestNet ? 1 : 0,
-    );
-
-    // Convert the Pointer<Char> to a Dart String.
-    final addressString = addressPointer.cast<Utf8>().toDartString();
-
-    // Free the native heap allocated memory.
-    malloc.free(keyDataPointer);
-    malloc.free(addressPointer);
-
-    return addressString;
   }
 
   ///
@@ -96,95 +115,130 @@ abstract final class LibSpark {
     required final Uint8List context,
     final bool isTestNet = false,
   }) {
-    // take sublist as tx hash is also appended here for some reason
-    final b64CoinDecoded = base64Decode(serializedCoin).sublist(0, 244);
-
-    final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
-    final privateKeyPtr =
-        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
-    final contextPtr = context.unsignedCharPointer();
-
-    final result = _bindings.idAndRecoverCoin(
-      serializedCoinPtr,
-      b64CoinDecoded.length,
-      privateKeyPtr,
-      index,
-      contextPtr,
-      context.length,
-      isTestNet ? 1 : 0,
-    );
-
-    malloc.free(serializedCoinPtr);
-    malloc.free(privateKeyPtr);
-    malloc.free(contextPtr);
-
-    if (result.address == nullptr.address) {
-      return null;
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
 
-    final LibSparkCoinType coinType;
-    switch (result.ref.type) {
-      case 0:
-        coinType = LibSparkCoinType.mint;
-        break;
-      case 1:
-        coinType = LibSparkCoinType.mint;
-        break;
-      default:
-        throw Exception("Unknown coin type \"${result.ref.type}\" found.");
+    try {
+      // take sublist as tx hash is also appended here for some reason
+      final b64CoinDecoded = base64Decode(serializedCoin).sublist(0, 244);
+
+      final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
+      final privateKeyPtr =
+          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+      final contextPtr = context.unsignedCharPointer();
+
+      final result = _bindings.idAndRecoverCoin(
+        serializedCoinPtr,
+        b64CoinDecoded.length,
+        privateKeyPtr,
+        index,
+        contextPtr,
+        context.length,
+        isTestNet ? 1 : 0,
+      );
+
+      freeDart(serializedCoinPtr);
+      freeDart(privateKeyPtr);
+      freeDart(contextPtr);
+
+      if (result.address == nullptr.address) {
+        return null;
+      }
+
+      final LibSparkCoinType coinType;
+      switch (result.ref.type) {
+        case 0:
+          coinType = LibSparkCoinType.mint;
+          break;
+        case 1:
+          coinType = LibSparkCoinType.mint;
+          break;
+        default:
+          throw Exception("Unknown coin type \"${result.ref.type}\" found.");
+      }
+
+      final ret = LibSparkCoin(
+        type: coinType,
+        nonceHex: result.ref.nonceHex
+            .cast<Utf8>()
+            .toDartString(length: result.ref.nonceHexLength),
+        address: result.ref.address.cast<Utf8>().toDartString(),
+        value: BigInt.from(result.ref.value),
+        memo: result.ref.memo.cast<Utf8>().toDartString(),
+        diversifier: BigInt.from(result.ref.diversifier),
+        encryptedDiversifier: result.ref.encryptedDiversifier
+            .toUint8List(result.ref.encryptedDiversifierLength),
+        serial: result.ref.serial.toUint8List(result.ref.serialLength),
+        lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
+      );
+
+      freeNative(result.ref.address);
+      freeNative(result.ref.memo);
+      freeNative(result.ref.lTagHash);
+      freeNative(result.ref.encryptedDiversifier);
+      freeNative(result.ref.nonceHex);
+      freeNative(result.ref.serial);
+      freeNative(result);
+
+      return ret;
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
-
-    final ret = LibSparkCoin(
-      type: coinType,
-      nonceHex: result.ref.nonceHex
-          .cast<Utf8>()
-          .toDartString(length: result.ref.nonceHexLength),
-      address: result.ref.address.cast<Utf8>().toDartString(),
-      value: BigInt.from(result.ref.value),
-      memo: result.ref.memo.cast<Utf8>().toDartString(),
-      diversifier: BigInt.from(result.ref.diversifier),
-      encryptedDiversifier: result.ref.encryptedDiversifier
-          .toUint8List(result.ref.encryptedDiversifierLength),
-      serial: result.ref.serial.toUint8List(result.ref.serialLength),
-      lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
-    );
-
-    malloc.free(result.ref.address);
-    malloc.free(result.ref.memo);
-    malloc.free(result.ref.lTagHash);
-    malloc.free(result.ref.encryptedDiversifier);
-    malloc.free(result.ref.nonceHex);
-    malloc.free(result.ref.serial);
-    malloc.free(result);
-
-    return ret;
   }
 
   static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
-    final inputsPtr =
-        malloc.allocate<DartInputData>(sizeOf<DartInputData>() * inputs.length);
-
-    for (int i = 0; i < inputs.length; i++) {
-      final hash =
-          Uint8List.fromList(inputs[i].$1.to32BytesFromHex().reversed.toList());
-
-      inputsPtr[i].txHashLength = hash.length;
-      inputsPtr[i].txHash = hash.unsignedCharPointer();
-      inputsPtr[i].vout = inputs[i].$2;
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
 
-    final result = _bindings.serializeMintContext(inputsPtr, inputs.length);
+    try {
+      final inputsPtr = malloc
+          .allocate<DartInputData>(sizeOf<DartInputData>() * inputs.length);
 
-    final serialized = result.ref.context.toUint8List(result.ref.contextLength);
+      for (int i = 0; i < inputs.length; i++) {
+        final hash = Uint8List.fromList(
+            inputs[i].$1.to32BytesFromHex().reversed.toList());
 
-    for (int i = 0; i < inputs.length; i++) {
-      malloc.free(inputsPtr[i].txHash);
+        inputsPtr[i].txHashLength = hash.length;
+        inputsPtr[i].txHash = hash.unsignedCharPointer();
+        inputsPtr[i].vout = inputs[i].$2;
+      }
+
+      final result = _bindings.serializeMintContext(inputsPtr, inputs.length);
+
+      final serialized =
+          result.ref.context.toUint8List(result.ref.contextLength);
+
+      for (int i = 0; i < inputs.length; i++) {
+        freeDart(inputsPtr[i].txHash);
+      }
+      freeDart(inputsPtr);
+      freeNative(result.ref.context);
+      freeNative(result);
+
+      return serialized;
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
-    malloc.free(inputsPtr);
-    malloc.free(result.ref.context);
-    malloc.free(result);
-
-    return serialized;
   }
 
   ///
@@ -202,61 +256,78 @@ abstract final class LibSpark {
     required Uint8List serialContext,
     bool generate = false,
   }) {
-    final outputsPtr = malloc
-        .allocate<CMintedCoinData>(sizeOf<CMintedCoinData>() * outputs.length);
-
-    for (int i = 0; i < outputs.length; i++) {
-      outputsPtr[i].value = outputs[i].value;
-      outputsPtr[i].address =
-          outputs[i].sparkAddress.toNativeUtf8().cast<Char>();
-      outputsPtr[i].memo = outputs[i].memo.toNativeUtf8().cast<Char>();
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
 
-    final serialContextPtr = serialContext.unsignedCharPointer();
+    try {
+      final outputsPtr = malloc.allocate<CMintedCoinData>(
+          sizeOf<CMintedCoinData>() * outputs.length);
 
-    final result = _bindings.cCreateSparkMintRecipients(
-      outputsPtr,
-      outputs.length,
-      serialContextPtr,
-      serialContext.length,
-      generate ? 1 : 0,
-    );
-
-    if (result.address == nullptr.address) {
       for (int i = 0; i < outputs.length; i++) {
-        malloc.free(outputsPtr[i].address);
-        malloc.free(outputsPtr[i].memo);
+        outputsPtr[i].value = outputs[i].value;
+        outputsPtr[i].address =
+            outputs[i].sparkAddress.toNativeUtf8().cast<Char>();
+        outputsPtr[i].memo = outputs[i].memo.toNativeUtf8().cast<Char>();
       }
-      malloc.free(outputsPtr);
-      throw Exception("createSparkMintRecipients() FFI call returned null!");
+
+      final serialContextPtr = serialContext.unsignedCharPointer();
+
+      final result = _bindings.cCreateSparkMintRecipients(
+        outputsPtr,
+        outputs.length,
+        serialContextPtr,
+        serialContext.length,
+        generate ? 1 : 0,
+      );
+
+      if (result.address == nullptr.address) {
+        for (int i = 0; i < outputs.length; i++) {
+          freeDart(outputsPtr[i].address);
+          freeDart(outputsPtr[i].memo);
+        }
+        freeDart(outputsPtr);
+        throw Exception("createSparkMintRecipients() FFI call returned null!");
+      }
+
+      final List<
+          ({
+            Uint8List scriptPubKey,
+            int amount,
+            bool subtractFeeFromAmount,
+          })> ret = [];
+
+      for (int i = 0; i < result.ref.length; i++) {
+        final d = result.ref.list[i];
+        ret.add((
+          scriptPubKey: d.pubKey.toUint8List(d.pubKeyLength),
+          amount: d.cAmount,
+          subtractFeeFromAmount: d.subtractFee > 0,
+        ));
+        freeNative(d.pubKey);
+      }
+
+      freeNative(result.ref.list);
+      freeNative(result);
+      for (int i = 0; i < outputs.length; i++) {
+        freeDart(outputsPtr[i].address);
+        freeDart(outputsPtr[i].memo);
+      }
+      freeDart(outputsPtr);
+
+      return ret;
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
-
-    final List<
-        ({
-          Uint8List scriptPubKey,
-          int amount,
-          bool subtractFeeFromAmount,
-        })> ret = [];
-
-    for (int i = 0; i < result.ref.length; i++) {
-      final d = result.ref.list[i];
-      ret.add((
-        scriptPubKey: d.pubKey.toUint8List(d.pubKeyLength),
-        amount: d.cAmount,
-        subtractFeeFromAmount: d.subtractFee > 0,
-      ));
-      malloc.free(d.pubKey);
-    }
-
-    malloc.free(result.ref.list);
-    malloc.free(result);
-    for (int i = 0; i < outputs.length; i++) {
-      malloc.free(outputsPtr[i].address);
-      malloc.free(outputsPtr[i].memo);
-    }
-    malloc.free(outputsPtr);
-
-    return ret;
   }
 
   ///
@@ -311,284 +382,351 @@ abstract final class LibSpark {
         idAndBlockHashes,
     required Uint8List txHash,
   }) {
-    final privateKeyPtr =
-        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
-
-    final recipientsPtr =
-        malloc.allocate<CRecip>(sizeOf<CRecip>() * recipients.length);
-    for (int i = 0; i < recipients.length; i++) {
-      recipientsPtr[i].amount = recipients[i].amount;
-      recipientsPtr[i].subtractFee =
-          recipients[i].subtractFeeFromAmount ? 1 : 0;
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
 
-    final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
-        sizeOf<COutputRecipient>() * recipients.length);
-    for (int i = 0; i < privateRecipients.length; i++) {
-      privateRecipientsPtr[i].subtractFee =
-          privateRecipients[i].subtractFeeFromAmount ? 1 : 0;
+    try {
+      final privateKeyPtr =
+          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
-      privateRecipientsPtr[i].output =
-          malloc.allocate<COutputCoinData>(sizeOf<COutputCoinData>());
-      privateRecipientsPtr[i].output.ref.value = privateRecipients[i].amount;
-      privateRecipientsPtr[i].output.ref.memoLength =
-          privateRecipients[i].memo.length;
-      privateRecipientsPtr[i].output.ref.memo =
-          privateRecipients[i].memo.toNativeUtf8().cast<Char>();
-      privateRecipientsPtr[i].output.ref.addressLength =
-          privateRecipients[i].sparkAddress.length;
-      privateRecipientsPtr[i].output.ref.address =
-          privateRecipients[i].sparkAddress.toNativeUtf8().cast<Char>();
-    }
+      final recipientsPtr =
+          malloc.allocate<CRecip>(sizeOf<CRecip>() * recipients.length);
+      for (int i = 0; i < recipients.length; i++) {
+        recipientsPtr[i].amount = recipients[i].amount;
+        recipientsPtr[i].subtractFee =
+            recipients[i].subtractFeeFromAmount ? 1 : 0;
+      }
 
-    final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
-        sizeOf<DartSpendCoinData>() * serializedCoins.length);
-    for (int i = 0; i < serializedCoins.length; i++) {
-      final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
-      serializedCoinsPtr[i].serializedCoin =
-          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
-      serializedCoinsPtr[i].serializedCoin.ref.data =
-          b64CoinDecoded.unsignedCharPointer();
-      serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
+      final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
+          sizeOf<COutputRecipient>() * recipients.length);
+      for (int i = 0; i < privateRecipients.length; i++) {
+        privateRecipientsPtr[i].subtractFee =
+            privateRecipients[i].subtractFeeFromAmount ? 1 : 0;
 
-      final b64ContextDecoded =
-          base64Decode(serializedCoins[i].serializedCoinContext);
-      serializedCoinsPtr[i].serializedCoinContext =
-          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
-      serializedCoinsPtr[i].serializedCoinContext.ref.data =
-          b64ContextDecoded.unsignedCharPointer();
-      serializedCoinsPtr[i].serializedCoinContext.ref.length =
-          b64ContextDecoded.length;
+        privateRecipientsPtr[i].output =
+            malloc.allocate<COutputCoinData>(sizeOf<COutputCoinData>());
+        privateRecipientsPtr[i].output.ref.value = privateRecipients[i].amount;
+        privateRecipientsPtr[i].output.ref.memoLength =
+            privateRecipients[i].memo.length;
+        privateRecipientsPtr[i].output.ref.memo =
+            privateRecipients[i].memo.toNativeUtf8().cast<Char>();
+        privateRecipientsPtr[i].output.ref.addressLength =
+            privateRecipients[i].sparkAddress.length;
+        privateRecipientsPtr[i].output.ref.address =
+            privateRecipients[i].sparkAddress.toNativeUtf8().cast<Char>();
+      }
 
-      serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
-      serializedCoinsPtr[i].height = serializedCoins[i].height;
-    }
-
-    final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
-        sizeOf<CCoverSetData>() * allAnonymitySets.length);
-    for (int i = 0; i < allAnonymitySets.length; i++) {
-      coverSetDataAllPtr[i].setId = allAnonymitySets[i].setId;
-
-      coverSetDataAllPtr[i].cover_set = malloc.allocate<CCDataStream>(
-          sizeOf<CCDataStream>() * allAnonymitySets[i].set.length);
-      coverSetDataAllPtr[i].cover_setLength = allAnonymitySets[i].set.length;
-
-      for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
-        final b64CoinDecoded =
-            base64Decode(allAnonymitySets[i].set[j].serializedCoin);
-        coverSetDataAllPtr[i].cover_set[j].length = b64CoinDecoded.length;
-        coverSetDataAllPtr[i].cover_set[j].data =
+      final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
+          sizeOf<DartSpendCoinData>() * serializedCoins.length);
+      for (int i = 0; i < serializedCoins.length; i++) {
+        final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
+        serializedCoinsPtr[i].serializedCoin =
+            malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+        serializedCoinsPtr[i].serializedCoin.ref.data =
             b64CoinDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
+
+        final b64ContextDecoded =
+            base64Decode(serializedCoins[i].serializedCoinContext);
+        serializedCoinsPtr[i].serializedCoinContext =
+            malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+        serializedCoinsPtr[i].serializedCoinContext.ref.data =
+            b64ContextDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoinContext.ref.length =
+            b64ContextDecoded.length;
+
+        serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
+        serializedCoinsPtr[i].height = serializedCoins[i].height;
       }
 
-      final setHash = base64Decode(allAnonymitySets[i].setHash);
-      coverSetDataAllPtr[i].cover_set_representation =
-          setHash.unsignedCharPointer();
-      coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
-    }
+      final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
+          sizeOf<CCoverSetData>() * allAnonymitySets.length);
+      for (int i = 0; i < allAnonymitySets.length; i++) {
+        coverSetDataAllPtr[i].setId = allAnonymitySets[i].setId;
 
-    final idAndBlockHashesPtr = malloc.allocate<BlockHashAndId>(
-        sizeOf<BlockHashAndId>() * idAndBlockHashes.length);
-    for (int i = 0; i < idAndBlockHashes.length; i++) {
-      assert(idAndBlockHashes[i].blockHash.length == 32);
-      idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
-      idAndBlockHashesPtr[i].hash =
-          idAndBlockHashes[i].blockHash.unsignedCharPointer();
-    }
+        coverSetDataAllPtr[i].cover_set = malloc.allocate<CCDataStream>(
+            sizeOf<CCDataStream>() * allAnonymitySets[i].set.length);
+        coverSetDataAllPtr[i].cover_setLength = allAnonymitySets[i].set.length;
 
-    final txHashPtr = txHash.unsignedCharPointer();
+        for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
+          final b64CoinDecoded =
+              base64Decode(allAnonymitySets[i].set[j].serializedCoin);
+          coverSetDataAllPtr[i].cover_set[j].length = b64CoinDecoded.length;
+          coverSetDataAllPtr[i].cover_set[j].data =
+              b64CoinDecoded.unsignedCharPointer();
+        }
 
-    final result = _bindings.cCreateSparkSpendTransaction(
-      privateKeyPtr,
-      index,
-      recipientsPtr,
-      recipients.length,
-      privateRecipientsPtr,
-      privateRecipients.length,
-      serializedCoinsPtr,
-      serializedCoins.length,
-      coverSetDataAllPtr,
-      allAnonymitySets.length,
-      idAndBlockHashesPtr,
-      idAndBlockHashes.length,
-      txHashPtr,
-    );
-
-    malloc.free(privateKeyPtr);
-    malloc.free(recipientsPtr);
-
-    for (int i = 0; i < privateRecipients.length; i++) {
-      malloc.free(privateRecipientsPtr[i].output.ref.memo);
-      malloc.free(privateRecipientsPtr[i].output.ref.address);
-      malloc.free(privateRecipientsPtr[i].output);
-    }
-    malloc.free(privateRecipientsPtr);
-
-    for (int i = 0; i < serializedCoins.length; i++) {
-      malloc.free(serializedCoinsPtr[i].serializedCoinContext.ref.data);
-      malloc.free(serializedCoinsPtr[i].serializedCoinContext);
-      malloc.free(serializedCoinsPtr[i].serializedCoin.ref.data);
-      malloc.free(serializedCoinsPtr[i].serializedCoin);
-    }
-    malloc.free(serializedCoinsPtr);
-
-    for (int i = 0; i < allAnonymitySets.length; i++) {
-      for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
-        malloc.free(coverSetDataAllPtr[i].cover_set[j].data);
+        final setHash = base64Decode(allAnonymitySets[i].setHash);
+        coverSetDataAllPtr[i].cover_set_representation =
+            setHash.unsignedCharPointer();
+        coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
       }
-      malloc.free(coverSetDataAllPtr[i].cover_set);
-      malloc.free(coverSetDataAllPtr[i].cover_set_representation);
-    }
-    malloc.free(coverSetDataAllPtr);
 
-    for (int i = 0; i < idAndBlockHashes.length; i++) {
-      malloc.free(idAndBlockHashesPtr[i].hash);
-    }
-    malloc.free(idAndBlockHashesPtr);
+      final idAndBlockHashesPtr = malloc.allocate<BlockHashAndId>(
+          sizeOf<BlockHashAndId>() * idAndBlockHashes.length);
+      for (int i = 0; i < idAndBlockHashes.length; i++) {
+        assert(idAndBlockHashes[i].blockHash.length == 32);
+        idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
+        idAndBlockHashesPtr[i].hash =
+            idAndBlockHashes[i].blockHash.unsignedCharPointer();
+      }
 
-    malloc.free(txHashPtr);
+      final txHashPtr = txHash.unsignedCharPointer();
 
-    if (result.address == nullptr.address) {
-      throw Exception(
-        "createSparkSendTransaction() failed for an unknown reason",
+      final result = _bindings.cCreateSparkSpendTransaction(
+        privateKeyPtr,
+        index,
+        recipientsPtr,
+        recipients.length,
+        privateRecipientsPtr,
+        privateRecipients.length,
+        serializedCoinsPtr,
+        serializedCoins.length,
+        coverSetDataAllPtr,
+        allAnonymitySets.length,
+        idAndBlockHashesPtr,
+        idAndBlockHashes.length,
+        txHashPtr,
       );
+
+      freeDart(privateKeyPtr);
+      freeDart(recipientsPtr);
+
+      for (int i = 0; i < privateRecipients.length; i++) {
+        freeDart(privateRecipientsPtr[i].output.ref.memo);
+        freeDart(privateRecipientsPtr[i].output.ref.address);
+        freeDart(privateRecipientsPtr[i].output);
+      }
+      freeDart(privateRecipientsPtr);
+
+      for (int i = 0; i < serializedCoins.length; i++) {
+        freeDart(serializedCoinsPtr[i].serializedCoinContext.ref.data);
+        freeDart(serializedCoinsPtr[i].serializedCoinContext);
+        freeDart(serializedCoinsPtr[i].serializedCoin.ref.data);
+        freeDart(serializedCoinsPtr[i].serializedCoin);
+      }
+      freeDart(serializedCoinsPtr);
+
+      for (int i = 0; i < allAnonymitySets.length; i++) {
+        for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
+          freeDart(coverSetDataAllPtr[i].cover_set[j].data);
+        }
+        freeDart(coverSetDataAllPtr[i].cover_set);
+        freeDart(coverSetDataAllPtr[i].cover_set_representation);
+      }
+      freeDart(coverSetDataAllPtr);
+
+      for (int i = 0; i < idAndBlockHashes.length; i++) {
+        freeDart(idAndBlockHashesPtr[i].hash);
+      }
+      freeDart(idAndBlockHashesPtr);
+
+      freeDart(txHashPtr);
+
+      if (result.address == nullptr.address) {
+        throw Exception(
+          "createSparkSendTransaction() failed for an unknown reason",
+        );
+      }
+
+      final messageBytes = result.ref.data.toUint8List(result.ref.dataLength);
+
+      freeNative(result.ref.data);
+
+      if (result.ref.isError > 0) {
+        final message = utf8.decode(messageBytes);
+        throw Exception(message);
+      }
+
+      final fee = result.ref.fee;
+
+      final List<Uint8List> scripts = [];
+      for (int i = 0; i < result.ref.outputScriptsLength; i++) {
+        final script = result.ref.outputScripts[i].bytes
+            .toUint8List(result.ref.outputScripts[i].length);
+        freeNative(result.ref.outputScripts[i].bytes);
+        scripts.add(script);
+      }
+
+      freeNative(result.ref.outputScripts);
+
+      final List<
+          ({
+            String serializedCoin,
+            String serializedCoinContext,
+            int groupId,
+            int height,
+          })> usedCoins = [];
+
+      for (int i = 0; i < result.ref.usedCoinsLength; i++) {
+        final coinRef = result.ref.usedCoins[i].serializedCoin.ref;
+        final contextRef = result.ref.usedCoins[i].serializedCoinContext.ref;
+
+        usedCoins.add((
+          serializedCoin: coinRef.data.toBase64(coinRef.length),
+          serializedCoinContext: contextRef.data.toBase64(contextRef.length),
+          groupId: result.ref.usedCoins[i].groupId,
+          height: result.ref.usedCoins[i].height,
+        ));
+
+        freeNative(result.ref.usedCoins[i].serializedCoin.ref.data);
+        freeNative(result.ref.usedCoins[i].serializedCoin);
+        freeNative(result.ref.usedCoins[i].serializedCoinContext.ref.data);
+        freeNative(result.ref.usedCoins[i].serializedCoinContext);
+      }
+
+      freeNative(result.ref.usedCoins);
+
+      return (
+        serializedSpendPayload: messageBytes,
+        fee: fee,
+        outputScripts: scripts,
+        usedCoins: usedCoins,
+      );
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
-
-    final messageBytes = result.ref.data.toUint8List(result.ref.dataLength);
-
-    malloc.free(result.ref.data);
-
-    if (result.ref.isError > 0) {
-      final message = utf8.decode(messageBytes);
-      throw Exception(message);
-    }
-
-    final fee = result.ref.fee;
-
-    final List<Uint8List> scripts = [];
-    for (int i = 0; i < result.ref.outputScriptsLength; i++) {
-      final script = result.ref.outputScripts[i].bytes
-          .toUint8List(result.ref.outputScripts[i].length);
-      malloc.free(result.ref.outputScripts[i].bytes);
-      scripts.add(script);
-    }
-
-    malloc.free(result.ref.outputScripts);
-
-    final List<
-        ({
-          String serializedCoin,
-          String serializedCoinContext,
-          int groupId,
-          int height,
-        })> usedCoins = [];
-
-    for (int i = 0; i < result.ref.usedCoinsLength; i++) {
-      final coinRef = result.ref.usedCoins[i].serializedCoin.ref;
-      final contextRef = result.ref.usedCoins[i].serializedCoinContext.ref;
-
-      usedCoins.add((
-        serializedCoin: coinRef.data.toBase64(coinRef.length),
-        serializedCoinContext: contextRef.data.toBase64(contextRef.length),
-        groupId: result.ref.usedCoins[i].groupId,
-        height: result.ref.usedCoins[i].height,
-      ));
-
-      malloc.free(result.ref.usedCoins[i].serializedCoin.ref.data);
-      malloc.free(result.ref.usedCoins[i].serializedCoin);
-      malloc.free(result.ref.usedCoins[i].serializedCoinContext.ref.data);
-      malloc.free(result.ref.usedCoins[i].serializedCoinContext);
-    }
-
-    malloc.free(result.ref.usedCoins);
-
-    return (
-      serializedSpendPayload: messageBytes,
-      fee: fee,
-      outputScripts: scripts,
-      usedCoins: usedCoins,
-    );
   }
 
   static bool validateAddress({
     required String address,
     required bool isTestNet,
   }) {
-    final addressPtr = address.toNativeUtf8().cast<Char>();
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+    }
+    try {
+      final addressPtr = address.toNativeUtf8().cast<Char>();
 
-    final result = _bindings.isValidSparkAddress(
-      addressPtr,
-      isTestNet ? 1 : 0,
-    );
+      final result = _bindings.isValidSparkAddress(
+        addressPtr,
+        isTestNet ? 1 : 0,
+      );
 
-    malloc.free(addressPtr);
+      freeDart(addressPtr);
 
-    if (result.address != nullptr.address) {
-      final isValid = result.ref.isValid > 0;
-      final String message;
+      if (result.address != nullptr.address) {
+        final isValid = result.ref.isValid > 0;
+        final String message;
 
-      if (result.ref.errorMessage.address == nullptr.address) {
-        message = "";
+        if (result.ref.errorMessage.address == nullptr.address) {
+          message = "";
+        } else {
+          message = result.ref.errorMessage.cast<Utf8>().toDartString();
+          freeNative(result.ref.errorMessage);
+        }
+        freeNative(result);
+
+        if (message.isNotEmpty) {
+          Log.d("validateAddress error message: $message");
+        }
+
+        return isValid;
       } else {
-        message = result.ref.errorMessage.cast<Utf8>().toDartString();
-        malloc.free(result.ref.errorMessage);
-      }
-      malloc.free(result);
+        // some error occurred result in null being returned which should happen
+        // but is checked anyways
+        Log.d("validateAddress ffi called returned nullptr");
 
-      if (kDebugMode && message.isNotEmpty) {
-        debugPrint("validateAddress error message: $message");
+        return false;
       }
-
-      return isValid;
-    } else {
-      // some error occurred result in null being returned which should happen
-      // but is checked anyways
-      if (kDebugMode) {
-        debugPrint("validateAddress ffi called returned nullptr");
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
       }
-      return false;
     }
   }
 
   static Set<String> hashTags({required Set<String> base64Tags}) {
-    if (base64Tags.isEmpty) {
-      return {};
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
+    try {
+      if (base64Tags.isEmpty) {
+        return {};
+      }
 
-    final bytes = Uint8List.fromList(
-      base64Tags.expand((e) => base64Decode(e)).toList(),
-    );
+      final bytesPointer = Uint8List.fromList(
+        base64Tags.expand((e) => base64Decode(e)).toList(),
+      ).unsignedCharPointer();
 
-    final result = _bindings.hashTags(
-      bytes.unsignedCharPointer(),
-      base64Tags.length,
-    );
+      final result = _bindings.hashTags(
+        bytesPointer,
+        base64Tags.length,
+      );
 
-    final Set<String> hashes = {};
+      freeDart(bytesPointer);
 
-    for (int i = 0; i < base64Tags.length; i++) {
-      final hash =
-          result.elementAt(i * 64).cast<Utf8>().toDartString(length: 64);
-      hashes.add(hash);
+      final Set<String> hashes = {};
+
+      for (int i = 0; i < base64Tags.length; i++) {
+        final hash =
+            result.elementAt(i * 64).cast<Utf8>().toDartString(length: 64);
+        hashes.add(hash);
+      }
+
+      freeNative(result);
+
+      return hashes;
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
-
-    malloc.free(result);
-
-    return hashes;
   }
 
   static String hashTag(String x, String y) {
-    final xPtr = x.toNativeUtf8().cast<Char>();
-    final yPtr = y.toNativeUtf8().cast<Char>();
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+    }
 
-    final result = _bindings.hashTag(xPtr, yPtr);
-    final hash = result.cast<Utf8>().toDartString();
+    try {
+      final xPtr = x.toNativeUtf8().cast<Char>();
+      final yPtr = y.toNativeUtf8().cast<Char>();
 
-    malloc.free(xPtr);
-    malloc.free(yPtr);
-    malloc.free(result);
+      final result = _bindings.hashTag(xPtr, yPtr);
+      final hash = result.cast<Utf8>().toDartString();
 
-    return hash;
+      freeDart(xPtr);
+      freeDart(yPtr);
+      freeNative(result);
+
+      return hash;
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
+    }
   }
 
   static int estimateSparkFee({
@@ -606,61 +744,88 @@ abstract final class LibSpark {
         serializedCoins,
     required int privateRecipientsCount,
   }) {
-    final privateKeyPtr =
-        privateKeyHex.to32BytesFromHex().unsignedCharPointer();
-
-    final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
-        sizeOf<DartSpendCoinData>() * serializedCoins.length);
-    for (int i = 0; i < serializedCoins.length; i++) {
-      final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
-      serializedCoinsPtr[i].serializedCoin =
-          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
-      serializedCoinsPtr[i].serializedCoin.ref.data =
-          b64CoinDecoded.unsignedCharPointer();
-      serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
-
-      final b64ContextDecoded =
-          base64Decode(serializedCoins[i].serializedCoinContext);
-      serializedCoinsPtr[i].serializedCoinContext =
-          malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
-      serializedCoinsPtr[i].serializedCoinContext.ref.data =
-          b64ContextDecoded.unsignedCharPointer();
-      serializedCoinsPtr[i].serializedCoinContext.ref.length =
-          b64ContextDecoded.length;
-
-      serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
-      serializedCoinsPtr[i].height = serializedCoins[i].height;
+    DateTime? start;
+    int? id;
+    if (enableTraceLogging) {
+      id = _id++;
+      start = DateTime.now();
+      Log.t("${StackTrace.current.functionName} BEGIN($id)");
     }
 
-    final result = _bindings.estimateSparkFee(
-      privateKeyPtr,
-      index,
-      sendAmount,
-      subtractFeeFromAmount ? 1 : 0,
-      serializedCoinsPtr,
-      serializedCoins.length,
-      privateRecipientsCount,
-    );
+    try {
+      final privateKeyPtr =
+          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
-    for (int i = 0; i < serializedCoins.length; i++) {
-      malloc.free(serializedCoinsPtr[i].serializedCoinContext);
-      malloc.free(serializedCoinsPtr[i].serializedCoin);
-    }
-    malloc.free(serializedCoinsPtr);
-    malloc.free(privateKeyPtr);
+      final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
+          sizeOf<DartSpendCoinData>() * serializedCoins.length);
+      for (int i = 0; i < serializedCoins.length; i++) {
+        final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
+        serializedCoinsPtr[i].serializedCoin =
+            malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+        serializedCoinsPtr[i].serializedCoin.ref.data =
+            b64CoinDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
 
-    if (result.ref.error.address != nullptr.address) {
-      final ex = Exception(
-        result.ref.error.cast<Utf8>().toDartString(),
+        final b64ContextDecoded =
+            base64Decode(serializedCoins[i].serializedCoinContext);
+        serializedCoinsPtr[i].serializedCoinContext =
+            malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
+        serializedCoinsPtr[i].serializedCoinContext.ref.data =
+            b64ContextDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoinContext.ref.length =
+            b64ContextDecoded.length;
+
+        serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
+        serializedCoinsPtr[i].height = serializedCoins[i].height;
+      }
+
+      final result = _bindings.estimateSparkFee(
+        privateKeyPtr,
+        index,
+        sendAmount,
+        subtractFeeFromAmount ? 1 : 0,
+        serializedCoinsPtr,
+        serializedCoins.length,
+        privateRecipientsCount,
       );
-      malloc.free(result.ref.error);
-      malloc.free(result);
-      throw ex;
-    } else {
-      final fee = result.ref.fee;
-      malloc.free(result);
-      return fee;
+
+      for (int i = 0; i < serializedCoins.length; i++) {
+        freeDart(serializedCoinsPtr[i].serializedCoinContext);
+        freeDart(serializedCoinsPtr[i].serializedCoin);
+      }
+      freeDart(serializedCoinsPtr);
+      freeDart(privateKeyPtr);
+
+      if (result.ref.error.address != nullptr.address) {
+        final ex = Exception(
+          result.ref.error.cast<Utf8>().toDartString(),
+        );
+        freeNative(result.ref.error);
+        freeNative(result);
+        throw ex;
+      } else {
+        final fee = result.ref.fee;
+        freeNative(result);
+        return fee;
+      }
+    } finally {
+      if (enableTraceLogging) {
+        Log.t(
+          "${StackTrace.current.functionName} END($id)"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
     }
+  }
+
+  static void freeNative<T extends NativeType>(Pointer<T> pointer) {
+    Log.d("Freeing $pointer using native `free` via FFI");
+    _bindings.native_free(pointer.cast());
+  }
+
+  static void freeDart<T extends NativeType>(Pointer<T> pointer) {
+    Log.d("Freeing $pointer using Dart's `malloc.free`");
+    malloc.free(pointer);
   }
 }
 
@@ -671,7 +836,7 @@ extension on Pointer<UnsignedChar> {
   }
 
   String toBase64(int length) {
-    Uint8List data = this.toUint8List(length);
+    final data = toUint8List(length);
     return base64.encode(data);
   }
 }

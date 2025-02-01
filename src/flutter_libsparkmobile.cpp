@@ -451,6 +451,11 @@ SparkFeeResult* estimateSparkFee(
     }
 }
 
+FFI_PLUGIN_EXPORT
+void native_free(void* ptr) {
+    free(ptr);
+}
+
 #ifdef __cplusplus
 }
 #endif
