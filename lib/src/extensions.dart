@@ -25,3 +25,18 @@ extension StringExt on String {
     return Uint8List.fromList(bytes);
   }
 }
+
+final _reg = RegExp("[A-Za-z0-9]");
+const _space = " ";
+
+extension StackTraceExt on StackTrace {
+  String get functionName {
+    final stackTraceString = toString();
+    final str = stackTraceString.substring(stackTraceString.indexOf(_space));
+    final index = str.indexOf(_reg);
+    return str.substring(index).substring(
+          0,
+          str.substring(index).indexOf(_space),
+        );
+  }
+}
