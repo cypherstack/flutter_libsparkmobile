@@ -37,6 +37,9 @@ final DynamicLibrary _dylib = () {
   throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
 }();
 
+bool get enableDebugLogging =>
+    Log.onLog != null && Log.levels.contains(LoggingLevel.debug);
+
 bool get enableTraceLogging =>
     Log.onLog != null && Log.levels.contains(LoggingLevel.trace);
 
@@ -44,6 +47,7 @@ abstract final class LibSpark {
   static final FlutterLibsparkmobileBindings _bindings =
       FlutterLibsparkmobileBindings(_dylib);
 
+  // trace call id
   static int _id = 0;
 
   // SparkMobileBindings methods:
@@ -57,10 +61,22 @@ abstract final class LibSpark {
   }) async {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(privateKey=REDACTED,"
+            "index=$index,"
+            "diversifier=$diversifier,"
+            "isTestNet=$isTestNet)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
     try {
       if (index < 0) {
@@ -93,9 +109,10 @@ abstract final class LibSpark {
 
       return addressString;
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -117,10 +134,24 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(serializedCoin=$serializedCoin,"
+            "privateKeyHex=REDACTED,"
+            "index=$index,"
+            "context=$context,"
+            "isTestNet=$isTestNet)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
 
     try {
@@ -187,9 +218,10 @@ abstract final class LibSpark {
 
       return ret;
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -199,10 +231,20 @@ abstract final class LibSpark {
   static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(inputs=$inputs)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
 
     try {
@@ -232,9 +274,10 @@ abstract final class LibSpark {
 
       return serialized;
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -258,10 +301,22 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(outputs=$outputs,"
+            "serialContext=$serialContext,"
+            "generate=$generate)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
 
     try {
@@ -321,9 +376,10 @@ abstract final class LibSpark {
 
       return ret;
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -384,10 +440,27 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(privateKeyHex=REDACTED,"
+            "index=$index,"
+            "recipients=$recipients,"
+            "privateRecipients=$privateRecipients,"
+            "serializedCoins=$serializedCoins,"
+            "allAnonymitySets=$allAnonymitySets,"
+            "idAndBlockHashes=$idAndBlockHashes,"
+            "txHash=$txHash)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
 
     try {
@@ -589,9 +662,10 @@ abstract final class LibSpark {
         usedCoins: usedCoins,
       );
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -604,10 +678,21 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(address=$address,"
+            "isTestNet=$isTestNet)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
     try {
       final addressPtr = address.toNativeUtf8().cast<Char>();
@@ -632,21 +717,22 @@ abstract final class LibSpark {
         freeNative(result);
 
         if (message.isNotEmpty) {
-          Log.d("validateAddress error message: $message");
+          Log.w("validateAddress error message: $message");
         }
 
         return isValid;
       } else {
         // some error occurred result in null being returned which should happen
         // but is checked anyways
-        Log.d("validateAddress ffi called returned nullptr");
+        Log.w("validateAddress ffi called returned nullptr");
 
         return false;
       }
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -656,10 +742,20 @@ abstract final class LibSpark {
   static Set<String> hashTags({required Set<String> base64Tags}) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(base64Tags=$base64Tags)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
     try {
       if (base64Tags.isEmpty) {
@@ -689,9 +785,10 @@ abstract final class LibSpark {
 
       return hashes;
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -701,10 +798,20 @@ abstract final class LibSpark {
   static String hashTag(String x, String y) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(x=$x, y=$y)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
 
     try {
@@ -720,9 +827,10 @@ abstract final class LibSpark {
 
       return hash;
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -746,10 +854,24 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    if (enableTraceLogging) {
+    String? function;
+    if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      Log.t("${StackTrace.current.functionName} BEGIN($id)");
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(privateKeyHex=REDACTED,"
+            "index=$index,"
+            "sendAmount=$sendAmount,"
+            "subtractFeeFromAmount=$subtractFeeFromAmount,"
+            "privateRecipientsCount=$privateRecipientsCount,"
+            "serializedCoins=${serializedCoins.length})";
+      }
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
     }
 
     try {
@@ -809,9 +931,10 @@ abstract final class LibSpark {
         return fee;
       }
     } finally {
-      if (enableTraceLogging) {
-        Log.t(
-          "${StackTrace.current.functionName} END($id)"
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -819,12 +942,24 @@ abstract final class LibSpark {
   }
 
   static void freeNative<T extends NativeType>(Pointer<T> pointer) {
-    Log.d("Freeing $pointer using native `free` via FFI");
+    if (enableDebugLogging) {
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "Freeing $pointer using native `free` via FFI",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
+    }
     _bindings.native_free(pointer.cast());
   }
 
   static void freeDart<T extends NativeType>(Pointer<T> pointer) {
-    Log.d("Freeing $pointer using Dart's `malloc.free`");
+    if (enableDebugLogging) {
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "Freeing $pointer using Dart's `malloc.free`",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
+    }
     malloc.free(pointer);
   }
 }

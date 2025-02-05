@@ -1,20 +1,5 @@
 enum LoggingLevel { trace, debug, info, warning, error, fatal }
 
-final _reg = RegExp("[A-Za-z0-9]");
-const _space = " ";
-
-extension ST on StackTrace {
-  String get functionName {
-    final stackTraceString = toString();
-    final str = stackTraceString.substring(stackTraceString.indexOf(_space));
-    final index = str.indexOf(_reg);
-    return str.substring(index).substring(
-          0,
-          str.substring(index).indexOf(_space),
-        );
-  }
-}
-
 abstract class Log {
   static Set<LoggingLevel> levels = {
     LoggingLevel.warning,
@@ -30,7 +15,7 @@ abstract class Log {
     required DateTime time,
   })? onLog;
 
-  static void _log(
+  static void l(
     LoggingLevel level,
     Object? value, {
     Error? error,
@@ -52,7 +37,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) =>
-      _log(
+      l(
         LoggingLevel.trace,
         value,
         error: error,
@@ -66,7 +51,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) =>
-      _log(
+      l(
         LoggingLevel.debug,
         value,
         error: error,
@@ -80,7 +65,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) =>
-      _log(
+      l(
         LoggingLevel.info,
         value,
         error: error,
@@ -94,7 +79,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) =>
-      _log(
+      l(
         LoggingLevel.warning,
         value,
         error: error,
@@ -108,7 +93,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) =>
-      _log(
+      l(
         LoggingLevel.error,
         value,
         error: error,
@@ -122,7 +107,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) =>
-      _log(
+      l(
         LoggingLevel.fatal,
         value,
         error: error,
