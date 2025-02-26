@@ -104,9 +104,8 @@ abstract final class LibSpark {
 
       final addressString = addressPointer.cast<Utf8>().toDartString();
 
-      freeDart(keyDataPointer);
-      freeNative(addressPointer);
-
+      freeDart(keyDataPointer, debugName: "keyDataPointer");
+      freeNative(addressPointer, debugName: "addressPointer");
       return addressString;
     } finally {
       if (enableDebugLogging) {
@@ -173,10 +172,9 @@ abstract final class LibSpark {
         isTestNet ? 1 : 0,
       );
 
-      freeDart(serializedCoinPtr);
-      freeDart(privateKeyPtr);
-      freeDart(contextPtr);
-
+      freeDart(serializedCoinPtr, debugName: "serializedCoinPtr");
+      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
+      freeDart(contextPtr, debugName: "contextPtr");
       if (result.address == nullptr.address) {
         return null;
       }
@@ -208,13 +206,16 @@ abstract final class LibSpark {
         lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
       );
 
-      freeNative(result.ref.address);
-      freeNative(result.ref.memo);
-      freeNative(result.ref.lTagHash);
-      freeNative(result.ref.encryptedDiversifier);
-      freeNative(result.ref.nonceHex);
-      freeNative(result.ref.serial);
-      freeNative(result);
+      freeNative(result.ref.address, debugName: "result.ref.address");
+      freeNative(result.ref.memo, debugName: "result.ref.memo");
+      freeNative(result.ref.lTagHash, debugName: "result.ref.lTagHash");
+      freeNative(
+        result.ref.encryptedDiversifier,
+        debugName: "result.ref.encryptedDiversifier",
+      );
+      freeNative(result.ref.nonceHex, debugName: "result.ref.nonceHex");
+      freeNative(result.ref.serial, debugName: "result.ref.serial");
+      freeNative(result, debugName: "result");
 
       return ret;
     } finally {
@@ -253,7 +254,8 @@ abstract final class LibSpark {
 
       for (int i = 0; i < inputs.length; i++) {
         final hash = Uint8List.fromList(
-            inputs[i].$1.to32BytesFromHex().reversed.toList());
+          inputs[i].$1.to32BytesFromHex().reversed.toList(),
+        );
 
         inputsPtr[i].txHashLength = hash.length;
         inputsPtr[i].txHash = hash.unsignedCharPointer();
@@ -266,11 +268,11 @@ abstract final class LibSpark {
           result.ref.context.toUint8List(result.ref.contextLength);
 
       for (int i = 0; i < inputs.length; i++) {
-        freeDart(inputsPtr[i].txHash);
+        freeDart(inputsPtr[i].txHash, debugName: "inputsPtr[$i].txHash");
       }
-      freeDart(inputsPtr);
-      freeNative(result.ref.context);
-      freeNative(result);
+      freeDart(inputsPtr, debugName: "inputsPtr");
+      freeNative(result.ref.context, debugName: "result.ref.context");
+      freeNative(result, debugName: "result");
 
       return serialized;
     } finally {
@@ -321,7 +323,8 @@ abstract final class LibSpark {
 
     try {
       final outputsPtr = malloc.allocate<CMintedCoinData>(
-          sizeOf<CMintedCoinData>() * outputs.length);
+        sizeOf<CMintedCoinData>() * outputs.length,
+      );
 
       for (int i = 0; i < outputs.length; i++) {
         outputsPtr[i].value = outputs[i].value;
@@ -342,10 +345,10 @@ abstract final class LibSpark {
 
       if (result.address == nullptr.address) {
         for (int i = 0; i < outputs.length; i++) {
-          freeDart(outputsPtr[i].address);
-          freeDart(outputsPtr[i].memo);
+          freeDart(outputsPtr[i].address, debugName: "outputsPtr[$i].address");
+          freeDart(outputsPtr[i].memo, debugName: "outputsPtr[$i].memo");
         }
-        freeDart(outputsPtr);
+        freeDart(outputsPtr, debugName: "outputsPtr");
         throw Exception("createSparkMintRecipients() FFI call returned null!");
       }
 
@@ -358,22 +361,23 @@ abstract final class LibSpark {
 
       for (int i = 0; i < result.ref.length; i++) {
         final d = result.ref.list[i];
-        ret.add((
-          scriptPubKey: d.pubKey.toUint8List(d.pubKeyLength),
-          amount: d.cAmount,
-          subtractFeeFromAmount: d.subtractFee > 0,
-        ));
-        freeNative(d.pubKey);
+        ret.add(
+          (
+            scriptPubKey: d.pubKey.toUint8List(d.pubKeyLength),
+            amount: d.cAmount,
+            subtractFeeFromAmount: d.subtractFee > 0,
+          ),
+        );
+        freeNative(d.pubKey, debugName: "d.pubKey");
       }
 
-      freeNative(result.ref.list);
-      freeNative(result);
+      freeNative(result.ref.list, debugName: "result.ref.list");
+      freeNative(result, debugName: "result");
       for (int i = 0; i < outputs.length; i++) {
-        freeDart(outputsPtr[i].address);
-        freeDart(outputsPtr[i].memo);
+        freeDart(outputsPtr[i].address, debugName: "outputsPtr[$i].address");
+        freeDart(outputsPtr[i].memo, debugName: "outputsPtr[$i].memo");
       }
-      freeDart(outputsPtr);
-
+      freeDart(outputsPtr, debugName: "outputsPtr");
       return ret;
     } finally {
       if (enableDebugLogging) {
@@ -476,7 +480,8 @@ abstract final class LibSpark {
       }
 
       final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
-          sizeOf<COutputRecipient>() * privateRecipients.length);
+        sizeOf<COutputRecipient>() * privateRecipients.length,
+      );
       for (int i = 0; i < privateRecipients.length; i++) {
         privateRecipientsPtr[i].subtractFee =
             privateRecipients[i].subtractFeeFromAmount ? 1 : 0;
@@ -495,7 +500,8 @@ abstract final class LibSpark {
       }
 
       final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
-          sizeOf<DartSpendCoinData>() * serializedCoins.length);
+        sizeOf<DartSpendCoinData>() * serializedCoins.length,
+      );
       for (int i = 0; i < serializedCoins.length; i++) {
         final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
         serializedCoinsPtr[i].serializedCoin =
@@ -518,12 +524,14 @@ abstract final class LibSpark {
       }
 
       final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
-          sizeOf<CCoverSetData>() * allAnonymitySets.length);
+        sizeOf<CCoverSetData>() * allAnonymitySets.length,
+      );
       for (int i = 0; i < allAnonymitySets.length; i++) {
         coverSetDataAllPtr[i].setId = allAnonymitySets[i].setId;
 
         coverSetDataAllPtr[i].cover_set = malloc.allocate<CCDataStream>(
-            sizeOf<CCDataStream>() * allAnonymitySets[i].set.length);
+          sizeOf<CCDataStream>() * allAnonymitySets[i].set.length,
+        );
         coverSetDataAllPtr[i].cover_setLength = allAnonymitySets[i].set.length;
 
         for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
@@ -541,7 +549,8 @@ abstract final class LibSpark {
       }
 
       final idAndBlockHashesPtr = malloc.allocate<BlockHashAndId>(
-          sizeOf<BlockHashAndId>() * idAndBlockHashes.length);
+        sizeOf<BlockHashAndId>() * idAndBlockHashes.length,
+      );
       for (int i = 0; i < idAndBlockHashes.length; i++) {
         assert(idAndBlockHashes[i].blockHash.length == 32);
         idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
@@ -567,40 +576,68 @@ abstract final class LibSpark {
         txHashPtr,
       );
 
-      freeDart(privateKeyPtr);
-      freeDart(recipientsPtr);
-
+      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
+      freeDart(recipientsPtr, debugName: "recipientsPtr");
       for (int i = 0; i < privateRecipients.length; i++) {
-        freeDart(privateRecipientsPtr[i].output.ref.memo);
-        freeDart(privateRecipientsPtr[i].output.ref.address);
-        freeDart(privateRecipientsPtr[i].output);
+        freeDart(
+          privateRecipientsPtr[i].output.ref.memo,
+          debugName: "privateRecipientsPtr[$i].output.ref.memo",
+        );
+        freeDart(
+          privateRecipientsPtr[i].output.ref.address,
+          debugName: "privateRecipientsPtr[$i].output.ref.address",
+        );
+        freeDart(
+          privateRecipientsPtr[i].output,
+          debugName: "privateRecipientsPtr[$i].output",
+        );
       }
-      freeDart(privateRecipientsPtr);
-
+      freeDart(privateRecipientsPtr, debugName: "privateRecipientsPtr");
       for (int i = 0; i < serializedCoins.length; i++) {
-        freeDart(serializedCoinsPtr[i].serializedCoinContext.ref.data);
-        freeDart(serializedCoinsPtr[i].serializedCoinContext);
-        freeDart(serializedCoinsPtr[i].serializedCoin.ref.data);
-        freeDart(serializedCoinsPtr[i].serializedCoin);
+        freeDart(
+          serializedCoinsPtr[i].serializedCoinContext.ref.data,
+          debugName: "serializedCoinsPtr[$i].serializedCoinContext.ref.data",
+        );
+        freeDart(
+          serializedCoinsPtr[i].serializedCoinContext,
+          debugName: "serializedCoinsPtr[$i].serializedCoinContext",
+        );
+        freeDart(
+          serializedCoinsPtr[i].serializedCoin.ref.data,
+          debugName: "serializedCoinsPtr[$i].serializedCoin.ref.data",
+        );
+        freeDart(
+          serializedCoinsPtr[i].serializedCoin,
+          debugName: "serializedCoinsPtr[$i].serializedCoin",
+        );
       }
-      freeDart(serializedCoinsPtr);
+      freeDart(serializedCoinsPtr, debugName: "serializedCoinsPtr");
 
       for (int i = 0; i < allAnonymitySets.length; i++) {
         for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
-          freeDart(coverSetDataAllPtr[i].cover_set[j].data);
+          freeDart(
+            coverSetDataAllPtr[i].cover_set[j].data,
+            debugName: "coverSetDataAllPtr[$i].cover_set[j].data",
+          );
         }
-        freeDart(coverSetDataAllPtr[i].cover_set);
-        freeDart(coverSetDataAllPtr[i].cover_set_representation);
+        freeDart(
+          coverSetDataAllPtr[i].cover_set,
+          debugName: "coverSetDataAllPtr[$i].cover_set",
+        );
+        freeDart(
+          coverSetDataAllPtr[i].cover_set_representation,
+          debugName: "coverSetDataAllPtr[$i].cover_set_representation",
+        );
       }
-      freeDart(coverSetDataAllPtr);
-
+      freeDart(coverSetDataAllPtr, debugName: "coverSetDataAllPtr");
       for (int i = 0; i < idAndBlockHashes.length; i++) {
-        freeDart(idAndBlockHashesPtr[i].hash);
+        freeDart(
+          idAndBlockHashesPtr[i].hash,
+          debugName: "idAndBlockHashesPtr[$i].hash",
+        );
       }
-      freeDart(idAndBlockHashesPtr);
-
-      freeDart(txHashPtr);
-
+      freeDart(idAndBlockHashesPtr, debugName: "idAndBlockHashesPtr");
+      freeDart(txHashPtr, debugName: "txHashPtr");
       if (result.address == nullptr.address) {
         throw Exception(
           "createSparkSendTransaction() failed for an unknown reason",
@@ -609,7 +646,7 @@ abstract final class LibSpark {
 
       final messageBytes = result.ref.data.toUint8List(result.ref.dataLength);
 
-      freeNative(result.ref.data);
+      freeNative(result.ref.data, debugName: "result.ref.data");
 
       if (result.ref.isError > 0) {
         final message = utf8.decode(messageBytes);
@@ -622,11 +659,17 @@ abstract final class LibSpark {
       for (int i = 0; i < result.ref.outputScriptsLength; i++) {
         final script = result.ref.outputScripts[i].bytes
             .toUint8List(result.ref.outputScripts[i].length);
-        freeNative(result.ref.outputScripts[i].bytes);
+        freeNative(
+          result.ref.outputScripts[i].bytes,
+          debugName: "result.ref.outputScripts[$i].bytes",
+        );
         scripts.add(script);
       }
 
-      freeNative(result.ref.outputScripts);
+      freeNative(
+        result.ref.outputScripts,
+        debugName: "result.ref.outputScripts",
+      );
 
       final List<
           ({
@@ -640,20 +683,34 @@ abstract final class LibSpark {
         final coinRef = result.ref.usedCoins[i].serializedCoin.ref;
         final contextRef = result.ref.usedCoins[i].serializedCoinContext.ref;
 
-        usedCoins.add((
-          serializedCoin: coinRef.data.toBase64(coinRef.length),
-          serializedCoinContext: contextRef.data.toBase64(contextRef.length),
-          groupId: result.ref.usedCoins[i].groupId,
-          height: result.ref.usedCoins[i].height,
-        ));
+        usedCoins.add(
+          (
+            serializedCoin: coinRef.data.toBase64(coinRef.length),
+            serializedCoinContext: contextRef.data.toBase64(contextRef.length),
+            groupId: result.ref.usedCoins[i].groupId,
+            height: result.ref.usedCoins[i].height,
+          ),
+        );
 
-        freeNative(result.ref.usedCoins[i].serializedCoin.ref.data);
-        freeNative(result.ref.usedCoins[i].serializedCoin);
-        freeNative(result.ref.usedCoins[i].serializedCoinContext.ref.data);
-        freeNative(result.ref.usedCoins[i].serializedCoinContext);
+        freeNative(
+          result.ref.usedCoins[i].serializedCoin.ref.data,
+          debugName: "result.ref.usedCoins[$i].serializedCoin.ref.data",
+        );
+        freeNative(
+          result.ref.usedCoins[i].serializedCoin,
+          debugName: "result.ref.usedCoins[$i].serializedCoin",
+        );
+        freeNative(
+          result.ref.usedCoins[i].serializedCoinContext.ref.data,
+          debugName: "result.ref.usedCoins[$i].serializedCoinContext.ref.data",
+        );
+        freeNative(
+          result.ref.usedCoins[i].serializedCoinContext,
+          debugName: "result.ref.usedCoins[$i].serializedCoinContext",
+        );
       }
 
-      freeNative(result.ref.usedCoins);
+      freeNative(result.ref.usedCoins, debugName: "result.ref.usedCoins");
 
       return (
         serializedSpendPayload: messageBytes,
@@ -702,8 +759,7 @@ abstract final class LibSpark {
         isTestNet ? 1 : 0,
       );
 
-      freeDart(addressPtr);
-
+      freeDart(addressPtr, debugName: "addressPtr");
       if (result.address != nullptr.address) {
         final isValid = result.ref.isValid > 0;
         final String message;
@@ -712,9 +768,12 @@ abstract final class LibSpark {
           message = "";
         } else {
           message = result.ref.errorMessage.cast<Utf8>().toDartString();
-          freeNative(result.ref.errorMessage);
+          freeNative(
+            result.ref.errorMessage,
+            debugName: "result.ref.errorMessage",
+          );
         }
-        freeNative(result);
+        freeNative(result, debugName: "result");
 
         if (message.isNotEmpty) {
           Log.w("validateAddress error message: $message");
@@ -771,8 +830,7 @@ abstract final class LibSpark {
         base64Tags.length,
       );
 
-      freeDart(bytesPointer);
-
+      freeDart(bytesPointer, debugName: "bytesPointer");
       final Set<String> hashes = {};
 
       for (int i = 0; i < base64Tags.length; i++) {
@@ -781,7 +839,7 @@ abstract final class LibSpark {
         hashes.add(hash);
       }
 
-      freeNative(result);
+      freeNative(result, debugName: "result");
 
       return hashes;
     } finally {
@@ -821,9 +879,9 @@ abstract final class LibSpark {
       final result = _bindings.hashTag(xPtr, yPtr);
       final hash = result.cast<Utf8>().toDartString();
 
-      freeDart(xPtr);
-      freeDart(yPtr);
-      freeNative(result);
+      freeDart(xPtr, debugName: "xPtr");
+      freeDart(yPtr, debugName: "yPtr");
+      freeNative(result, debugName: "result");
 
       return hash;
     } finally {
@@ -879,7 +937,8 @@ abstract final class LibSpark {
           privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
       final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
-          sizeOf<DartSpendCoinData>() * serializedCoins.length);
+        sizeOf<DartSpendCoinData>() * serializedCoins.length,
+      );
       for (int i = 0; i < serializedCoins.length; i++) {
         final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
         serializedCoinsPtr[i].serializedCoin =
@@ -912,22 +971,28 @@ abstract final class LibSpark {
       );
 
       for (int i = 0; i < serializedCoins.length; i++) {
-        freeDart(serializedCoinsPtr[i].serializedCoinContext);
-        freeDart(serializedCoinsPtr[i].serializedCoin);
+        freeDart(
+          serializedCoinsPtr[i].serializedCoinContext,
+          debugName: "serializedCoinsPtr[$i].serializedCoinContext",
+        );
+        freeDart(
+          serializedCoinsPtr[i].serializedCoin,
+          debugName: "serializedCoinsPtr[$i].serializedCoin",
+        );
       }
-      freeDart(serializedCoinsPtr);
-      freeDart(privateKeyPtr);
+      freeDart(serializedCoinsPtr, debugName: "serializedCoinsPtr");
+      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
 
       if (result.ref.error.address != nullptr.address) {
         final ex = Exception(
           result.ref.error.cast<Utf8>().toDartString(),
         );
-        freeNative(result.ref.error);
-        freeNative(result);
+        freeNative(result.ref.error, debugName: "result.ref.error");
+        freeNative(result, debugName: "result");
         throw ex;
       } else {
         final fee = result.ref.fee;
-        freeNative(result);
+        freeNative(result, debugName: "result");
         return fee;
       }
     } finally {
@@ -941,22 +1006,28 @@ abstract final class LibSpark {
     }
   }
 
-  static void freeNative<T extends NativeType>(Pointer<T> pointer) {
+  static void freeNative<T extends NativeType>(
+    Pointer<T> pointer, {
+    required String debugName,
+  }) {
     if (enableDebugLogging) {
       Log.l(
         enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-        "Freeing $pointer using native `free` via FFI",
+        "Freeing $debugName $pointer using native `free` via FFI",
         stackTrace: enableTraceLogging ? StackTrace.current : null,
       );
     }
     _bindings.native_free(pointer.cast());
   }
 
-  static void freeDart<T extends NativeType>(Pointer<T> pointer) {
+  static void freeDart<T extends NativeType>(
+    Pointer<T> pointer, {
+    required String debugName,
+  }) {
     if (enableDebugLogging) {
       Log.l(
         enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-        "Freeing $pointer using Dart's `malloc.free`",
+        "Freeing $debugName $pointer using Dart's `malloc.free`",
         stackTrace: enableTraceLogging ? StackTrace.current : null,
       );
     }
