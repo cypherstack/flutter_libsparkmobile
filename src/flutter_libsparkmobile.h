@@ -103,6 +103,20 @@ struct SparkFeeResult* estimateSparkFee(
 );
 
 FFI_PLUGIN_EXPORT
+struct SparkNameScript* createSparkNameScript(
+        int version,
+        int sparkNameValidityBlocks,
+        int hashFailsafe,
+        unsigned char* inputsHash,
+        char* name,
+        char* additionalInfo,
+        char* sparkAddress,
+        unsigned char* scalarM,
+        unsigned char* spendKeyData,
+        int spendKeyIndex
+);
+
+FFI_PLUGIN_EXPORT
 void native_free(void* ptr);
 
 #ifdef __cplusplus

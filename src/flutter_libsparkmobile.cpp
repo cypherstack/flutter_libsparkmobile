@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "deps/sparkmobile/include/spark.h"
 #include "deps/sparkmobile/src/spark.h"
+#include "deps/sparkmobile/src/sparkname.h"
 #include "deps/sparkmobile/bitcoin/uint256.h"
 #include "structs.h"
 #include "transaction.h"
@@ -446,6 +447,77 @@ SparkFeeResult* estimateSparkFee(
         result->fee = 0;
         result->error = (char*)malloc(sizeof(char) * (strlen(e.what()) + 1));
         strcpy(result->error, e.what());
+
+        return result;
+    }
+}
+
+FFI_PLUGIN_EXPORT
+SparkNameScript* createSparkNameScript(
+        int version,
+        int sparkNameValidityBlocks,
+        int hashFailsafe,
+        unsigned char* inputsHash,
+        char* name,
+        char* additionalInfo,
+        char* sparkAddress,
+        unsigned char* scalarM,
+        unsigned char* spendKeyData,
+        int spendKeyIndex
+) {
+    try {
+        // Derive the keys from the key data and index.
+        spark::SpendKey spendKey = createSpendKeyFromData(spendKeyData, spendKeyIndex);
+        spark::FullViewKey fullViewKey(spendKey);
+        spark::IncomingViewKey incomingViewKey(fullViewKey);
+
+        std::vector<unsigned char> inputsHashVec(inputsHash, inputsHash + 32);
+        uint256 inputsHash256(inputsHashVec);
+
+        std::string nameString(name);
+        std::string addressString(sparkAddress);
+        std::string infoString(additionalInfo);
+
+        spark::CSparkNameTxData nameTxData;
+        nameTxData.inputsHash = inputsHash256;
+        nameTxData.name = nameString;
+        nameTxData.sparkAddress = addressString;
+        nameTxData.sparkNameValidityBlocks = static_cast<uint32_t>(sparkNameValidityBlocks);
+        nameTxData.additionalInfo = infoString;
+        nameTxData.hashFailsafe = static_cast<uint32_t>(hashFailsafe);
+        nameTxData.nVersion = static_cast<uint16_t>(version);
+
+        Scalar m(scalarM);
+
+        // result
+        std::vector<unsigned char>& outputScript;
+
+        GetSparkNameScript(nameTxData, m, spendKey,incomingViewKey, outputScript);
+
+        SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
+        if (!result) return nullptr;
+
+        result->scriptLength = outputScript.size();
+        result->error = nullptr;
+        result->script = (unsigned char*)malloc(outputScript.size());
+        if (!result->script) {
+            free(result);
+            return nullptr;
+        }
+
+        memcpy(result->script, outputScript.data(), outputScript.size());
+
+        return result;
+    } catch (const std::exception& e) {
+        SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
+        if (!result) return nullptr;
+
+        result->script = nullptr;
+        result->scriptLength = 0;
+        result->error = (char*)malloc(strlen(e.what()) + 1);
+        if (result->error) {
+            strcpy(result->error, e.what());
+        }
 
         return result;
     }

@@ -1006,6 +1006,109 @@ abstract final class LibSpark {
     }
   }
 
+  static Uint8List createSparkNameScript({
+    int version = 1,
+    required int sparkNameValidityBlocks,
+    required int hashFailsafe,
+    required Uint8List inputsHash,
+    required String name,
+    required String additionalInfo,
+    required String sparkAddress,
+    required Uint8List scalarM,
+    required Uint8List spendKeyData,
+    required int spendKeyIndex,
+  }) {
+    DateTime? start;
+    int? id;
+
+    if (enableDebugLogging) {
+      id = _id++;
+      start = DateTime.now();
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(version=$version,"
+            "sparkNameValidityBlocks=$sparkNameValidityBlocks,"
+            "hashFailsafe=$hashFailsafe,"
+            "inputsHash=$inputsHash,"
+            "name=$name,"
+            "additionalInfo=$additionalInfo,"
+            "sparkAddress=$sparkAddress,"
+            "scalarM=$scalarM,"
+            "spendKeyData=REDACTED,"
+            "spendKeyIndex=$spendKeyIndex)";
+      }
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
+    }
+
+    try {
+      final inputsHashPtr = inputsHash.unsignedCharPointer();
+      final namePtr = name.toNativeUtf8().cast<Char>();
+      final additionalInfoPtr = additionalInfo.toNativeUtf8().cast<Char>();
+      final sparkAddressPtr = sparkAddress.toNativeUtf8().cast<Char>();
+      final scalarMPtr = scalarM.unsignedCharPointer();
+      final spendKeyDataPtr = spendKeyData.unsignedCharPointer();
+
+      final result = _bindings.createSparkNameScript(
+        version,
+        sparkNameValidityBlocks,
+        hashFailsafe,
+        inputsHashPtr,
+        namePtr,
+        additionalInfoPtr,
+        sparkAddressPtr,
+        scalarMPtr,
+        spendKeyDataPtr,
+        spendKeyIndex,
+      );
+
+      freeDart(inputsHashPtr, debugName: "inputsHashPtr");
+      freeDart(namePtr, debugName: "namePtr");
+      freeDart(additionalInfoPtr, debugName: "additionalInfoPtr");
+      freeDart(sparkAddressPtr, debugName: "sparkAddressPtr");
+      freeDart(scalarMPtr, debugName: "scalarMPtr");
+      freeDart(spendKeyDataPtr, debugName: "spendKeyDataPtr");
+
+      if (result.address == nullptr.address) {
+        throw Exception("Internal memory allocation likely failed");
+      }
+
+      Uint8List? script;
+      String? errorMessage;
+
+      if (result.ref.error.address != nullptr.address) {
+        errorMessage = result.ref.error.cast<Utf8>().toDartString();
+        freeNative(result.ref.error, debugName: "result.ref.error");
+      }
+
+      if (result.ref.script.address != nullptr.address) {
+        script = result.ref.script.toUint8List(result.ref.scriptLength);
+        freeNative(result.ref.script, debugName: "result.ref.script");
+      }
+
+      freeNative(result, debugName: "result");
+
+      if (script == null) {
+        errorMessage ??=
+            "Internal memory allocation for error message likely failed";
+        throw Exception(errorMessage);
+      }
+
+      return script;
+    } finally {
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
+    }
+  }
+
   static void freeNative<T extends NativeType>(
     Pointer<T> pointer, {
     required String debugName,

@@ -299,6 +299,58 @@ final class FlutterLibsparkmobileBindings {
       ffi.Pointer<SparkFeeResult> Function(ffi.Pointer<ffi.UnsignedChar>, int,
           int, int, ffi.Pointer<DartSpendCoinData>, int, int)>();
 
+  ffi.Pointer<SparkNameScript> createSparkNameScript(
+    int version,
+    int sparkNameValidityBlocks,
+    int hashFailsafe,
+    ffi.Pointer<ffi.UnsignedChar> inputsHash,
+    ffi.Pointer<ffi.Char> name,
+    ffi.Pointer<ffi.Char> additionalInfo,
+    ffi.Pointer<ffi.Char> sparkAddress,
+    ffi.Pointer<ffi.UnsignedChar> scalarM,
+    ffi.Pointer<ffi.UnsignedChar> spendKeyData,
+    int spendKeyIndex,
+  ) {
+    return _createSparkNameScript(
+      version,
+      sparkNameValidityBlocks,
+      hashFailsafe,
+      inputsHash,
+      name,
+      additionalInfo,
+      sparkAddress,
+      scalarM,
+      spendKeyData,
+      spendKeyIndex,
+    );
+  }
+
+  late final _createSparkNameScriptPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SparkNameScript> Function(
+              ffi.Int,
+              ffi.Int,
+              ffi.Int,
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Int)>>('createSparkNameScript');
+  late final _createSparkNameScript = _createSparkNameScriptPtr.asFunction<
+      ffi.Pointer<SparkNameScript> Function(
+          int,
+          int,
+          int,
+          ffi.Pointer<ffi.UnsignedChar>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.UnsignedChar>,
+          ffi.Pointer<ffi.UnsignedChar>,
+          int)>();
+
   void native_free(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -658,4 +710,13 @@ final class SparkFeeResult extends ffi.Struct {
 
   @ffi.Int64()
   external int fee;
+}
+
+final class SparkNameScript extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> script;
+
+  @ffi.Int()
+  external int scriptLength;
+
+  external ffi.Pointer<ffi.Char> error;
 }
