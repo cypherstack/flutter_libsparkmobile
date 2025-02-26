@@ -134,7 +134,7 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -231,7 +231,7 @@ abstract final class LibSpark {
   static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -301,7 +301,7 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -440,7 +440,7 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -476,7 +476,7 @@ abstract final class LibSpark {
       }
 
       final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
-          sizeOf<COutputRecipient>() * recipients.length);
+          sizeOf<COutputRecipient>() * privateRecipients.length);
       for (int i = 0; i < privateRecipients.length; i++) {
         privateRecipientsPtr[i].subtractFee =
             privateRecipients[i].subtractFeeFromAmount ? 1 : 0;
@@ -678,7 +678,7 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -742,7 +742,7 @@ abstract final class LibSpark {
   static Set<String> hashTags({required Set<String> base64Tags}) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -798,7 +798,7 @@ abstract final class LibSpark {
   static String hashTag(String x, String y) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
@@ -854,7 +854,7 @@ abstract final class LibSpark {
   }) {
     DateTime? start;
     int? id;
-    String? function;
+
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
