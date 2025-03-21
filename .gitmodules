@@ -1,6 +1,6 @@
 [submodule "src/deps/sparkmobile"]
 	path = src/deps/sparkmobile
-	url = https://github.com/firoorg/sparkmobile.git
+	url = https://github.com/julian-CStack/sparkmobile.git
 	ignore = untracked
 [submodule "src/deps/boost-cmake"]
 	path = src/deps/boost-cmake

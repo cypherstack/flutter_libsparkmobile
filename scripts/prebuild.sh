@@ -10,5 +10,5 @@ cp src/deps/CMakeLists/secp256k1/CMakeLists.txt       src/deps/sparkmobile/secp2
 
 
 pushd src/deps/boost-cmake
-  git apply ../patches/boost-patch.patch
+  git apply ../patches/boost-patch.patch || true
 popd
