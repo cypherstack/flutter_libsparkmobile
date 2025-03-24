@@ -103,7 +103,7 @@ class _MyAppState extends State<MyApp> {
               child: const Text(
                 "ID Coin",
               ),
-            )
+            ),
           ],
         ),
       ),

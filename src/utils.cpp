@@ -16,8 +16,8 @@
  */
 spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index) {
     try {
-        const SpendKeyData *data = new SpendKeyData(keyData, index);
-        return createSpendKey(*data);
+        SpendKeyData data(keyData, index);
+        return createSpendKey(data);
     } catch (const std::exception& e) {
         // We can't return here, so just throw the exception again.
         throw e;

@@ -454,16 +454,13 @@ SparkFeeResult* estimateSparkFee(
 
 FFI_PLUGIN_EXPORT
 SparkNameScript* createSparkNameScript(
-        int version,
         int sparkNameValidityBlocks,
-        int hashFailsafe,
-        unsigned char* inputsHash,
-        char* name,
-        char* additionalInfo,
-        char* sparkAddress,
-        unsigned char* scalarM,
+        const char* name,
+        const char* additionalInfo,
         unsigned char* spendKeyData,
-        int spendKeyIndex
+        int spendKeyIndex,
+        int diversifier,
+        int isTestNet
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -471,28 +468,22 @@ SparkNameScript* createSparkNameScript(
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
 
-        std::vector<unsigned char> inputsHashVec(inputsHash, inputsHash + 32);
-        uint256 inputsHash256(inputsHashVec);
-
         std::string nameString(name);
-        std::string addressString(sparkAddress);
         std::string infoString(additionalInfo);
 
         spark::CSparkNameTxData nameTxData;
-        nameTxData.inputsHash = inputsHash256;
         nameTxData.name = nameString;
-        nameTxData.sparkAddress = addressString;
+        nameTxData.sparkAddress = getAddress(incomingViewKey, diversifier).encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
         nameTxData.sparkNameValidityBlocks = static_cast<uint32_t>(sparkNameValidityBlocks);
         nameTxData.additionalInfo = infoString;
-        nameTxData.hashFailsafe = static_cast<uint32_t>(hashFailsafe);
-        nameTxData.nVersion = static_cast<uint16_t>(version);
 
-        Scalar m(scalarM);
+        Scalar m;
+        m.SetHex(spendKey.get_r().GetHex());
 
         // result
-        std::vector<unsigned char>& outputScript;
+        std::vector<unsigned char> outputScript;
 
-        GetSparkNameScript(nameTxData, m, spendKey,incomingViewKey, outputScript);
+        GetSparkNameScript(nameTxData, m, spendKey, incomingViewKey, outputScript);
 
         SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
         if (!result) return nullptr;

@@ -1007,16 +1007,13 @@ abstract final class LibSpark {
   }
 
   static Uint8List createSparkNameScript({
-    int version = 1,
     required int sparkNameValidityBlocks,
-    required int hashFailsafe,
-    required Uint8List inputsHash,
     required String name,
     required String additionalInfo,
-    required String sparkAddress,
-    required Uint8List scalarM,
     required Uint8List spendKeyData,
     required int spendKeyIndex,
+    required int diversifier,
+    required bool isTestNet,
   }) {
     DateTime? start;
     int? id;
@@ -1026,16 +1023,15 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(version=$version,"
+        function += "("
             "sparkNameValidityBlocks=$sparkNameValidityBlocks,"
-            "hashFailsafe=$hashFailsafe,"
-            "inputsHash=$inputsHash,"
             "name=$name,"
             "additionalInfo=$additionalInfo,"
-            "sparkAddress=$sparkAddress,"
-            "scalarM=$scalarM,"
             "spendKeyData=REDACTED,"
-            "spendKeyIndex=$spendKeyIndex)";
+            "spendKeyIndex=$spendKeyIndex,"
+            "diversifier=$diversifier,"
+            "isTestNet=$isTestNet,"
+            ")";
       }
       Log.l(
         enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
@@ -1045,31 +1041,22 @@ abstract final class LibSpark {
     }
 
     try {
-      final inputsHashPtr = inputsHash.unsignedCharPointer();
       final namePtr = name.toNativeUtf8().cast<Char>();
       final additionalInfoPtr = additionalInfo.toNativeUtf8().cast<Char>();
-      final sparkAddressPtr = sparkAddress.toNativeUtf8().cast<Char>();
-      final scalarMPtr = scalarM.unsignedCharPointer();
       final spendKeyDataPtr = spendKeyData.unsignedCharPointer();
 
       final result = _bindings.createSparkNameScript(
-        version,
         sparkNameValidityBlocks,
-        hashFailsafe,
-        inputsHashPtr,
         namePtr,
         additionalInfoPtr,
-        sparkAddressPtr,
-        scalarMPtr,
         spendKeyDataPtr,
         spendKeyIndex,
+        diversifier,
+        isTestNet ? 1 : 0,
       );
 
-      freeDart(inputsHashPtr, debugName: "inputsHashPtr");
       freeDart(namePtr, debugName: "namePtr");
       freeDart(additionalInfoPtr, debugName: "additionalInfoPtr");
-      freeDart(sparkAddressPtr, debugName: "sparkAddressPtr");
-      freeDart(scalarMPtr, debugName: "scalarMPtr");
       freeDart(spendKeyDataPtr, debugName: "spendKeyDataPtr");
 
       if (result.address == nullptr.address) {
