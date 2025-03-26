@@ -1,4 +1,4 @@
-# Run with `flutter pub run ffigen --config ffigen.yaml`.
+# Run with `dart run ffigen --config ffigen.yaml`.
 name: FlutterLibsparkmobileBindings
 description: |
   Bindings for `src/flutter_libsparkmobile.h`.

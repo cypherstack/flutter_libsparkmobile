@@ -4,19 +4,18 @@ group 'com.cypherstack.flutter_libsparkmobile'
 version '1.0'
 
 buildscript {
-    ext.kotlin_version = "1.8.22"
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+        // The Android Gradle Plugin knows how to build native code with the NDK.
+        classpath("com.android.tools.build:gradle:8.7.0")
     }
 }
 
-allprojects {
+rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
@@ -24,20 +23,20 @@ allprojects {
 }
 
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
-
 
 android {
-    if (project.android.hasProperty("namespace")) {
-        namespace = "com.cypherstack.flutter_libsparkmobile"
-    }
+    namespace = "com.cypherstack.flutter_libsparkmobile"
 
-    compileSdk = 34
+    // Bumping the plugin compileSdk version requires all clients of this plugin
+    // to bump the version in their app.
+    compileSdk = 35
 
-    // Bumping the plugin ndkVersion requires all clients of this plugin to bump
-    // the version in their app and to download a newer version of the NDK.
-//    ndkVersion "23.1.7779620"
-    ndkVersion = "21.1.6352462"
+    // Use the NDK version
+    // declared in /android/app/build.gradle file of the Flutter project.
+    // Replace it with a version number if this plugin requires a specific NDK version.
+    // (e.g. ndkVersion "23.1.7779620")
+//    ndkVersion = "28.0.13004108"
+    ndkVersion = android.ndkVersion
 
     // Invoke the shared CMake build with the Android Gradle Plugin.
     externalNativeBuild {
@@ -55,22 +54,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
-    }
-
-    sourceSets {
-        main.java.srcDirs += "src/main/kotlin"
-        test.java.srcDirs += "src/test/kotlin"
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     defaultConfig {
         minSdk = 21
-        ndkVersion = "21.1.6352462"
 
         externalNativeBuild {
             cmake {
@@ -81,19 +70,12 @@ android {
         }
     }
 
-    dependencies {
-        testImplementation("org.jetbrains.kotlin:kotlin-test")
-        testImplementation("org.mockito:mockito-core:5.0.0")
-    }
-
-    testOptions {
-        unitTests.all {
-            useJUnitPlatform()
-
-            testLogging {
-                events "passed", "skipped", "failed", "standardOut", "standardError"
-                outputs.upToDateWhen {false}
-                showStandardStreams = true
+    // Not required, just info
+    tasks.whenTaskAdded {
+        if (name == "assembleDebug") {
+            doFirst {
+                println("com.cypherstack.flutter_libsparkmobile android.ndkVersion is ${android.ndkVersion}")
+                println("com.cypherstack.flutter_libsparkmobile ndkVersion in use is $ndkVersion")
             }
         }
     }

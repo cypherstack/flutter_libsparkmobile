@@ -19,6 +19,39 @@ const kSparkChange = 0x270F;
 const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";
 const kSparkBaseDerivationPathTestnet = "m/44'/1'/0'/$kSparkChain/";
 
+const kMaxNameLength =
+    20; // max 20 symbols, alphanumerical or "-_.", case-insensitive
+const kNameRegexString = r'^[a-zA-Z0-9\-_\.]+$';
+const kMaxAdditionalInfoLengthBytes = 1024;
+const kMaxNameRegistrationLengthYears = 10;
+const kStage3DevelopmentFundAddressMainNet =
+    "aLgRaYSFk6iVw2FqY1oei8Tdn2aTsGPVmP";
+const kStage3DevelopmentFundAddressTestNet =
+    "TWDxLLKsFp6qcV1LL4U2uNmW4HwMcapmMU";
+const kStandardSparkNamesFee = [
+  -1,
+  1000,
+  100,
+  10,
+  10,
+  10,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+];
+
 const String _kLibName = 'flutter_libsparkmobile';
 
 /// The dynamic library in which the symbols for [FlutterLibsparkmobileBindings] can be found.
@@ -995,6 +1028,100 @@ abstract final class LibSpark {
         freeNative(result, debugName: "result");
         return fee;
       }
+    } finally {
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
+    }
+  }
+
+  static Uint8List createSparkNameScript({
+    required int sparkNameValidityBlocks,
+    required String name,
+    required String additionalInfo,
+    required String scalarHex,
+    required String privateKeyHex,
+    required int spendKeyIndex,
+    required int diversifier,
+    required bool isTestNet,
+  }) {
+    DateTime? start;
+    int? id;
+
+    if (enableDebugLogging) {
+      id = _id++;
+      start = DateTime.now();
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "("
+            "sparkNameValidityBlocks=$sparkNameValidityBlocks,"
+            "name=$name,"
+            "additionalInfo=$additionalInfo,"
+            "privateKeyPtr=REDACTED,"
+            "spendKeyIndex=$spendKeyIndex,"
+            "diversifier=$diversifier,"
+            "isTestNet=$isTestNet,"
+            ")";
+      }
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
+    }
+
+    try {
+      final namePtr = name.toNativeUtf8().cast<Char>();
+      final additionalInfoPtr = additionalInfo.toNativeUtf8().cast<Char>();
+      final scalarHexPtr = scalarHex.toNativeUtf8().cast<Char>();
+      final privateKeyPtr =
+          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+
+      final result = _bindings.createSparkNameScript(
+        sparkNameValidityBlocks,
+        namePtr,
+        additionalInfoPtr,
+        scalarHexPtr,
+        privateKeyPtr,
+        spendKeyIndex,
+        diversifier,
+        isTestNet ? 1 : 0,
+      );
+
+      freeDart(namePtr, debugName: "namePtr");
+      freeDart(additionalInfoPtr, debugName: "additionalInfoPtr");
+      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
+
+      if (result.address == nullptr.address) {
+        throw Exception("Internal memory allocation likely failed");
+      }
+
+      Uint8List? script;
+      String? errorMessage;
+
+      if (result.ref.error.address != nullptr.address) {
+        errorMessage = result.ref.error.cast<Utf8>().toDartString();
+        freeNative(result.ref.error, debugName: "result.ref.error");
+      }
+
+      if (result.ref.script.address != nullptr.address) {
+        script = result.ref.script.toUint8List(result.ref.scriptLength);
+        freeNative(result.ref.script, debugName: "result.ref.script");
+      }
+
+      freeNative(result, debugName: "result");
+
+      if (script == null) {
+        errorMessage ??=
+            "Internal memory allocation for error message likely failed";
+        throw Exception(errorMessage);
+      }
+
+      return script;
     } finally {
       if (enableDebugLogging) {
         Log.l(

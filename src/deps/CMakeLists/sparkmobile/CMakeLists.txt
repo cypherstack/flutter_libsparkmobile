@@ -27,6 +27,7 @@ endif()
 SET(MY_CUSTOM_COMPILE_FLAGS "-std=c++17")
 
 set_property(SOURCE src/spark.cpp
+    src/sparkname.cpp
     bitcoin/amount.cpp
     bitcoin/arith_uint256.cpp
     bitcoin/script.cpp
@@ -67,6 +68,7 @@ endif()
 
 add_library(sparkmobile ${CUSTOM_LIB_TYPE}
     src/spark.cpp
+    src/sparkname.cpp
     bitcoin/amount.cpp
     bitcoin/arith_uint256.cpp
     bitcoin/script.cpp
