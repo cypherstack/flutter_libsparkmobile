@@ -457,6 +457,7 @@ SparkNameScript* createSparkNameScript(
         int sparkNameValidityBlocks,
         const char* name,
         const char* additionalInfo,
+        const char* scalarMHex,
         unsigned char* spendKeyData,
         int spendKeyIndex,
         int diversifier,
@@ -477,8 +478,9 @@ SparkNameScript* createSparkNameScript(
         nameTxData.sparkNameValidityBlocks = static_cast<uint32_t>(sparkNameValidityBlocks);
         nameTxData.additionalInfo = infoString;
 
+        std::string mHex(scalarMHex);
         Scalar m;
-        m.SetHex(spendKey.get_r().GetHex());
+        m.SetHex(mHex);
 
         // result
         std::vector<unsigned char> outputScript;

@@ -19,6 +19,39 @@ const kSparkChange = 0x270F;
 const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";
 const kSparkBaseDerivationPathTestnet = "m/44'/1'/0'/$kSparkChain/";
 
+const kMaxNameLength =
+    20; // max 20 symbols, alphanumerical or "-_.", case-insensitive
+const kNameRegexString = r'^[a-zA-Z0-9\-_\.]+$';
+const kMaxAdditionalInfoLengthBytes = 1024;
+const kMaxNameRegistrationLengthYears = 10;
+const kStage3DevelopmentFundAddressMainNet =
+    "aLgRaYSFk6iVw2FqY1oei8Tdn2aTsGPVmP";
+const kStage3DevelopmentFundAddressTestNet =
+    "TWDxLLKsFp6qcV1LL4U2uNmW4HwMcapmMU";
+const kStandardSparkNamesFee = [
+  -1,
+  1000,
+  100,
+  10,
+  10,
+  10,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+];
+
 const String _kLibName = 'flutter_libsparkmobile';
 
 /// The dynamic library in which the symbols for [FlutterLibsparkmobileBindings] can be found.
@@ -1010,7 +1043,8 @@ abstract final class LibSpark {
     required int sparkNameValidityBlocks,
     required String name,
     required String additionalInfo,
-    required Uint8List spendKeyData,
+    required String scalarHex,
+    required String privateKeyHex,
     required int spendKeyIndex,
     required int diversifier,
     required bool isTestNet,
@@ -1027,7 +1061,7 @@ abstract final class LibSpark {
             "sparkNameValidityBlocks=$sparkNameValidityBlocks,"
             "name=$name,"
             "additionalInfo=$additionalInfo,"
-            "spendKeyData=REDACTED,"
+            "privateKeyPtr=REDACTED,"
             "spendKeyIndex=$spendKeyIndex,"
             "diversifier=$diversifier,"
             "isTestNet=$isTestNet,"
@@ -1043,13 +1077,16 @@ abstract final class LibSpark {
     try {
       final namePtr = name.toNativeUtf8().cast<Char>();
       final additionalInfoPtr = additionalInfo.toNativeUtf8().cast<Char>();
-      final spendKeyDataPtr = spendKeyData.unsignedCharPointer();
+      final scalarHexPtr = scalarHex.toNativeUtf8().cast<Char>();
+      final privateKeyPtr =
+          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
 
       final result = _bindings.createSparkNameScript(
         sparkNameValidityBlocks,
         namePtr,
         additionalInfoPtr,
-        spendKeyDataPtr,
+        scalarHexPtr,
+        privateKeyPtr,
         spendKeyIndex,
         diversifier,
         isTestNet ? 1 : 0,
@@ -1057,7 +1094,7 @@ abstract final class LibSpark {
 
       freeDart(namePtr, debugName: "namePtr");
       freeDart(additionalInfoPtr, debugName: "additionalInfoPtr");
-      freeDart(spendKeyDataPtr, debugName: "spendKeyDataPtr");
+      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
 
       if (result.address == nullptr.address) {
         throw Exception("Internal memory allocation likely failed");

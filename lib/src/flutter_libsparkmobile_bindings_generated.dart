@@ -304,6 +304,7 @@ class FlutterLibsparkmobileBindings {
     int sparkNameValidityBlocks,
     ffi.Pointer<ffi.Char> name,
     ffi.Pointer<ffi.Char> additionalInfo,
+    ffi.Pointer<ffi.Char> scalarMHex,
     ffi.Pointer<ffi.UnsignedChar> spendKeyData,
     int spendKeyIndex,
     int diversifier,
@@ -313,6 +314,7 @@ class FlutterLibsparkmobileBindings {
       sparkNameValidityBlocks,
       name,
       additionalInfo,
+      scalarMHex,
       spendKeyData,
       spendKeyIndex,
       diversifier,
@@ -326,6 +328,7 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
               ffi.Int,
@@ -333,6 +336,7 @@ class FlutterLibsparkmobileBindings {
   late final _createSparkNameScript = _createSparkNameScriptPtr.asFunction<
       ffi.Pointer<SparkNameScript> Function(
           int,
+          ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.UnsignedChar>,

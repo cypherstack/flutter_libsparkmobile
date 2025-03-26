@@ -107,6 +107,7 @@ struct SparkNameScript* createSparkNameScript(
         int sparkNameValidityBlocks,
         const char* name,
         const char* additionalInfo,
+        const char* scalarMHex,
         unsigned char* spendKeyData,
         int spendKeyIndex,
         int diversifier,
