@@ -24,6 +24,11 @@ if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
+if(BUILD_FOR_SYSTEM_NAME STREQUAL "android")
+    add_definitions(-Wno-enum-constexpr-conversion)
+    add_compile_definitions(_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+endif ()
+
 if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
     add_compile_definitions(_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
     SET(SPARK_MISSING_HEADERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/missing_headers/darwin")
@@ -68,3 +73,8 @@ endif()
 target_link_libraries(flutter_libsparkmobile sparkmobile)
 
 target_compile_definitions(flutter_libsparkmobile PUBLIC DART_SHARED_LIB)
+
+if (ANDROID)
+  # Support Android 15 16k page size.
+  target_link_options(flutter_libsparkmobile PRIVATE "-Wl,-z,max-page-size=16384")
+endif()
