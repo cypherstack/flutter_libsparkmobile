@@ -10,5 +10,13 @@ cp src/deps/CMakeLists/secp256k1/CMakeLists.txt       src/deps/sparkmobile/secp2
 
 
 pushd src/deps/boost-cmake
-  git apply ../patches/boost-patch.patch || true
+  if git apply -q --check ../patches/boost-patch.patch; then
+    git apply ../patches/boost-patch.patch
+  fi
+popd
+
+pushd src/deps/openssl-cmake
+  if git apply -q --check ../patches/openssl-cmake-patch.patch; then
+    git apply ../patches/openssl-cmake-patch.patch
+  fi
 popd

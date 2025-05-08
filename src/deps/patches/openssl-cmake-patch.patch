@@ -1,0 +1,25 @@
+From bfff81c09a34a64c8d8adf97e963793054584773 Mon Sep 17 00:00:00 2001
+From: cassandras-lies <203535133+cassandras-lies@users.noreply.github.com>
+Date: Mon, 7 Apr 2025 09:27:36 +0000
+Subject: [PATCH] Bump cmake_required_version for compatibility with new
+ CMakes.
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e93be8f..66c7605 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -23,7 +23,7 @@
+ # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ # SOFTWARE.
+-cmake_minimum_required( VERSION 3.1.0 )
++cmake_minimum_required( VERSION 3.5.0 )
+ set( CMAKE_LEGACY_CYGWIN_WIN32 0 )
+ project( openssl )
+ 
+-- 
+
