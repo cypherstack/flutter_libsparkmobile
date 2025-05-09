@@ -144,6 +144,7 @@ class FlutterLibsparkmobileBindings {
     ffi.Pointer<BlockHashAndId> idAndBlockHashes,
     int idAndBlockHashesLength,
     ffi.Pointer<ffi.UnsignedChar> txHashSig,
+    int additionalTxSize,
   ) {
     return _cCreateSparkSpendTransaction(
       keyData,
@@ -159,6 +160,7 @@ class FlutterLibsparkmobileBindings {
       idAndBlockHashes,
       idAndBlockHashesLength,
       txHashSig,
+      additionalTxSize,
     );
   }
 
@@ -177,7 +179,8 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<BlockHashAndId>,
               ffi.Int,
-              ffi.Pointer<ffi.UnsignedChar>)>>('cCreateSparkSpendTransaction');
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Int)>>('cCreateSparkSpendTransaction');
   late final _cCreateSparkSpendTransaction =
       _cCreateSparkSpendTransactionPtr.asFunction<
           ffi.Pointer<SparkSpendTransactionResult> Function(
@@ -193,7 +196,8 @@ class FlutterLibsparkmobileBindings {
               int,
               ffi.Pointer<BlockHashAndId>,
               int,
-              ffi.Pointer<ffi.UnsignedChar>)>();
+              ffi.Pointer<ffi.UnsignedChar>,
+              int)>();
 
   ffi.Pointer<SerializedMintContextResult> serializeMintContext(
     ffi.Pointer<DartInputData> inputs,
@@ -274,6 +278,8 @@ class FlutterLibsparkmobileBindings {
     ffi.Pointer<DartSpendCoinData> coins,
     int coinsLength,
     int privateRecipientsLength,
+    int utxoNum,
+    int additionalTxSize,
   ) {
     return _estimateSparkFee(
       keyData,
@@ -283,6 +289,8 @@ class FlutterLibsparkmobileBindings {
       coins,
       coinsLength,
       privateRecipientsLength,
+      utxoNum,
+      additionalTxSize,
     );
   }
 
@@ -295,10 +303,12 @@ class FlutterLibsparkmobileBindings {
               ffi.Int,
               ffi.Pointer<DartSpendCoinData>,
               ffi.Int,
+              ffi.Int,
+              ffi.Int,
               ffi.Int)>>('estimateSparkFee');
   late final _estimateSparkFee = _estimateSparkFeePtr.asFunction<
       ffi.Pointer<SparkFeeResult> Function(ffi.Pointer<ffi.UnsignedChar>, int,
-          int, int, ffi.Pointer<DartSpendCoinData>, int, int)>();
+          int, int, ffi.Pointer<DartSpendCoinData>, int, int, int, int)>();
 
   ffi.Pointer<SparkNameScript> createSparkNameScript(
     int sparkNameValidityBlocks,
@@ -309,6 +319,8 @@ class FlutterLibsparkmobileBindings {
     int spendKeyIndex,
     int diversifier,
     int isTestNet,
+    int hashFailSafe,
+    int withoutProof,
   ) {
     return _createSparkNameScript(
       sparkNameValidityBlocks,
@@ -319,6 +331,8 @@ class FlutterLibsparkmobileBindings {
       spendKeyIndex,
       diversifier,
       isTestNet,
+      hashFailSafe,
+      withoutProof,
     );
   }
 
@@ -332,6 +346,8 @@ class FlutterLibsparkmobileBindings {
               ffi.Pointer<ffi.UnsignedChar>,
               ffi.Int,
               ffi.Int,
+              ffi.Int,
+              ffi.Int,
               ffi.Int)>>('createSparkNameScript');
   late final _createSparkNameScript = _createSparkNameScriptPtr.asFunction<
       ffi.Pointer<SparkNameScript> Function(
@@ -340,6 +356,8 @@ class FlutterLibsparkmobileBindings {
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.UnsignedChar>,
+          int,
+          int,
           int,
           int,
           int)>();
@@ -712,4 +730,7 @@ final class SparkNameScript extends ffi.Struct {
   external int scriptLength;
 
   external ffi.Pointer<ffi.Char> error;
+
+  @ffi.Int()
+  external int size;
 }
