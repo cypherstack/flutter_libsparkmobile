@@ -203,7 +203,8 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     int cover_set_data_allLength,
     struct BlockHashAndId* idAndBlockHashes,
     int idAndBlockHashesLength,
-    unsigned char* txHashSig
+    unsigned char* txHashSig,
+    int additionalTxSize
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -280,6 +281,7 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             cppCoverSetDataAll,
             cppIdAndBlockHashesAll,
             cppTxHashSig,
+            additionalTxSize,
             cppFee,
             cppSerializedSpend,
             cppOutputScripts,
@@ -410,7 +412,9 @@ SparkFeeResult* estimateSparkFee(
         int subtractFeeFromAmount,
         struct DartSpendCoinData* coins,
         int coinsLength,
-        int privateRecipientsLength
+        int privateRecipientsLength,
+        int utxoNum,
+        int additionalTxSize
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -434,7 +438,9 @@ SparkFeeResult* estimateSparkFee(
                 sendAmount,
                 subtractFeeFromAmount > 0,
                 cppCoins,
-                privateRecipientsLength
+                privateRecipientsLength,
+                utxoNum,
+                additionalTxSize
         );
 
         SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
@@ -461,7 +467,9 @@ SparkNameScript* createSparkNameScript(
         unsigned char* spendKeyData,
         int spendKeyIndex,
         int diversifier,
-        int isTestNet
+        int isTestNet,
+        int hashFailSafe,
+        int withoutProof
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -477,15 +485,41 @@ SparkNameScript* createSparkNameScript(
         nameTxData.sparkAddress = getAddress(incomingViewKey, diversifier).encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
         nameTxData.sparkNameValidityBlocks = static_cast<uint32_t>(sparkNameValidityBlocks);
         nameTxData.additionalInfo = infoString;
-
-        std::string mHex(scalarMHex);
-        Scalar m;
-        m.SetHex(mHex);
+        nameTxData.hashFailsafe = hashFailSafe;
 
         // result
         std::vector<unsigned char> outputScript;
+        if (withoutProof) {
+            outputScript.clear();
+            nameTxData.addressOwnershipProof.clear();
+            CDataStream sparkNameDataStream(SER_NETWORK, PROTOCOL_VERSION);
+            sparkNameDataStream << nameTxData;
+            outputScript.insert(outputScript.end(), sparkNameDataStream.begin(), sparkNameDataStream.end());
+        } else {
+            std::string mHex(scalarMHex);
+            Scalar m;
+            try {
+                m.SetHex(mHex);
+            } catch (const std::exception&) {
+                SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
+                if (!result) return nullptr;
 
-        GetSparkNameScript(nameTxData, m, spendKey, incomingViewKey, outputScript);
+                const char* error = "hash fail";
+
+                result->script = nullptr;
+                result->scriptLength = 0;
+                result->size = 0;
+                result->error = (char*)malloc(strlen(error) + 1);
+                if (result->error) {
+                    strcpy(result->error, error);
+                }
+
+                return result;
+            }
+            GetSparkNameScript(nameTxData, m, spendKey, incomingViewKey, outputScript);
+        }
+
+        std::size_t sparkNameTxDataSize = getSparkNameTxDataSize(nameTxData);
 
         SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
         if (!result) return nullptr;
@@ -493,6 +527,7 @@ SparkNameScript* createSparkNameScript(
         result->scriptLength = outputScript.size();
         result->error = nullptr;
         result->script = (unsigned char*)malloc(outputScript.size());
+        result->size = sparkNameTxDataSize;
         if (!result->script) {
             free(result);
             return nullptr;
@@ -507,6 +542,7 @@ SparkNameScript* createSparkNameScript(
 
         result->script = nullptr;
         result->scriptLength = 0;
+        result->size = 0;
         result->error = (char*)malloc(strlen(e.what()) + 1);
         if (result->error) {
             strcpy(result->error, e.what());

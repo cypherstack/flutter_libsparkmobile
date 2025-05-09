@@ -474,6 +474,7 @@ abstract final class LibSpark {
             })>
         idAndBlockHashes,
     required Uint8List txHash,
+    required int additionalTxSize,
   }) {
     DateTime? start;
     int? id;
@@ -607,6 +608,7 @@ abstract final class LibSpark {
         idAndBlockHashesPtr,
         idAndBlockHashes.length,
         txHashPtr,
+        additionalTxSize,
       );
 
       freeDart(privateKeyPtr, debugName: "privateKeyPtr");
@@ -942,6 +944,8 @@ abstract final class LibSpark {
             })>
         serializedCoins,
     required int privateRecipientsCount,
+    required int utxoNum,
+    required int additionalTxSize,
   }) {
     DateTime? start;
     int? id;
@@ -1001,6 +1005,8 @@ abstract final class LibSpark {
         serializedCoinsPtr,
         serializedCoins.length,
         privateRecipientsCount,
+        utxoNum,
+        additionalTxSize,
       );
 
       for (int i = 0; i < serializedCoins.length; i++) {
@@ -1039,7 +1045,7 @@ abstract final class LibSpark {
     }
   }
 
-  static Uint8List createSparkNameScript({
+  static ({Uint8List script, int size}) createSparkNameScript({
     required int sparkNameValidityBlocks,
     required String name,
     required String additionalInfo,
@@ -1048,6 +1054,8 @@ abstract final class LibSpark {
     required int spendKeyIndex,
     required int diversifier,
     required bool isTestNet,
+    required int hashFailSafe,
+    required bool ignoreProof,
   }) {
     DateTime? start;
     int? id;
@@ -1090,6 +1098,8 @@ abstract final class LibSpark {
         spendKeyIndex,
         diversifier,
         isTestNet ? 1 : 0,
+        hashFailSafe,
+        ignoreProof ? 1 : 0,
       );
 
       freeDart(namePtr, debugName: "namePtr");
@@ -1102,6 +1112,7 @@ abstract final class LibSpark {
 
       Uint8List? script;
       String? errorMessage;
+      int? size;
 
       if (result.ref.error.address != nullptr.address) {
         errorMessage = result.ref.error.cast<Utf8>().toDartString();
@@ -1110,8 +1121,12 @@ abstract final class LibSpark {
 
       if (result.ref.script.address != nullptr.address) {
         script = result.ref.script.toUint8List(result.ref.scriptLength);
+
         freeNative(result.ref.script, debugName: "result.ref.script");
       }
+
+      size = result.ref.size +
+          20; // https://github.com/firoorg/firo/blob/dd2a537d52c177736284f568e494dafb55db4924/src/spark/sparkwallet.cpp#L1624C59-L1624C123
 
       freeNative(result, debugName: "result");
 
@@ -1121,7 +1136,7 @@ abstract final class LibSpark {
         throw Exception(errorMessage);
       }
 
-      return script;
+      return (script: script, size: size);
     } finally {
       if (enableDebugLogging) {
         Log.l(
