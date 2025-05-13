@@ -2,6 +2,3 @@
 	path = src/deps/sparkmobile
 	url = https://github.com/firoorg/sparkmobile.git
 	ignore = untracked
-[submodule "src/deps/openssl-cmake"]
-	path = src/deps/openssl-cmake
-	url = https://github.com/janbar/openssl-cmake
