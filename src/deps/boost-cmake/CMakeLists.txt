@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(Boost-CMake)
 
-option(BOOST_DISABLE_TESTS "Do not build test targets, even if building standalone" OFF)
+add_compile_definitions(_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
-set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.bz2" CACHE STRING "Boost download URL")
+option(BOOST_DISABLE_TESTS "Do not build test targets, even if building standalone" ON)
+
+set(BOOST_URL "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.tar.bz2" CACHE STRING "Boost download URL")
 set(BOOST_URL_SHA256 "d73a8da01e8bf8c7eda40b4c84915071a8c8a0df4a6734537ddde4a8580524ee" CACHE STRING "Boost download URL SHA256 checksum")
 
 include(FetchContent)
@@ -19,6 +21,20 @@ if(NOT Boost_POPULATED)
   FetchContent_Populate(Boost)
   message(STATUS "Fetching Boost - done")
   set(BOOST_SOURCE ${boost_SOURCE_DIR})
+
+  set(PATCH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/patches")
+
+  file(REMOVE "${BOOST_SOURCE}/boost/thread/future.hpp")
+  file(INSTALL "${PATCH_DIR}/boost.thread.future.hpp.replacement"
+       DESTINATION "${BOOST_SOURCE}/boost/thread"
+       RENAME "future.hpp")
+
+  file(REMOVE "${BOOST_SOURCE}/boost/mpl/aux_/integral_wrapper.hpp")
+  file(INSTALL "${PATCH_DIR}/boost.mpl.aux_.integral_wrapper.hpp.replacement"
+       DESTINATION "${BOOST_SOURCE}/boost/mpl/aux_"
+       RENAME "integral_wrapper.hpp")
+
+  message(STATUS "Patching Boost - done")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
