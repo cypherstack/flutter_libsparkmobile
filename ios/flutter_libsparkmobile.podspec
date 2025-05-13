@@ -14,7 +14,9 @@ A new Flutter project.
   s.author           = { 'Your Company' => 'email@example.com' }
 
   s.source           = { :path => '.' }
-
+  s.prepare_command = <<-CMD
+    "./run_build.sh"
+  CMD
   s.vendored_frameworks = 'flutter_libsparkmobile.framework'
   s.dependency 'Flutter'
   s.platform = :ios, '11.0'
