@@ -37,6 +37,16 @@ if(NOT Boost_POPULATED)
   message(STATUS "Patching Boost - done")
 endif()
 
+set(SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../thread_data.hpp")
+set(DESTINATION_DIR "${BOOST_SOURCE}/boost/thread/pthread")
+set(DESTINATION_FILE "${BOOST_SOURCE}/boost/thread/pthread/thread_data.hpp")
+if(EXISTS "${DESTINATION_FILE}")
+  message(STATUS "Removing: ${DESTINATION_FILE}")
+  file(REMOVE "${DESTINATION_FILE}")
+endif()
+message(STATUS "Copying: ${SOURCE_FILE} to ${DESTINATION_DIR}")
+file(COPY ${SOURCE_FILE} DESTINATION ${DESTINATION_DIR})
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 include(CheckBoostVersion)
 
