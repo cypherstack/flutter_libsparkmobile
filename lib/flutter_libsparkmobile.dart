@@ -833,7 +833,7 @@ abstract final class LibSpark {
     }
   }
 
-  static Set<String> hashTags({required Set<String> base64Tags}) {
+  static List<String> hashTags({required List<String> base64Tags}) {
     DateTime? start;
     int? id;
 
@@ -853,7 +853,7 @@ abstract final class LibSpark {
     }
     try {
       if (base64Tags.isEmpty) {
-        return {};
+        return [];
       }
 
       final bytesPointer = Uint8List.fromList(
@@ -866,7 +866,7 @@ abstract final class LibSpark {
       );
 
       freeDart(bytesPointer, debugName: "bytesPointer");
-      final Set<String> hashes = {};
+      final List<String> hashes = [];
 
       for (int i = 0; i < base64Tags.length; i++) {
         final hash =
