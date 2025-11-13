@@ -151,116 +151,34 @@ abstract final class LibSpark {
     }
   }
 
+  static Future<String> getAddressFromFullViewKey({
+    required String fullViewKeyHex,
+    required int index,
+    required int diversifier,
+    bool isTestNet = false,
+  }) async {
+    final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
+    try {
+      final addressPointer = _bindings.getAddressFromFullViewKey(
+        fullViewKey,
+        index,
+        diversifier,
+        isTestNet ? 1 : 0,
+      );
+      final addressString = addressPointer.cast<Utf8>().toDartString();
+      freeNative(addressPointer, debugName: "addressPointer");
+      return addressString;
+    } finally {
+      _deleteFullViewKey(fullViewKey);
+    }
+  }
+
   ///
   /// Check whether the spark coin is ours and if so recover required data
   /// and encapsulate into a single object ([LibSparkCoin]).
   ///
   /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
   ///
-  static LibSparkCoin? identifyAndRecoverCoin(
-    final String serializedCoin, {
-    required final String privateKeyHex,
-    required final int index,
-    required final Uint8List context,
-    final bool isTestNet = false,
-  }) {
-    DateTime? start;
-    int? id;
-
-    if (enableDebugLogging) {
-      id = _id++;
-      start = DateTime.now();
-      String function = StackTrace.current.functionName;
-      if (enableTraceLogging) {
-        function += "(serializedCoin=$serializedCoin,"
-            "privateKeyHex=REDACTED,"
-            "index=$index,"
-            "context=$context,"
-            "isTestNet=$isTestNet)";
-      }
-
-      Log.l(
-        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-        "BEGIN($id) $function",
-        stackTrace: enableTraceLogging ? StackTrace.current : null,
-      );
-    }
-
-    try {
-      // take sublist as tx hash is also appended here for some reason
-      final b64CoinDecoded = base64Decode(serializedCoin).sublist(0, 244);
-
-      final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
-      final privateKeyPtr =
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
-      final contextPtr = context.unsignedCharPointer();
-
-      final result = _bindings.idAndRecoverCoin(
-        serializedCoinPtr,
-        b64CoinDecoded.length,
-        privateKeyPtr,
-        index,
-        contextPtr,
-        context.length,
-        isTestNet ? 1 : 0,
-      );
-
-      freeDart(serializedCoinPtr, debugName: "serializedCoinPtr");
-      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
-      freeDart(contextPtr, debugName: "contextPtr");
-      if (result.address == nullptr.address) {
-        return null;
-      }
-
-      final LibSparkCoinType coinType;
-      switch (result.ref.type) {
-        case 0:
-          coinType = LibSparkCoinType.mint;
-          break;
-        case 1:
-          coinType = LibSparkCoinType.mint;
-          break;
-        default:
-          throw Exception("Unknown coin type \"${result.ref.type}\" found.");
-      }
-
-      final ret = LibSparkCoin(
-        type: coinType,
-        nonceHex: result.ref.nonceHex
-            .cast<Utf8>()
-            .toDartString(length: result.ref.nonceHexLength),
-        address: result.ref.address.cast<Utf8>().toDartString(),
-        value: BigInt.from(result.ref.value),
-        memo: result.ref.memo.cast<Utf8>().toDartString(),
-        diversifier: BigInt.from(result.ref.diversifier),
-        encryptedDiversifier: result.ref.encryptedDiversifier
-            .toUint8List(result.ref.encryptedDiversifierLength),
-        serial: result.ref.serial.toUint8List(result.ref.serialLength),
-        lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
-      );
-
-      freeNative(result.ref.address, debugName: "result.ref.address");
-      freeNative(result.ref.memo, debugName: "result.ref.memo");
-      freeNative(result.ref.lTagHash, debugName: "result.ref.lTagHash");
-      freeNative(
-        result.ref.encryptedDiversifier,
-        debugName: "result.ref.encryptedDiversifier",
-      );
-      freeNative(result.ref.nonceHex, debugName: "result.ref.nonceHex");
-      freeNative(result.ref.serial, debugName: "result.ref.serial");
-      freeNative(result, debugName: "result");
-
-      return ret;
-    } finally {
-      if (enableDebugLogging) {
-        Log.l(
-          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
-          " Duration=${DateTime.now().difference(start!)}",
-        );
-      }
-    }
-  }
 
   static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
     DateTime? start;
@@ -1174,6 +1092,176 @@ abstract final class LibSpark {
       );
     }
     malloc.free(pointer);
+  }
+
+  static String getFullViewKeyHexFromPrivateKeyData({
+    required final String privateKeyHex,
+    required final int index,
+  }) {
+    final privateKeyData = privateKeyHex.to32BytesFromHex();
+    final privateKeyDataPtr = privateKeyData.unsignedCharPointer();
+    final fullViewKeyPtr = _bindings.getFullViewKeyFromPrivateKeyData(privateKeyDataPtr, index);
+    // Prepare to receive the size of the serialized key
+    final sizePtr = malloc.allocate<Int>(sizeOf<Int>());
+    final serializedPtr = _bindings.serializeFullViewKey(fullViewKeyPtr, sizePtr);
+    final size = sizePtr.value;
+    // Convert to Dart Uint8List using the extension
+    final fullViewKeyBytes = serializedPtr.toUint8List(size);
+    // Convert to hex string using the extension
+    final fullViewKeyHex = fullViewKeyBytes.toHexString();
+    // Free all native memory
+    freeDart(privateKeyDataPtr, debugName: "privateKeyDataPtr");
+    freeNative(serializedPtr, debugName: "serializedPtr");
+    freeNative(fullViewKeyPtr, debugName: "fullViewKeyPtr");
+    malloc.free(sizePtr);
+    return fullViewKeyHex;
+  }
+
+  /// Creates a FullViewKey from key data.
+  ///
+  /// Returns a pointer to a FullViewKey that must be freed using [_deleteFullViewKey].
+  static Pointer<Void> _deserializeFullViewKey({
+    required final String fullViewKeyHex,
+  }) {
+    // This is *not* converting to int32s, and it supports lengths above 32 bytes.
+    final fullViewKeyData = fullViewKeyHex.to32OrMoreBytesFromHex();
+    final fullViewKeyDataPtr = fullViewKeyData.unsignedCharPointer();
+    final result = _bindings.deserializeFullViewKey(fullViewKeyDataPtr, fullViewKeyData.length);
+
+    if (result.address == nullptr.address) {
+      throw Exception("Failed to deserialize full view key");
+    }
+
+    return result;
+  }
+
+  /// Check whether the spark coin is ours and if so recover required data
+  /// and encapsulate into a single object ([LibSparkCoin]).
+  ///
+  /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
+  static LibSparkCoin? identifyAndRecoverCoin(
+    final String serializedCoin, {
+    required final String privateKeyHex,
+    required final int index,
+    required final Uint8List context,
+    final bool isTestNet = false,
+  }) {
+    final fullViewKeyHex = getFullViewKeyHexFromPrivateKeyData(
+      privateKeyHex: privateKeyHex,
+      index: index,
+    );
+
+    return identifyAndRecoverCoinByFullViewKey(
+      serializedCoin: serializedCoin,
+      fullViewKeyHex: fullViewKeyHex,
+      context: context,
+      isTestNet: isTestNet,
+    );
+  }
+
+  /// Identifies and recovers a coin using a FullViewKey.
+  ///
+  /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
+  static LibSparkCoin? identifyAndRecoverCoinByFullViewKey({
+    required final String serializedCoin,
+    required final String fullViewKeyHex,
+    required final Uint8List context,
+    final bool isTestNet = false,
+  }) {
+    final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
+    try {
+      final b64CoinDecoded = base64Decode(serializedCoin).sublist(0, 244);
+      final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
+      final contextPtr = context.unsignedCharPointer();
+
+      final result = _bindings.idAndRecoverCoinByFullViewKey(
+        serializedCoinPtr,
+        b64CoinDecoded.length,
+        fullViewKey,
+        contextPtr,
+        context.length,
+        isTestNet ? 1 : 0,
+      );
+
+      freeDart(serializedCoinPtr, debugName: "serializedCoinPtr");
+      freeDart(contextPtr, debugName: "contextPtr");
+
+      if (result.address == nullptr.address) {
+        return null;
+      }
+
+      final LibSparkCoinType coinType;
+      switch (result.ref.type) {
+        case 0:
+          coinType = LibSparkCoinType.mint;
+          break;
+        case 1:
+          coinType = LibSparkCoinType.spend;
+          break;
+        default:
+          throw Exception("Unknown coin type \"${result.ref.type}\" found.");
+      }
+
+      final ret = LibSparkCoin(
+        type: coinType,
+        nonceHex: result.ref.nonceHex
+            .cast<Utf8>()
+            .toDartString(length: result.ref.nonceHexLength),
+        address: result.ref.address.cast<Utf8>().toDartString(),
+        value: BigInt.from(result.ref.value),
+        memo: result.ref.memo.cast<Utf8>().toDartString(),
+        diversifier: BigInt.from(result.ref.diversifier),
+        encryptedDiversifier: result.ref.encryptedDiversifier
+            .toUint8List(result.ref.encryptedDiversifierLength),
+        serial: result.ref.serial.toUint8List(result.ref.serialLength),
+        lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
+      );
+
+      freeNative(result.ref.address, debugName: "result.ref.address");
+      freeNative(result.ref.memo, debugName: "result.ref.memo");
+      freeNative(result.ref.lTagHash, debugName: "result.ref.lTagHash");
+      freeNative(result.ref.encryptedDiversifier, debugName: "result.ref.encryptedDiversifier");
+      freeNative(result.ref.serial, debugName: "result.ref.serial");
+      freeNative(result.ref.nonceHex, debugName: "result.ref.nonceHex");
+      freeNative(result, debugName: "result");
+
+      return ret;
+    } finally {
+      _deleteFullViewKey(fullViewKey);
+    }
+  }
+
+  /// Deletes a FullViewKey.
+  static void _deleteFullViewKey(Pointer<Void> fullViewKey) {
+    DateTime? start;
+    int? id;
+
+    if (enableDebugLogging) {
+      id = _id++;
+      start = DateTime.now();
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(fullViewKey=$fullViewKey)";
+      }
+
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
+    }
+
+    try {
+      _bindings.deleteFullViewKey(fullViewKey);
+    } finally {
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
+    }
   }
 }
 

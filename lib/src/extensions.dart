@@ -13,6 +13,10 @@ extension StringExt on String {
       throw Exception("$this is too long for 32 bytes");
     }
 
+    return to32OrMoreBytesFromHex();
+  }
+
+  Uint8List to32OrMoreBytesFromHex() {
     // Pad the string to 64 characters with zeros if it's shorter.
     String hexString = padLeft(64, '0');
 

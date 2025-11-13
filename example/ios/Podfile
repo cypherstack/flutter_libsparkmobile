@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -40,5 +40,38 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # Exclude x86_64 from simulator builds (only support arm64 for Apple Silicon Macs)
+    target.build_configurations.each do |config|
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386 x86_64'
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+    end
+
+    # Manually extract XCFramework for flutter_libsparkmobile if needed
+    if target.name == 'flutter_libsparkmobile'
+      target.build_configurations.each do |config|
+        # Add a script phase to extract the framework from XCFramework
+        extract_script = target.shell_script_build_phases.find { |phase| phase.name == 'Extract XCFramework' }
+        unless extract_script
+          extract_script = target.new_shell_script_build_phase('Extract XCFramework')
+          extract_script.shell_script = <<-SCRIPT
+            XCFRAMEWORK_PATH="${PODS_ROOT}/../.symlinks/plugins/flutter_libsparkmobile/ios/flutter_libsparkmobile.xcframework"
+            EXTRACTED_PATH="${BUILD_DIR}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/XCFrameworkIntermediates/flutter_libsparkmobile"
+
+            if [ -d "${XCFRAMEWORK_PATH}" ] && [ ! -d "${EXTRACTED_PATH}/flutter_libsparkmobile.framework" ]; then
+              mkdir -p "${EXTRACTED_PATH}"
+              if [[ "${PLATFORM_NAME}" == "iphonesimulator" ]]; then
+                cp -R "${XCFRAMEWORK_PATH}/ios-arm64-simulator/flutter_libsparkmobile.framework" "${EXTRACTED_PATH}/"
+              else
+                cp -R "${XCFRAMEWORK_PATH}/ios-arm64/flutter_libsparkmobile.framework" "${EXTRACTED_PATH}/"
+              fi
+            fi
+          SCRIPT
+        end
+      end
+    end
+  end
+  # Also exclude x86_64 from the main project
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386 x86_64'
   end
 end
