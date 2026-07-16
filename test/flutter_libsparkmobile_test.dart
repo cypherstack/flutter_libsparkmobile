@@ -3,6 +3,12 @@ import 'package:flutter_libsparkmobile/src/extensions.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('Spark Names reject underscores', () {
+    final pattern = RegExp(kNameRegexString);
+    expect(pattern.hasMatch('NAME-FOR.TESTING'), isTrue);
+    expect(pattern.hasMatch('NAME_FOR_TESTING'), isFalse);
+  });
+
   test('mnemonic to address test', () async {
     // Generate key data from the mnemonic.
     //
