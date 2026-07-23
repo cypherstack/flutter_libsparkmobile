@@ -20,8 +20,8 @@ const kSparkBaseDerivationPath = "m/44'/136'/0'/$kSparkChain/";
 const kSparkBaseDerivationPathTestnet = "m/44'/1'/0'/$kSparkChain/";
 
 const kMaxNameLength =
-    20; // max 20 symbols, alphanumerical or "-_.", case-insensitive
-const kNameRegexString = r'^[a-zA-Z0-9\-_\.]+$';
+    20; // max 20 symbols, alphanumerical or "-.", case-insensitive
+const kNameRegexString = r'^[a-zA-Z0-9.-]+$';
 const kMaxAdditionalInfoLengthBytes = 1024;
 const kMaxNameRegistrationLengthYears = 10;
 const kStage3CommunityFundAddressMainNet = "aFA2TbqG9cnhhzX5Yny2pBJRK5EaEqLCH7";
