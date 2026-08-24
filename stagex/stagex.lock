@@ -1,0 +1,7 @@
+stagex_commit = "9bdf430d09ce2ba53932df0182faef00d4feecd1"
+platform = "linux/amd64"
+
+[images]
+pallet-clang-cmake-busybox = "sha256:371e7258f4e1a16782f3152c097acb15e678a52d364f3ac94c14e392d1e7eaf9"
+core-gmp = "sha256:8ee7701d164596391cd64d8a4ed8884fe1a0292e6ea157572d3090e55ea150c5"
+core-filesystem = "sha256:cd3a66471ce1f630fa77d5c9bd9829f9f9fab6302a1aaa64d67b74f1f069b750"

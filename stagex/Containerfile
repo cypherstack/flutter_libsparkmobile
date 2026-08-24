@@ -1,0 +1,26 @@
+FROM stagex/pallet-clang-cmake-busybox AS build
+COPY --from=stagex/core-gmp . /
+ARG VERSION
+ADD fetch/flutter_libsparkmobile-${VERSION}.tar.gz /
+ADD fetch/boost_1_71_0.tar.bz2 /
+WORKDIR /flutter_libsparkmobile-${VERSION}
+ENV SOURCE_DATE_EPOCH=1
+RUN --network=none <<-EOF
+	set -eu
+	cmake -S src -B build -G Ninja \
+		-DBUILD_FOR_SYSTEM_NAME=linux \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DFETCHCONTENT_SOURCE_DIR_BOOST=/boost_1_71_0 \
+		-DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -g0 -ffile-prefix-map=/flutter_libsparkmobile-${VERSION}=." \
+		-DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -g0 -ffile-prefix-map=/flutter_libsparkmobile-${VERSION}=." \
+		-DCMAKE_SHARED_LINKER_FLAGS='-Wl,--build-id=none'
+	cmake --build build --target flutter_libsparkmobile
+	library="$(find build -name libflutter_libsparkmobile.so -print -quit)"
+	test -n "$library"
+	install -Dm755 "$library" /rootfs/usr/lib/libflutter_libsparkmobile.so
+	install -Dm644 src/flutter_libsparkmobile.h /rootfs/usr/include/flutter_libsparkmobile.h
+	install -Dm644 LICENSE /rootfs/usr/share/licenses/stack-wallet-sparkmobile/LICENSE
+EOF
+
+FROM stagex/core-filesystem AS package
+COPY --from=build /rootfs/ /
