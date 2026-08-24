@@ -1,0 +1,41 @@
+{
+  "nodes": {
+    "boost-171": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1565785777,
+        "narHash": "sha256-Df3NZg32r+8FGwFhyyIbCwt0pe19tqtuZOwYUowRvD8=",
+        "type": "tarball",
+        "url": "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.tar.bz2"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.tar.bz2"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1787498568,
+        "narHash": "sha256-9i/VTdusq/+NM/tz+J1Re+ojkMB8MBf0QshnYfzHz30=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "56c02bc00adcf003215cc4bd996d6efaf4cff188",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "boost-171": "boost-171",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
