@@ -96,7 +96,9 @@ struct SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         struct BlockHashAndId* idAndBlockHashes,
         int idAndBlockHashesLength,
         unsigned char* txHashSig,
-        int additionalTxSize
+        int additionalTxSize,
+        int spendVersion,
+        const unsigned char* extensionCommitment
 );
 
 FFI_PLUGIN_EXPORT
@@ -127,7 +129,8 @@ struct SparkFeeResult* estimateSparkFee(
         int coinsLength,
         int privateRecipientsLength,
         int utxoNum,
-        int additionalTxSize
+        int additionalTxSize,
+        int spendVersion
 );
 
 FFI_PLUGIN_EXPORT
@@ -135,7 +138,8 @@ struct SparkNameScript* createSparkNameScript(
         int sparkNameValidityBlocks,
         const char* name,
         const char* additionalInfo,
-        const char* scalarMHex,
+        const unsigned char* ownershipDigest,
+        int spendVersion,
         unsigned char* spendKeyData,
         int spendKeyIndex,
         int diversifier,

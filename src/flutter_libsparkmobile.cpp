@@ -292,7 +292,9 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     struct BlockHashAndId* idAndBlockHashes,
     int idAndBlockHashesLength,
     unsigned char* txHashSig,
-    int additionalTxSize
+    int additionalTxSize,
+    int spendVersion,
+    const unsigned char* extensionCommitment
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -349,6 +351,9 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 
         std::vector<unsigned char> vec(txHashSig, txHashSig + 32);
         uint256 cppTxHashSig = uint256(vec);
+        std::vector<unsigned char> extensionCommitmentBytes(extensionCommitment, extensionCommitment + 32);
+        uint256 cppExtensionCommitment(extensionCommitmentBytes);
+        auto cppSpendVersion = static_cast<spark::SpendTransactionVersion>(spendVersion);
 
         // Output data
         std::vector<uint8_t> cppSerializedSpend;
@@ -370,6 +375,8 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             cppIdAndBlockHashesAll,
             cppTxHashSig,
             additionalTxSize,
+            cppSpendVersion,
+            cppExtensionCommitment,
             cppFee,
             cppSerializedSpend,
             cppOutputScripts,
@@ -502,7 +509,8 @@ SparkFeeResult* estimateSparkFee(
         int coinsLength,
         int privateRecipientsLength,
         int utxoNum,
-        int additionalTxSize
+        int additionalTxSize,
+        int spendVersion
 ) {
     try {
         // Derive the keys from the key data and index.
@@ -528,7 +536,8 @@ SparkFeeResult* estimateSparkFee(
                 cppCoins,
                 privateRecipientsLength,
                 utxoNum,
-                additionalTxSize
+                additionalTxSize,
+                static_cast<spark::SpendTransactionVersion>(spendVersion)
         );
 
         SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
@@ -551,7 +560,8 @@ SparkNameScript* createSparkNameScript(
         int sparkNameValidityBlocks,
         const char* name,
         const char* additionalInfo,
-        const char* scalarMHex,
+        const unsigned char* ownershipDigest,
+        int spendVersion,
         unsigned char* spendKeyData,
         int spendKeyIndex,
         int diversifier,
@@ -564,6 +574,13 @@ SparkNameScript* createSparkNameScript(
         spark::SpendKey spendKey = createSpendKeyFromData(spendKeyData, spendKeyIndex);
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
+        std::vector<unsigned char> ownershipDigestBytes(ownershipDigest, ownershipDigest + 32);
+        uint256 cppOwnershipDigest(ownershipDigestBytes);
+        auto cppSpendVersion = static_cast<spark::SpendTransactionVersion>(spendVersion);
+        if (cppSpendVersion != spark::SpendTransactionVersion::V1 &&
+            cppSpendVersion != spark::SpendTransactionVersion::V2) {
+            throw std::invalid_argument("Unsupported Spark spend version");
+        }
 
         std::string nameString(name);
         std::string infoString(additionalInfo);
@@ -583,27 +600,33 @@ SparkNameScript* createSparkNameScript(
             sparkNameDataStream << nameTxData;
             outputScript.insert(outputScript.end(), sparkNameDataStream.begin(), sparkNameDataStream.end());
         } else {
-            std::string mHex(scalarMHex);
-            Scalar m;
-            try {
-                m.SetHex(mHex);
-            } catch (const std::exception&) {
-                SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
-                if (!result) return nullptr;
+            if (cppSpendVersion == spark::SpendTransactionVersion::V1) {
+                try {
+                    getSparkNameOwnershipMessage(cppOwnershipDigest, cppSpendVersion);
+                } catch (const std::exception&) {
+                    SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
+                    if (!result) return nullptr;
 
-                const char* error = "hash fail";
+                    const char* error = "hash fail";
 
-                result->script = nullptr;
-                result->scriptLength = 0;
-                result->size = 0;
-                result->error = (char*)malloc(strlen(error) + 1);
-                if (result->error) {
-                    strcpy(result->error, error);
+                    result->script = nullptr;
+                    result->scriptLength = 0;
+                    result->size = 0;
+                    result->error = (char*)malloc(strlen(error) + 1);
+                    if (result->error) {
+                        strcpy(result->error, error);
+                    }
+
+                    return result;
                 }
-
-                return result;
             }
-            GetSparkNameScript(nameTxData, m, spendKey, incomingViewKey, outputScript);
+            GetSparkNameScript(
+                nameTxData,
+                cppOwnershipDigest,
+                cppSpendVersion,
+                spendKey,
+                incomingViewKey,
+                outputScript);
         }
 
         std::size_t sparkNameTxDataSize = getSparkNameTxDataSize(nameTxData);
