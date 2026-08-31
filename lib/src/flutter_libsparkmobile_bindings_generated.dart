@@ -504,6 +504,25 @@ class FlutterLibsparkmobileBindings {
           int,
           int)>();
 
+  ffi.Pointer<SparkNameCommitmentResult> cGetSparkNameCommitment(
+    ffi.Pointer<ffi.UnsignedChar> serializedSparkNameData,
+    int serializedSparkNameDataLength,
+  ) {
+    return _cGetSparkNameCommitment(
+      serializedSparkNameData,
+      serializedSparkNameDataLength,
+    );
+  }
+
+  late final _cGetSparkNameCommitmentPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<SparkNameCommitmentResult> Function(
+              ffi.Pointer<ffi.UnsignedChar>,
+              ffi.Int)>>('cGetSparkNameCommitment');
+  late final _cGetSparkNameCommitment = _cGetSparkNameCommitmentPtr.asFunction<
+      ffi.Pointer<SparkNameCommitmentResult> Function(
+          ffi.Pointer<ffi.UnsignedChar>, int)>();
+
   void native_free(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -863,6 +882,15 @@ final class SparkFeeResult extends ffi.Struct {
 
   @ffi.Int64()
   external int fee;
+}
+
+final class SparkNameCommitmentResult extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> commitment;
+
+  @ffi.Int()
+  external int commitmentLength;
+
+  external ffi.Pointer<ffi.Char> error;
 }
 
 final class SparkNameScript extends ffi.Struct {

@@ -242,6 +242,12 @@ struct UsedCoin {
     int height;
 };
 
+struct SparkNameCommitmentResult {
+    unsigned char* commitment;
+    int commitmentLength;
+    char* error;
+};
+
 struct SparkNameScript {
     unsigned char* script;
     int scriptLength;

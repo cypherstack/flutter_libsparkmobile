@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:coinlib_flutter/coinlib_flutter.dart' as coinlib;
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 import 'package:flutter_libsparkmobile_example/util/address_generator.dart';
@@ -82,6 +84,44 @@ void main() {
 
     // Compare the derived address with the expected address.
     expect(address, expectedAddress);
+  });
+
+  testWidgets('Spark Name extension commitment', (WidgetTester tester) async {
+    const privateKeyHex =
+        'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+    const ownershipDigest =
+        '0000000000000000000000000000000000000000000000000000000000000000';
+
+    ({Uint8List script, int size}) createNameData(String name) =>
+        LibSpark.createSparkNameScript(
+          sparkNameValidityBlocks: 365 * 24 * 24,
+          name: name,
+          additionalInfo: 'commitment test',
+          ownershipDigest: ownershipDigest,
+          spendVersion: 2,
+          privateKeyHex: privateKeyHex,
+          spendKeyIndex: 1,
+          diversifier: 0,
+          isTestNet: false,
+          hashFailSafe: 0,
+          ignoreProof: true,
+        );
+
+    final nameData = createNameData('H2-TEST');
+    final commitment = LibSpark.getSparkNameCommitment(
+      serializedSparkNameData: nameData.script,
+    );
+    final recomputed = LibSpark.getSparkNameCommitment(
+      serializedSparkNameData: nameData.script,
+    );
+    final changed = LibSpark.getSparkNameCommitment(
+      serializedSparkNameData: createNameData('H2-TEST-2').script,
+    );
+
+    expect(commitment, hasLength(32));
+    expect(commitment.any((byte) => byte != 0), isTrue);
+    expect(recomputed, orderedEquals(commitment));
+    expect(changed, isNot(orderedEquals(commitment)));
   });
 
   // TODO fix when memo changes are added to firo core

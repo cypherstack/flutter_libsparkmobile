@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_libsparkmobile/flutter_libsparkmobile.dart';
 import 'package:flutter_libsparkmobile/src/extensions.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,15 @@ void main() {
     final pattern = RegExp(kNameRegexString);
     expect(pattern.hasMatch('NAME-FOR.TESTING'), isTrue);
     expect(pattern.hasMatch('NAME_FOR_TESTING'), isFalse);
+  });
+
+  test('Spark Name commitment rejects empty data', () {
+    expect(
+      () => LibSpark.getSparkNameCommitment(
+        serializedSparkNameData: Uint8List(0),
+      ),
+      throwsArgumentError,
+    );
   });
 
   test('mnemonic to address test', () async {

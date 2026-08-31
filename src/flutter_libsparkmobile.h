@@ -149,6 +149,12 @@ struct SparkNameScript* createSparkNameScript(
 );
 
 FFI_PLUGIN_EXPORT
+struct SparkNameCommitmentResult* cGetSparkNameCommitment(
+        const unsigned char* serializedSparkNameData,
+        int serializedSparkNameDataLength
+);
+
+FFI_PLUGIN_EXPORT
 void native_free(void* ptr);
 
 #ifdef __cplusplus

@@ -663,6 +663,61 @@ SparkNameScript* createSparkNameScript(
 }
 
 FFI_PLUGIN_EXPORT
+        SparkNameCommitmentResult* cGetSparkNameCommitment(
+        const unsigned char* serializedSparkNameData,
+        int serializedSparkNameDataLength
+) {
+    SparkNameCommitmentResult* result =
+    (SparkNameCommitmentResult*)malloc(sizeof(SparkNameCommitmentResult));
+    if (!result) return nullptr;
+
+    result->commitment = nullptr;
+    result->commitmentLength = 0;
+    result->error = nullptr;
+
+    try {
+        if (!serializedSparkNameData || serializedSparkNameDataLength <= 0) {
+            throw std::invalid_argument(
+                    "Serialized Spark Name data must not be empty");
+        }
+
+        std::vector<unsigned char> serialized(
+                serializedSparkNameData,
+                serializedSparkNameData + serializedSparkNameDataLength);
+        CDataStream stream(serialized, SER_NETWORK, PROTOCOL_VERSION);
+        spark::CSparkNameTxData nameTxData;
+        stream >> nameTxData;
+        if (!stream.empty()) {
+            throw std::invalid_argument(
+                    "Serialized Spark Name data contains trailing bytes");
+        }
+
+        const uint256 commitment = getSparkNameCommitment(nameTxData);
+        result->commitmentLength = commitment.size();
+        result->commitment =
+                (unsigned char*)malloc(result->commitmentLength);
+        if (!result->commitment) {
+            free(result);
+            return nullptr;
+        }
+
+        memcpy(
+                result->commitment,
+                commitment.begin(),
+                result->commitmentLength);
+        return result;
+    } catch (const std::exception& e) {
+        result->error = (char*)malloc(strlen(e.what()) + 1);
+        if (!result->error) {
+            free(result);
+            return nullptr;
+        }
+        strcpy(result->error, e.what());
+        return result;
+    }
+}
+
+FFI_PLUGIN_EXPORT
 void native_free(void* ptr) {
     free(ptr);
 }

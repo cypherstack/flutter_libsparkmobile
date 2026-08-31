@@ -1085,6 +1085,98 @@ abstract final class LibSpark {
     }
   }
 
+  /// Returns the 32-byte extension commitment for serialized Spark Name data.
+  ///
+  /// [serializedSparkNameData] should be the `script` returned by
+  /// [createSparkNameScript] with `ignoreProof: true`.
+  static Uint8List getSparkNameCommitment({
+    required Uint8List serializedSparkNameData,
+  }) {
+    DateTime? start;
+    int? id;
+
+    if (enableDebugLogging) {
+      id = _id++;
+      start = DateTime.now();
+      String function = StackTrace.current.functionName;
+      if (enableTraceLogging) {
+        function += "(serializedSparkNameDataLength="
+            "${serializedSparkNameData.length})";
+      }
+      Log.l(
+        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+        "BEGIN($id) $function",
+        stackTrace: enableTraceLogging ? StackTrace.current : null,
+      );
+    }
+
+    try {
+      if (serializedSparkNameData.isEmpty) {
+        throw ArgumentError.value(
+          serializedSparkNameData,
+          "serializedSparkNameData",
+          "must not be empty",
+        );
+      }
+
+      final serializedSparkNameDataPtr =
+          serializedSparkNameData.unsignedCharPointer();
+      try {
+        final result = _bindings.cGetSparkNameCommitment(
+          serializedSparkNameDataPtr,
+          serializedSparkNameData.length,
+        );
+        if (result.address == nullptr.address) {
+          throw Exception("Internal memory allocation likely failed");
+        }
+
+        try {
+          if (result.ref.error.address != nullptr.address) {
+            final error = result.ref.error.cast<Utf8>().toDartString();
+            freeNative(result.ref.error, debugName: "result.ref.error");
+            throw Exception(error);
+          }
+
+          if (result.ref.commitment.address == nullptr.address) {
+            throw Exception("Internal memory allocation likely failed");
+          }
+
+          try {
+            if (result.ref.commitmentLength != 32) {
+              throw Exception(
+                "Unexpected Spark Name commitment length: "
+                "${result.ref.commitmentLength}",
+              );
+            }
+            return result.ref.commitment.toUint8List(
+              result.ref.commitmentLength,
+            );
+          } finally {
+            freeNative(
+              result.ref.commitment,
+              debugName: "result.ref.commitment",
+            );
+          }
+        } finally {
+          freeNative(result, debugName: "result");
+        }
+      } finally {
+        freeDart(
+          serializedSparkNameDataPtr,
+          debugName: "serializedSparkNameDataPtr",
+        );
+      }
+    } finally {
+      if (enableDebugLogging) {
+        Log.l(
+          enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
+          "END($id) ${StackTrace.current.functionName}"
+          " Duration=${DateTime.now().difference(start!)}",
+        );
+      }
+    }
+  }
+
   static void freeNative<T extends NativeType>(
     Pointer<T> pointer, {
     required String debugName,
