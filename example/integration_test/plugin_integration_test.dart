@@ -97,8 +97,9 @@ void main() {
           sparkNameValidityBlocks: 365 * 24 * 24,
           name: name,
           additionalInfo: 'commitment test',
-          ownershipDigest: ownershipDigest,
-          spendVersion: 2,
+          proofInput: const SparkNameProofInput.chaumV2(
+            ownershipDigest: ownershipDigest,
+          ),
           privateKeyHex: privateKeyHex,
           spendKeyIndex: 1,
           diversifier: 0,

@@ -5,6 +5,60 @@ import 'package:flutter_libsparkmobile/src/extensions.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('Spark spend version', () {
+    test('selects Chaum V2 at the activation boundary', () {
+      expect(
+        SparkSpendVersion.forBlockHeight(
+          nextBlockHeight: 1370999,
+          chaumV2ActivationHeight: 1371000,
+        ),
+        SparkSpendVersion.chaumV1,
+      );
+      expect(
+        SparkSpendVersion.forBlockHeight(
+          nextBlockHeight: 1371000,
+          chaumV2ActivationHeight: 1371000,
+        ),
+        SparkSpendVersion.chaumV2,
+      );
+    });
+
+    test('keeps native and outer transaction versions together', () {
+      expect(SparkSpendVersion.chaumV1.nativeValue, 1);
+      expect(SparkSpendVersion.chaumV1.transactionVersion, 3 | (9 << 16));
+      expect(SparkSpendVersion.chaumV2.nativeValue, 2);
+      expect(SparkSpendVersion.chaumV2.transactionVersion, 3 | (11 << 16));
+    });
+
+    test('defaults plain spends to a zero extension commitment', () {
+      final commitment = SparkSpendVersion.chaumV2.resolveExtensionCommitment(
+        null,
+      );
+
+      expect(commitment, hasLength(32));
+      expect(commitment, everyElement(0));
+    });
+
+    test('rejects a non-zero Chaum V1 extension commitment', () {
+      expect(
+        () => SparkSpendVersion.chaumV1.resolveExtensionCommitment(
+          Uint8List.fromList([1, ...List<int>.filled(31, 0)]),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('keeps the Spark Name V1 scalar distinct from the V2 digest', () {
+      const v1 = SparkNameProofInput.chaumV1(scalarHex: '01');
+      const v2 = SparkNameProofInput.chaumV2(ownershipDigest: '02');
+
+      expect(v1.spendVersion, SparkSpendVersion.chaumV1);
+      expect(v1.inputHex, '01');
+      expect(v2.spendVersion, SparkSpendVersion.chaumV2);
+      expect(v2.inputHex, '02');
+    });
+  });
+
   test('Spark Names reject underscores', () {
     final pattern = RegExp(kNameRegexString);
     expect(pattern.hasMatch('NAME-FOR.TESTING'), isTrue);
