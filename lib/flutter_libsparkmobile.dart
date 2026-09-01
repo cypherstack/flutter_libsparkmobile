@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -53,24 +52,6 @@ const kStandardSparkNamesFee = [
   1,
 ];
 
-const String _kLibName = 'flutter_libsparkmobile';
-
-/// The dynamic library in which the symbols for [FlutterLibsparkmobileBindings] can be found.
-final DynamicLibrary _dylib = () {
-  // TODO: Make available in test somehow. Not sure if easily possible atm
-
-  if (Platform.isMacOS || Platform.isIOS) {
-    return DynamicLibrary.open('$_kLibName.framework/$_kLibName');
-  }
-  if (Platform.isAndroid || Platform.isLinux) {
-    return DynamicLibrary.open('lib$_kLibName.so');
-  }
-  if (Platform.isWindows) {
-    return DynamicLibrary.open('$_kLibName.dll');
-  }
-  throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
-}();
-
 bool get enableDebugLogging =>
     Log.onLog != null && Log.levels.contains(LoggingLevel.debug);
 
@@ -78,9 +59,6 @@ bool get enableTraceLogging =>
     Log.onLog != null && Log.levels.contains(LoggingLevel.trace);
 
 abstract final class LibSpark {
-  static final FlutterLibsparkmobileBindings _bindings =
-      FlutterLibsparkmobileBindings(_dylib);
-
   // trace call id
   static int _id = 0;
 
@@ -130,7 +108,7 @@ abstract final class LibSpark {
 
       final keyDataPointer = privateKey.unsignedCharPointer();
 
-      final addressPointer = _bindings.getAddress(
+      final addressPointer = native_getAddress(
         keyDataPointer,
         index,
         diversifier,
@@ -161,7 +139,7 @@ abstract final class LibSpark {
   }) async {
     final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
     try {
-      final addressPointer = _bindings.getAddressFromFullViewKey(
+      final addressPointer = native_getAddressFromFullViewKey(
         fullViewKey,
         index,
         diversifier,
@@ -216,7 +194,7 @@ abstract final class LibSpark {
         inputsPtr[i].vout = inputs[i].$2;
       }
 
-      final result = _bindings.serializeMintContext(inputsPtr, inputs.length);
+      final result = native_serializeMintContext(inputsPtr, inputs.length);
 
       final serialized = result.ref.context.toUint8List(
         result.ref.contextLength,
@@ -290,7 +268,7 @@ abstract final class LibSpark {
 
       final serialContextPtr = serialContext.unsignedCharPointer();
 
-      final result = _bindings.cCreateSparkMintRecipients(
+      final result = native_cCreateSparkMintRecipients(
         outputsPtr,
         outputs.length,
         serialContextPtr,
@@ -532,7 +510,7 @@ abstract final class LibSpark {
       final extensionCommitmentPtr = resolvedExtensionCommitment
           .unsignedCharPointer();
 
-      final result = _bindings.cCreateSparkSpendTransaction(
+      final result = native_cCreateSparkSpendTransaction(
         privateKeyPtr,
         index,
         recipientsPtr,
@@ -732,7 +710,7 @@ abstract final class LibSpark {
     try {
       final addressPtr = address.toNativeUtf8().cast<Char>();
 
-      final result = _bindings.isValidSparkAddress(
+      final result = native_isValidSparkAddress(
         addressPtr,
         isTestNet ? 1 : 0,
       );
@@ -803,7 +781,7 @@ abstract final class LibSpark {
         base64Tags.expand((e) => base64Decode(e)).toList(),
       ).unsignedCharPointer();
 
-      final result = _bindings.hashTags(bytesPointer, base64Tags.length);
+      final result = native_hashTags(bytesPointer, base64Tags.length);
 
       freeDart(bytesPointer, debugName: "bytesPointer");
       final List<String> hashes = [];
@@ -853,7 +831,7 @@ abstract final class LibSpark {
       final xPtr = x.toNativeUtf8().cast<Char>();
       final yPtr = y.toNativeUtf8().cast<Char>();
 
-      final result = _bindings.hashTag(xPtr, yPtr);
+      final result = native_hashTag(xPtr, yPtr);
       final hash = result.cast<Utf8>().toDartString();
 
       freeDart(xPtr, debugName: "xPtr");
@@ -946,7 +924,7 @@ abstract final class LibSpark {
         serializedCoinsPtr[i].height = serializedCoins[i].height;
       }
 
-      final result = _bindings.estimateSparkFee(
+      final result = native_estimateSparkFee(
         privateKeyPtr,
         index,
         sendAmount,
@@ -1042,7 +1020,7 @@ abstract final class LibSpark {
           .to32BytesFromHex()
           .unsignedCharPointer();
 
-      final result = _bindings.createSparkNameScript(
+      final result = native_createSparkNameScript(
         sparkNameValidityBlocks,
         namePtr,
         additionalInfoPtr,
@@ -1142,7 +1120,7 @@ abstract final class LibSpark {
       final serializedSparkNameDataPtr = serializedSparkNameData
           .unsignedCharPointer();
       try {
-        final result = _bindings.cGetSparkNameCommitment(
+        final result = native_cGetSparkNameCommitment(
           serializedSparkNameDataPtr,
           serializedSparkNameData.length,
         );
@@ -1208,7 +1186,7 @@ abstract final class LibSpark {
         stackTrace: enableTraceLogging ? StackTrace.current : null,
       );
     }
-    _bindings.native_free(pointer.cast());
+    native_free(pointer.cast());
   }
 
   static void freeDart<T extends NativeType>(
@@ -1231,13 +1209,13 @@ abstract final class LibSpark {
   }) {
     final privateKeyData = privateKeyHex.to32BytesFromHex();
     final privateKeyDataPtr = privateKeyData.unsignedCharPointer();
-    final fullViewKeyPtr = _bindings.getFullViewKeyFromPrivateKeyData(
+    final fullViewKeyPtr = native_getFullViewKeyFromPrivateKeyData(
       privateKeyDataPtr,
       index,
     );
     // Prepare to receive the size of the serialized key
     final sizePtr = malloc.allocate<Int>(sizeOf<Int>());
-    final serializedPtr = _bindings.serializeFullViewKey(
+    final serializedPtr = native_serializeFullViewKey(
       fullViewKeyPtr,
       sizePtr,
     );
@@ -1263,7 +1241,7 @@ abstract final class LibSpark {
     // This is *not* converting to int32s, and it supports lengths above 32 bytes.
     final fullViewKeyData = fullViewKeyHex.to32OrMoreBytesFromHex();
     final fullViewKeyDataPtr = fullViewKeyData.unsignedCharPointer();
-    final result = _bindings.deserializeFullViewKey(
+    final result = native_deserializeFullViewKey(
       fullViewKeyDataPtr,
       fullViewKeyData.length,
     );
@@ -1314,7 +1292,7 @@ abstract final class LibSpark {
       final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
       final contextPtr = context.unsignedCharPointer();
 
-      final result = _bindings.idAndRecoverCoinByFullViewKey(
+      final result = native_idAndRecoverCoinByFullViewKey(
         serializedCoinPtr,
         b64CoinDecoded.length,
         fullViewKey,
@@ -1396,7 +1374,7 @@ abstract final class LibSpark {
     }
 
     try {
-      _bindings.deleteFullViewKey(fullViewKey);
+      native_deleteFullViewKey(fullViewKey);
     } finally {
       if (enableDebugLogging) {
         Log.l(

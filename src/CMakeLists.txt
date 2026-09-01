@@ -38,28 +38,15 @@ set(BOOST_URL "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.zip"
 set(BOOST_URL_SHA256 "85a94ac71c28e59cf97a96714e4c58a18550c227ac8b0388c260d6c717e47a69" CACHE STRING "Boost download URL SHA256 checksum")
 add_subdirectory("deps/boost-cmake")
 
+set(WITH_APPS OFF CACHE BOOL "" FORCE)
 add_subdirectory("deps/openssl-cmake" EXCLUDE_FROM_ALL)
 
 add_subdirectory("deps/sparkmobile")
 
-if(BUILD_FOR_SYSTEM_NAME STREQUAL "macos" OR BUILD_FOR_SYSTEM_NAME STREQUAL "ios")
-    set_target_properties(flutter_libsparkmobile PROPERTIES FRAMEWORK TRUE
-        FRAMEWORK_VERSION C
-        MACOSX_FRAMEWORK_IDENTIFIER com.cypherstack.flutterLibsparkmobile
-        # "current version" in semantic format in Mach-O binary file
-        VERSION 16.4.0
-        # "compatibility version" in semantic format in Mach-O binary file
-        SOVERSION 1.0.0
-        PUBLIC_HEADER flutter_libsparkmobile.h
-        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
-    )
-    target_compile_options(flutter_libsparkmobile PUBLIC -fembed-bitcode)
-else()
-    set_target_properties(flutter_libsparkmobile PROPERTIES
-        PUBLIC_HEADER flutter_libsparkmobile.h
-        OUTPUT_NAME "flutter_libsparkmobile"
-    )
-endif()
+set_target_properties(flutter_libsparkmobile PROPERTIES
+    PUBLIC_HEADER flutter_libsparkmobile.h
+    OUTPUT_NAME "flutter_libsparkmobile"
+)
 
 target_link_libraries(flutter_libsparkmobile sparkmobile)
 
