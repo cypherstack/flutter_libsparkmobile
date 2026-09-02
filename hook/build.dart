@@ -21,10 +21,15 @@ void main(List<String> args) async {
     );
 
     await builder.run(input: input, output: output);
+    // On Windows search only the Visual Studio config dir: the full build tree
+    // holds the extracted Boost sources, whose paths exceed MAX_PATH.
+    final searchDir = input.config.code.targetOS == OS.windows
+        ? buildDir.resolve('Release/')
+        : buildDir;
     final assets = await output.findAndAddCodeAssets(
       input,
       names: {input.packageName: _assetName},
-      outDir: buildDir,
+      outDir: searchDir,
     );
     if (assets.length != 1) {
       throw StateError('Expected one ${input.packageName} native library.');
