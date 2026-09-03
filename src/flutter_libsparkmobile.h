@@ -149,6 +149,15 @@ struct SparkNameScript* createSparkNameScript(
 );
 
 FFI_PLUGIN_EXPORT
+struct SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
+        const unsigned char* message,
+        int messageLength,
+        unsigned char* spendKeyData,
+        int spendKeyIndex,
+        int diversifier
+);
+
+FFI_PLUGIN_EXPORT
 struct SparkNameCommitmentResult* cGetSparkNameCommitment(
         const unsigned char* serializedSparkNameData,
         int serializedSparkNameDataLength

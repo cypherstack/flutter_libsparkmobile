@@ -734,6 +734,76 @@ abstract final class LibSpark {
     }
   }
 
+  static String createSparkAddressOwnershipProof({
+    required String message,
+    required String privateKeyHex,
+    required int spendKeyIndex,
+    required int diversifier,
+  }) {
+    final messageBytes = Uint8List.fromList(utf8.encode(message));
+    if (messageBytes.length > 0x7fffffff) {
+      throw ArgumentError.value(
+        message,
+        'message',
+        'is too long',
+      );
+    }
+    RangeError.checkValueInInterval(
+      spendKeyIndex,
+      0,
+      0x7fffffff,
+      'spendKeyIndex',
+    );
+    RangeError.checkValueInInterval(diversifier, 0, 0x7fffffff, 'diversifier');
+
+    final privateKeyBytes = privateKeyHex.to32BytesFromHex();
+    final messagePtr = messageBytes.isEmpty
+        ? nullptr.cast<UnsignedChar>()
+        : messageBytes.unsignedCharPointer();
+    final privateKeyPtr = privateKeyBytes.unsignedCharPointer();
+
+    late Pointer<SparkAddressOwnershipProofResult> result;
+    try {
+      result = native_createSparkAddressOwnershipProof(
+        messagePtr,
+        messageBytes.length,
+        privateKeyPtr,
+        spendKeyIndex,
+        diversifier,
+      );
+    } finally {
+      if (messagePtr.address != nullptr.address) {
+        freeDart(messagePtr, debugName: 'messagePtr');
+      }
+      freeDart(privateKeyPtr, debugName: 'privateKeyPtr');
+    }
+
+    if (result.address == nullptr.address) {
+      throw Exception('Internal memory allocation failed');
+    }
+
+    try {
+      if (result.ref.error.address != nullptr.address) {
+        final error = result.ref.error.cast<Utf8>().toDartString();
+        freeNative(result.ref.error, debugName: 'result.ref.error');
+        throw Exception(error);
+      }
+      if (result.ref.proof.address == nullptr.address ||
+          result.ref.proofLength <= 0) {
+        throw Exception('Failed to create Spark address ownership proof');
+      }
+
+      return result.ref.proof
+          .toUint8List(result.ref.proofLength)
+          .toHexString();
+    } finally {
+      if (result.ref.proof.address != nullptr.address) {
+        freeNative(result.ref.proof, debugName: 'result.ref.proof');
+      }
+      freeNative(result, debugName: 'result');
+    }
+  }
+
   static List<String> hashTags({required List<String> base64Tags}) {
     DateTime? start;
     int? id;

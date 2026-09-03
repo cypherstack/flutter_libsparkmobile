@@ -74,6 +74,60 @@ void main() {
     );
   });
 
+  test('Spark address ownership proof supports Core message lengths', () {
+    const privateKeyHex =
+        'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+
+    for (final message in ['', List.filled(1025, 'a').join()]) {
+      final proof = LibSpark.createSparkAddressOwnershipProof(
+        message: message,
+        privateKeyHex: privateKeyHex,
+        spendKeyIndex: 1,
+        diversifier: 0,
+      );
+      expect(proof, hasLength(260));
+      expect(RegExp(r'^[0-9a-f]+$').hasMatch(proof), isTrue);
+    }
+  });
+
+  test('Spark address ownership proof checks native integer bounds', () {
+    const privateKeyHex =
+        'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+    expect(
+      () => LibSpark.createSparkAddressOwnershipProof(
+        message: 'challenge',
+        privateKeyHex: privateKeyHex,
+        spendKeyIndex: 0x80000000,
+        diversifier: 0,
+      ),
+      throwsRangeError,
+    );
+    expect(
+      () => LibSpark.createSparkAddressOwnershipProof(
+        message: 'challenge',
+        privateKeyHex: privateKeyHex,
+        spendKeyIndex: 1,
+        diversifier: 0x80000000,
+      ),
+      throwsRangeError,
+    );
+  });
+
+  test('Spark address ownership proof is canonical hex', () {
+    const privateKeyHex =
+        'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+
+    final proof = LibSpark.createSparkAddressOwnershipProof(
+      message: 'Spark Name ownership challenge',
+      privateKeyHex: privateKeyHex,
+      spendKeyIndex: 1,
+      diversifier: 0,
+    );
+
+    expect(proof, hasLength(260));
+    expect(RegExp(r'^[0-9a-f]+$').hasMatch(proof), isTrue);
+  });
+
   test('mnemonic to address test', () async {
     // Generate key data from the mnemonic.
     //

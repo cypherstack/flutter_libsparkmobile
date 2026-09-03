@@ -244,6 +244,22 @@ external ffi.Pointer<SparkNameScript> native_createSparkNameScript(
 );
 
 @ffi.Native<
+    ffi.Pointer<SparkAddressOwnershipProofResult> Function(
+        ffi.Pointer<ffi.UnsignedChar>,
+        ffi.Int,
+        ffi.Pointer<ffi.UnsignedChar>,
+        ffi.Int,
+        ffi.Int)>(symbol: 'createSparkAddressOwnershipProof')
+external ffi.Pointer<SparkAddressOwnershipProofResult>
+native_createSparkAddressOwnershipProof(
+  ffi.Pointer<ffi.UnsignedChar> message,
+  int messageLength,
+  ffi.Pointer<ffi.UnsignedChar> spendKeyData,
+  int spendKeyIndex,
+  int diversifier,
+);
+
+@ffi.Native<
     ffi.Pointer<SparkNameCommitmentResult> Function(
         ffi.Pointer<ffi.UnsignedChar>,
         ffi.Int)>(symbol: 'cGetSparkNameCommitment')
@@ -622,4 +638,13 @@ final class SparkNameScript extends ffi.Struct {
 
   @ffi.Int()
   external int size;
+}
+
+final class SparkAddressOwnershipProofResult extends ffi.Struct {
+  external ffi.Pointer<ffi.UnsignedChar> proof;
+
+  @ffi.Int()
+  external int proofLength;
+
+  external ffi.Pointer<ffi.Char> error;
 }

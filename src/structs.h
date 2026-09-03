@@ -255,6 +255,12 @@ struct SparkNameScript {
     int size;
 };
 
+struct SparkAddressOwnershipProofResult {
+    unsigned char* proof;
+    int proofLength;
+    char* error;
+};
+
 //#ifdef __cplusplus
 //}
 //#endif
