@@ -9,6 +9,9 @@ analyzer:
     - "crypto_plugins/**"
     - "bin/cache/**"
     - "lib/generated_plugin_registrant.dart"
+    - build/**
+    - ios/**
+    - macos/**
 
   # For more information see:
   # https://dart.dev/guides/language/analysis-options#enabling-additional-type-checks
