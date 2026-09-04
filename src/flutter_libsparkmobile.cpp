@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "deps/sparkmobile/include/spark.h"
 #include "deps/sparkmobile/src/sparkname.h"
+#include "deps/sparkmobile/bitcoin/hash.h"
 #include "deps/sparkmobile/bitcoin/uint256.h"
 #include "structs.h"
 #include "transaction.h"
@@ -48,6 +49,69 @@ const char* getAddressFromFullViewKey(void* fullViewKeyVoid, int index, int dive
         std::cerr << "Exception: " << e.what() << std::endl;
         return nullptr;
     }
+}
+
+FFI_PLUGIN_EXPORT
+SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
+        const unsigned char* message,
+        int messageLength,
+        unsigned char* spendKeyData,
+        int spendKeyIndex,
+        int diversifier
+) {
+    SparkAddressOwnershipProofResult* result =
+        static_cast<SparkAddressOwnershipProofResult*>(malloc(sizeof(SparkAddressOwnershipProofResult)));
+    if (!result) return nullptr;
+
+    result->proof = nullptr;
+    result->proofLength = 0;
+    result->error = nullptr;
+
+    try {
+        if (messageLength < 0 || (messageLength > 0 && !message)) {
+            throw std::invalid_argument("Invalid message");
+        }
+        if (!spendKeyData || spendKeyIndex < 0 || diversifier < 0) {
+            throw std::invalid_argument("Invalid Spark key parameters");
+        }
+
+        const std::string messageString = messageLength == 0
+            ? std::string()
+            : std::string(
+                reinterpret_cast<const char*>(message),
+                static_cast<size_t>(messageLength));
+        CHashWriter messageHash(SER_GETHASH, 0);
+        messageHash << std::string("Zcoin Signed Message:\n") << messageString;
+
+        Scalar messageScalar;
+        messageScalar.SetHex(messageHash.GetHash().GetHex());
+
+        spark::SpendKey spendKey = createSpendKeyFromData(spendKeyData, spendKeyIndex);
+        spark::FullViewKey fullViewKey(spendKey);
+        spark::IncomingViewKey incomingViewKey(fullViewKey);
+        spark::Address address(incomingViewKey, static_cast<uint64_t>(diversifier));
+
+        spark::OwnershipProof proof;
+        address.prove_own(messageScalar, spendKey, incomingViewKey, proof);
+
+        CDataStream proofStream(SER_NETWORK, PROTOCOL_VERSION);
+        proofStream << proof;
+
+        result->proofLength = static_cast<int>(proofStream.size());
+        result->proof = static_cast<unsigned char*>(malloc(proofStream.size()));
+        if (!result->proof) {
+            free(result);
+            return nullptr;
+        }
+        memcpy(result->proof, proofStream.data(), proofStream.size());
+    } catch (const std::exception& e) {
+        result->error = static_cast<char*>(malloc(strlen(e.what()) + 1));
+        if (result->error) {
+            strcpy(result->error, e.what());
+        }
+    }
+
+    return result;
 }
 
 /*
