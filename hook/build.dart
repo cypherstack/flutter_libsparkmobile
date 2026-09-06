@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
+import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:native_toolchain_cmake/native_toolchain_cmake.dart';
 
@@ -11,12 +13,20 @@ void main(List<String> args) async {
     if (!input.config.buildCodeAssets) return;
 
     final sourceDir = input.packageRoot.resolve('src/');
-    final buildDir = input.outputDirectory.resolve('cmake/');
+    final (:defines, :appleSdkCacheKey) = await _cmakeConfiguration(
+      input,
+      output,
+    );
+    // The hook configuration does not identify the installed Xcode SDK, while
+    // the Apple CMake toolchain caches SDK details as INTERNAL values.
+    final buildDir = input.outputDirectory.resolve(
+      appleSdkCacheKey == null ? 'cmake/' : 'cmake-$appleSdkCacheKey/',
+    );
     final builder = CMakeBuilder.create(
       name: input.packageName,
       sourceDir: sourceDir,
       outDir: buildDir,
-      defines: await _cmakeDefines(input),
+      defines: defines,
       targets: [input.packageName],
     );
 
@@ -43,24 +53,47 @@ void main(List<String> args) async {
   });
 }
 
-Future<Map<String, String>> _cmakeDefines(BuildInput input) async {
+Future<({Map<String, String> defines, String? appleSdkCacheKey})>
+_cmakeConfiguration(BuildInput input, BuildOutputBuilder output) async {
   final os = input.config.code.targetOS;
   final defines = {'BUILD_FOR_SYSTEM_NAME': os.name};
-  if (os != OS.iOS && os != OS.macOS) return defines;
+  if (os != OS.iOS && os != OS.macOS) {
+    return (defines: defines, appleSdkCacheKey: null);
+  }
 
   final sdk = os == OS.macOS
       ? 'macosx'
       : input.config.code.iOS.targetSdk == IOSSdk.iPhoneSimulator
       ? 'iphonesimulator'
       : 'iphoneos';
-  final result = await Process.run('xcrun', ['--sdk', sdk, '--show-sdk-path']);
+  final arguments = ['--sdk', sdk, '--show-sdk-path'];
+  final result = await Process.run('xcrun', arguments);
   if (result.exitCode != 0) {
-    throw ProcessException('xcrun', [
-      '--sdk',
-      sdk,
-      '--show-sdk-path',
-    ], result.stderr as String);
+    throw ProcessException(
+      'xcrun',
+      arguments,
+      result.stderr as String,
+      result.exitCode,
+    );
   }
-  defines['CMAKE_OSX_SYSROOT_INT'] = (result.stdout as String).trim();
-  return defines;
+  final sdkPath = (result.stdout as String).trim();
+  defines['CMAKE_OSX_SYSROOT_INT'] = sdkPath;
+
+  final sdkDirectory = Directory(sdkPath);
+  final sdkSettings = File.fromUri(
+    sdkDirectory.uri.resolve('SDKSettings.json'),
+  );
+  // Flutter includes xcrun's compiler paths in the hook configuration, which
+  // handles switching Xcode. These dependencies handle an in-place SDK update.
+  output.dependencies.addAll([sdkSettings.uri, sdkDirectory.parent.uri]);
+  final sdkSettingsBytes = await sdkSettings.readAsBytes();
+
+  return (
+    defines: defines,
+    appleSdkCacheKey: sha256.convert([
+      ...utf8.encode(sdkPath),
+      0,
+      ...sdkSettingsBytes,
+    ]).toString(),
+  );
 }
