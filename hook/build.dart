@@ -17,8 +17,8 @@ void main(List<String> args) async {
       input,
       output,
     );
-    // The hook configuration does not identify the installed Xcode SDK, while
-    // the Apple CMake toolchain caches SDK details as INTERNAL values.
+    // The hook configuration does not identify the installed SDK or Xcode build,
+    // while the Apple CMake toolchain caches their details as INTERNAL values.
     final buildDir = input.outputDirectory.resolve(
       appleSdkCacheKey == null ? 'cmake/' : 'cmake-$appleSdkCacheKey/',
     );
@@ -66,34 +66,64 @@ _cmakeConfiguration(BuildInput input, BuildOutputBuilder output) async {
       : input.config.code.iOS.targetSdk == IOSSdk.iPhoneSimulator
       ? 'iphonesimulator'
       : 'iphoneos';
-  final arguments = ['--sdk', sdk, '--show-sdk-path'];
-  final result = await Process.run('xcrun', arguments);
-  if (result.exitCode != 0) {
-    throw ProcessException(
-      'xcrun',
-      arguments,
-      result.stderr as String,
-      result.exitCode,
-    );
-  }
-  final sdkPath = (result.stdout as String).trim();
+  final sdkPath = await _appleToolOutput('xcrun', [
+    '--sdk',
+    sdk,
+    '--show-sdk-path',
+  ]);
   defines['CMAKE_OSX_SYSROOT_INT'] = sdkPath;
 
   final sdkDirectory = Directory(sdkPath);
   final sdkSettings = File.fromUri(
     sdkDirectory.uri.resolve('SDKSettings.json'),
   );
-  // Flutter includes xcrun's compiler paths in the hook configuration, which
-  // handles switching Xcode. These dependencies handle an in-place SDK update.
-  output.dependencies.addAll([sdkSettings.uri, sdkDirectory.parent.uri]);
-  final sdkSettingsBytes = await sdkSettings.readAsBytes();
+  final sdkVersion = File.fromUri(
+    sdkDirectory.uri.resolve('System/Library/CoreServices/SystemVersion.plist'),
+  );
+  final developerDirectory = Directory(
+    await _appleToolOutput('xcode-select', ['--print-path']),
+  );
+  final xcodeVersion = File.fromUri(
+    developerDirectory.parent.uri.resolve('version.plist'),
+  );
+  final metadataFiles = [
+    sdkSettings,
+    // Custom SDKs may omit SystemVersion.plist; standalone Command Line Tools
+    // have no Xcode app version.plist.
+    if (await sdkVersion.exists()) sdkVersion,
+    if (await xcodeVersion.exists()) xcodeVersion,
+  ];
+
+  // Flutter's outer build cache treats dependencies as files, so a directory
+  // dependency would make every build dirty. Track and hash metadata files to
+  // detect SDK and Xcode updates in place, including changes in build numbers.
+  final cacheIdentity = <String>[sdkPath, developerDirectory.path];
+  for (final file in metadataFiles) {
+    final bytes = await file.readAsBytes();
+    output.dependencies.add(file.uri);
+    cacheIdentity.addAll([file.path, sha256.convert(bytes).toString()]);
+  }
 
   return (
     defines: defines,
-    appleSdkCacheKey: sha256.convert([
-      ...utf8.encode(sdkPath),
-      0,
-      ...sdkSettingsBytes,
-    ]).toString(),
+    appleSdkCacheKey: sha256
+        .convert(utf8.encode(jsonEncode(cacheIdentity)))
+        .toString(),
   );
+}
+
+Future<String> _appleToolOutput(
+  String executable,
+  List<String> arguments,
+) async {
+  final result = await Process.run(executable, arguments);
+  if (result.exitCode != 0) {
+    throw ProcessException(
+      executable,
+      arguments,
+      result.stderr as String,
+      result.exitCode,
+    );
+  }
+  return (result.stdout as String).trim();
 }
