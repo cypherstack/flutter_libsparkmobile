@@ -114,6 +114,52 @@ SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
     return result;
 }
 
+FFI_PLUGIN_EXPORT
+int verifySparkAddressOwnershipProof(
+        const unsigned char* message,
+        int messageLength,
+        const char* encodedAddress,
+        const unsigned char* proofData,
+        int proofLength,
+        int isTestNet
+) {
+    try {
+        spark::OwnershipProof proof;
+        if (messageLength < 0 || (messageLength > 0 && !message) ||
+            !encodedAddress || !proofData ||
+            proofLength != static_cast<int>(proof.memoryRequired())) {
+            return 0;
+        }
+
+        spark::Address address;
+        if (address.decode(encodedAddress) != (isTestNet
+                ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET)) {
+            return 0;
+        }
+
+        std::vector<unsigned char> bytes(proofData, proofData + proofLength);
+        CDataStream stream(bytes, SER_NETWORK, PROTOCOL_VERSION);
+        stream >> proof;
+        // Reject alternate encodings as well as truncated or trailing data.
+        CDataStream canonical(SER_NETWORK, PROTOCOL_VERSION);
+        canonical << proof;
+        if (bytes != std::vector<unsigned char>(canonical.begin(), canonical.end())) {
+            return 0;
+        }
+
+        const std::string messageString = messageLength == 0
+            ? std::string()
+            : std::string(reinterpret_cast<const char*>(message), messageLength);
+        CHashWriter messageHash(SER_GETHASH, 0);
+        messageHash << std::string("Zcoin Signed Message:\n") << messageString;
+        Scalar messageScalar;
+        messageScalar.SetHex(messageHash.GetHash().GetHex());
+        return address.verify_own(messageScalar, proof) ? 1 : 0;
+    } catch (const std::exception&) {
+        return 0;
+    }
+}
+
 /*
  * FFI-friendly wrapper for spark:identifyCoin.
  *
