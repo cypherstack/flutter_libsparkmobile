@@ -9,38 +9,45 @@
 import 'dart:ffi' as ffi;
 
 @ffi.Native<
-        ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>(
-    symbol: 'getFullViewKeyFromPrivateKeyData')
+  ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int)
+>(symbol: 'getFullViewKeyFromPrivateKeyData')
 external ffi.Pointer<ffi.Void> native_getFullViewKeyFromPrivateKeyData(
   ffi.Pointer<ffi.UnsignedChar> keyData,
   int index,
 );
 
 @ffi.Native<
-        ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>(
-    symbol: 'deserializeFullViewKey')
+  ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int)
+>(symbol: 'deserializeFullViewKey')
 external ffi.Pointer<ffi.Void> native_deserializeFullViewKey(
   ffi.Pointer<ffi.UnsignedChar> keyData,
   int keyDataLength,
 );
 
 @ffi.Native<
-    ffi.Pointer<ffi.UnsignedChar> Function(ffi.Pointer<ffi.Void>,
-        ffi.Pointer<ffi.Int>)>(symbol: 'serializeFullViewKey')
+  ffi.Pointer<ffi.UnsignedChar> Function(
+    ffi.Pointer<ffi.Void>,
+    ffi.Pointer<ffi.Int>,
+  )
+>(symbol: 'serializeFullViewKey')
 external ffi.Pointer<ffi.UnsignedChar> native_serializeFullViewKey(
   ffi.Pointer<ffi.Void> fullViewKeyVoid,
   ffi.Pointer<ffi.Int> serializedSize,
 );
 
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>(
-    symbol: 'deleteFullViewKey')
-external void native_deleteFullViewKey(
-  ffi.Pointer<ffi.Void> fullViewKey,
-);
+  symbol: 'deleteFullViewKey',
+)
+external void native_deleteFullViewKey(ffi.Pointer<ffi.Void> fullViewKey);
 
 @ffi.Native<
-    ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int,
-        ffi.Int, ffi.Int)>(symbol: 'getAddress')
+  ffi.Pointer<ffi.Char> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'getAddress')
 external ffi.Pointer<ffi.Char> native_getAddress(
   ffi.Pointer<ffi.UnsignedChar> keyData,
   int index,
@@ -49,8 +56,13 @@ external ffi.Pointer<ffi.Char> native_getAddress(
 );
 
 @ffi.Native<
-    ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>, ffi.Int, ffi.Int,
-        ffi.Int)>(symbol: 'getAddressFromFullViewKey')
+  ffi.Pointer<ffi.Char> Function(
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'getAddressFromFullViewKey')
 external ffi.Pointer<ffi.Char> native_getAddressFromFullViewKey(
   ffi.Pointer<ffi.Void> fullViewKeyVoid,
   int index,
@@ -65,14 +77,16 @@ external ffi.Pointer<ffi.Char> native_getAddressFromFullViewKey(
 /// //FFI_PLUGIN_EXPORT
 /// //struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
 @ffi.Native<
-    ffi.Pointer<AggregateCoinData> Function(
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int)>(symbol: 'idAndRecoverCoin')
+  ffi.Pointer<AggregateCoinData> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'idAndRecoverCoin')
 external ffi.Pointer<AggregateCoinData> native_idAndRecoverCoin(
   ffi.Pointer<ffi.UnsignedChar> serializedCoin,
   int serializedCoinLength,
@@ -84,13 +98,15 @@ external ffi.Pointer<AggregateCoinData> native_idAndRecoverCoin(
 );
 
 @ffi.Native<
-    ffi.Pointer<AggregateCoinData> Function(
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Pointer<ffi.Void>,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int)>(symbol: 'idAndRecoverCoinByFullViewKey')
+  ffi.Pointer<AggregateCoinData> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<ffi.Void>,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'idAndRecoverCoinByFullViewKey')
 external ffi.Pointer<AggregateCoinData> native_idAndRecoverCoinByFullViewKey(
   ffi.Pointer<ffi.UnsignedChar> serializedCoin,
   int serializedCoinLength,
@@ -104,12 +120,14 @@ external ffi.Pointer<AggregateCoinData> native_idAndRecoverCoinByFullViewKey(
 ///
 /// createSparkMintRecipients: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L43
 @ffi.Native<
-    ffi.Pointer<CCRecipientList> Function(
-        ffi.Pointer<CMintedCoinData>,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int)>(symbol: 'cCreateSparkMintRecipients')
+  ffi.Pointer<CCRecipientList> Function(
+    ffi.Pointer<CMintedCoinData>,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'cCreateSparkMintRecipients')
 external ffi.Pointer<CCRecipientList> native_cCreateSparkMintRecipients(
   ffi.Pointer<CMintedCoinData> outputs,
   int outputsLength,
@@ -122,25 +140,27 @@ external ffi.Pointer<CCRecipientList> native_cCreateSparkMintRecipients(
 ///
 /// createSparkSpendTransaction: https://github.com/firoorg/sparkmobile/blob/23099b0d9010a970ad75b9cfe05d568d634088f3/src/spark.cpp#L190
 @ffi.Native<
-    ffi.Pointer<SparkSpendTransactionResult> Function(
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Pointer<CRecip>,
-        ffi.Int,
-        ffi.Pointer<COutputRecipient>,
-        ffi.Int,
-        ffi.Pointer<DartSpendCoinData>,
-        ffi.Int,
-        ffi.Pointer<CCoverSetData>,
-        ffi.Int,
-        ffi.Pointer<BlockHashAndId>,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>)>(symbol: 'cCreateSparkSpendTransaction')
+  ffi.Pointer<SparkSpendTransactionResult> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<CRecip>,
+    ffi.Int,
+    ffi.Pointer<COutputRecipient>,
+    ffi.Int,
+    ffi.Pointer<DartSpendCoinData>,
+    ffi.Int,
+    ffi.Pointer<CCoverSetData>,
+    ffi.Int,
+    ffi.Pointer<BlockHashAndId>,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+  )
+>(symbol: 'cCreateSparkSpendTransaction')
 external ffi.Pointer<SparkSpendTransactionResult>
-    native_cCreateSparkSpendTransaction(
+native_cCreateSparkSpendTransaction(
   ffi.Pointer<ffi.UnsignedChar> keyData,
   int index,
   ffi.Pointer<CRecip> recipients,
@@ -160,49 +180,54 @@ external ffi.Pointer<SparkSpendTransactionResult>
 );
 
 @ffi.Native<
-    ffi.Pointer<SerializedMintContextResult> Function(
-        ffi.Pointer<DartInputData>, ffi.Int)>(symbol: 'serializeMintContext')
+  ffi.Pointer<SerializedMintContextResult> Function(
+    ffi.Pointer<DartInputData>,
+    ffi.Int,
+  )
+>(symbol: 'serializeMintContext')
 external ffi.Pointer<SerializedMintContextResult> native_serializeMintContext(
   ffi.Pointer<DartInputData> inputs,
   int inputsLength,
 );
 
 @ffi.Native<
-    ffi.Pointer<ValidateAddressResult> Function(
-        ffi.Pointer<ffi.Char>, ffi.Int)>(symbol: 'isValidSparkAddress')
+  ffi.Pointer<ValidateAddressResult> Function(ffi.Pointer<ffi.Char>, ffi.Int)
+>(symbol: 'isValidSparkAddress')
 external ffi.Pointer<ValidateAddressResult> native_isValidSparkAddress(
   ffi.Pointer<ffi.Char> addressCStr,
   int isTestNet,
 );
 
 @ffi.Native<
-    ffi.Pointer<ffi.Char> Function(
-        ffi.Pointer<ffi.UnsignedChar>, ffi.Int)>(symbol: 'hashTags')
+  ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Int)
+>(symbol: 'hashTags')
 external ffi.Pointer<ffi.Char> native_hashTags(
   ffi.Pointer<ffi.UnsignedChar> tags,
   int tagCount,
 );
 
 @ffi.Native<
-    ffi.Pointer<ffi.Char> Function(
-        ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>(symbol: 'hashTag')
+  ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)
+>(symbol: 'hashTag')
 external ffi.Pointer<ffi.Char> native_hashTag(
   ffi.Pointer<ffi.Char> x,
   ffi.Pointer<ffi.Char> y,
 );
 
 @ffi.Native<
-    ffi.Pointer<SparkFeeResult> Function(
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int64,
-        ffi.Int,
-        ffi.Pointer<DartSpendCoinData>,
-        ffi.Int,
-        ffi.Int,
-        ffi.Int,
-        ffi.Int,
-        ffi.Int)>(symbol: 'estimateSparkFee')
+  ffi.Pointer<SparkFeeResult> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int64,
+    ffi.Int,
+    ffi.Pointer<DartSpendCoinData>,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'estimateSparkFee')
 external ffi.Pointer<SparkFeeResult> native_estimateSparkFee(
   ffi.Pointer<ffi.UnsignedChar> keyData,
   int index,
@@ -217,18 +242,20 @@ external ffi.Pointer<SparkFeeResult> native_estimateSparkFee(
 );
 
 @ffi.Native<
-    ffi.Pointer<SparkNameScript> Function(
-        ffi.Int,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int,
-        ffi.Int,
-        ffi.Int,
-        ffi.Int)>(symbol: 'createSparkNameScript')
+  ffi.Pointer<SparkNameScript> Function(
+    ffi.Int,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'createSparkNameScript')
 external ffi.Pointer<SparkNameScript> native_createSparkNameScript(
   int sparkNameValidityBlocks,
   ffi.Pointer<ffi.Char> name,
@@ -244,12 +271,14 @@ external ffi.Pointer<SparkNameScript> native_createSparkNameScript(
 );
 
 @ffi.Native<
-    ffi.Pointer<SparkAddressOwnershipProofResult> Function(
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int,
-        ffi.Int)>(symbol: 'createSparkAddressOwnershipProof')
+  ffi.Pointer<SparkAddressOwnershipProofResult> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'createSparkAddressOwnershipProof')
 external ffi.Pointer<SparkAddressOwnershipProofResult>
 native_createSparkAddressOwnershipProof(
   ffi.Pointer<ffi.UnsignedChar> message,
@@ -260,18 +289,18 @@ native_createSparkAddressOwnershipProof(
 );
 
 @ffi.Native<
-    ffi.Pointer<SparkNameCommitmentResult> Function(
-        ffi.Pointer<ffi.UnsignedChar>,
-        ffi.Int)>(symbol: 'cGetSparkNameCommitment')
+  ffi.Pointer<SparkNameCommitmentResult> Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+  )
+>(symbol: 'cGetSparkNameCommitment')
 external ffi.Pointer<SparkNameCommitmentResult> native_cGetSparkNameCommitment(
   ffi.Pointer<ffi.UnsignedChar> serializedSparkNameData,
   int serializedSparkNameDataLength,
 );
 
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
-external void native_free(
-  ffi.Pointer<ffi.Void> ptr,
-);
+external void native_free(ffi.Pointer<ffi.Void> ptr);
 
 /// FFI-friendly wrapper for a spark::Coin.
 ///
@@ -648,3 +677,22 @@ final class SparkAddressOwnershipProofResult extends ffi.Struct {
 
   external ffi.Pointer<ffi.Char> error;
 }
+
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Int,
+    ffi.Int,
+  )
+>(symbol: 'verifySparkAddressOwnershipProof')
+external int native_verifySparkAddressOwnershipProof(
+  ffi.Pointer<ffi.UnsignedChar> message,
+  int messageLength,
+  ffi.Pointer<ffi.Char> encodedAddress,
+  ffi.Pointer<ffi.UnsignedChar> proofData,
+  int proofLength,
+  int isTestNet,
+);

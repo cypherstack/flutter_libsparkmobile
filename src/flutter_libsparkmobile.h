@@ -158,6 +158,16 @@ struct SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
 );
 
 FFI_PLUGIN_EXPORT
+int verifySparkAddressOwnershipProof(
+        const unsigned char* message,
+        int messageLength,
+        const char* encodedAddress,
+        const unsigned char* proofData,
+        int proofLength,
+        int isTestNet
+);
+
+FFI_PLUGIN_EXPORT
 struct SparkNameCommitmentResult* cGetSparkNameCommitment(
         const unsigned char* serializedSparkNameData,
         int serializedSparkNameDataLength

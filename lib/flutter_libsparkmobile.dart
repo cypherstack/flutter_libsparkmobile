@@ -78,7 +78,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(privateKey=REDACTED,"
+        function +=
+            "(privateKey=REDACTED,"
             "index=$index,"
             "diversifier=$diversifier,"
             "isTestNet=$isTestNet)";
@@ -224,8 +225,9 @@ abstract final class LibSpark {
   /// Returns a list of spark mint recipients
   ///
   static List<
-          ({Uint8List scriptPubKey, int amount, bool subtractFeeFromAmount})>
-      createSparkMintRecipients({
+    ({Uint8List scriptPubKey, int amount, bool subtractFeeFromAmount})
+  >
+  createSparkMintRecipients({
     required List<({String sparkAddress, int value, String memo})> outputs,
     required Uint8List serialContext,
     bool generate = false,
@@ -238,7 +240,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(outputs=$outputs,"
+        function +=
+            "(outputs=$outputs,"
             "serialContext=$serialContext,"
             "generate=$generate)";
       }
@@ -257,8 +260,9 @@ abstract final class LibSpark {
 
       for (int i = 0; i < outputs.length; i++) {
         outputsPtr[i].value = outputs[i].value;
-        outputsPtr[i].address =
-            outputs[i].sparkAddress.toNativeUtf8().cast<Char>();
+        outputsPtr[i].address = outputs[i].sparkAddress
+            .toNativeUtf8()
+            .cast<Char>();
         outputsPtr[i].memo = outputs[i].memo.toNativeUtf8().cast<Char>();
       }
 
@@ -282,11 +286,9 @@ abstract final class LibSpark {
       }
 
       final List<
-          ({
-            Uint8List scriptPubKey,
-            int amount,
-            bool subtractFeeFromAmount
-          })> ret = [];
+        ({Uint8List scriptPubKey, int amount, bool subtractFeeFromAmount})
+      >
+      ret = [];
 
       for (int i = 0; i < result.ref.length; i++) {
         final d = result.ref.list[i];
@@ -327,40 +329,46 @@ abstract final class LibSpark {
     List<Uint8List> outputScripts,
     int fee,
     List<
-        ({
-          String serializedCoin,
-          String serializedCoinContext,
-          int groupId,
-          int height,
-        })> usedCoins,
-  }) createSparkSendTransaction({
+      ({
+        String serializedCoin,
+        String serializedCoinContext,
+        int groupId,
+        int height,
+      })
+    >
+    usedCoins,
+  })
+  createSparkSendTransaction({
     required String privateKeyHex,
     int index = 1,
     required List<({String address, int amount, bool subtractFeeFromAmount})>
-        recipients,
+    recipients,
     required List<
-            ({
-              String sparkAddress,
-              int amount,
-              bool subtractFeeFromAmount,
-              String memo,
-            })>
-        privateRecipients,
+      ({
+        String sparkAddress,
+        int amount,
+        bool subtractFeeFromAmount,
+        String memo,
+      })
+    >
+    privateRecipients,
     required List<
-            ({
-              String serializedCoin,
-              String serializedCoinContext,
-              int groupId,
-              int height,
-            })>
-        serializedCoins,
+      ({
+        String serializedCoin,
+        String serializedCoinContext,
+        int groupId,
+        int height,
+      })
+    >
+    serializedCoins,
     required List<
-            ({
-              int setId,
-              String setHash,
-              List<({String serializedCoin, String txHash})> set,
-            })>
-        allAnonymitySets,
+      ({
+        int setId,
+        String setHash,
+        List<({String serializedCoin, String txHash})> set,
+      })
+    >
+    allAnonymitySets,
     required List<({int setId, Uint8List blockHash})> idAndBlockHashes,
     required Uint8List txHash,
     required int additionalTxSize,
@@ -375,7 +383,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(privateKeyHex=REDACTED,"
+        function +=
+            "(privateKeyHex=REDACTED,"
             "index=$index,"
             "recipients=$recipients,"
             "privateRecipients=$privateRecipients,"
@@ -394,19 +403,21 @@ abstract final class LibSpark {
     }
 
     try {
-      final resolvedExtensionCommitment =
-          spendVersion.resolveExtensionCommitment(extensionCommitment);
+      final resolvedExtensionCommitment = spendVersion
+          .resolveExtensionCommitment(extensionCommitment);
 
-      final privateKeyPtr =
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+      final privateKeyPtr = privateKeyHex
+          .to32BytesFromHex()
+          .unsignedCharPointer();
 
       final recipientsPtr = malloc.allocate<CRecip>(
         sizeOf<CRecip>() * recipients.length,
       );
       for (int i = 0; i < recipients.length; i++) {
         recipientsPtr[i].amount = recipients[i].amount;
-        recipientsPtr[i].subtractFee =
-            recipients[i].subtractFeeFromAmount ? 1 : 0;
+        recipientsPtr[i].subtractFee = recipients[i].subtractFeeFromAmount
+            ? 1
+            : 0;
       }
 
       final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
@@ -422,12 +433,15 @@ abstract final class LibSpark {
         privateRecipientsPtr[i].output.ref.value = privateRecipients[i].amount;
         privateRecipientsPtr[i].output.ref.memoLength =
             privateRecipients[i].memo.length;
-        privateRecipientsPtr[i].output.ref.memo =
-            privateRecipients[i].memo.toNativeUtf8().cast<Char>();
+        privateRecipientsPtr[i].output.ref.memo = privateRecipients[i].memo
+            .toNativeUtf8()
+            .cast<Char>();
         privateRecipientsPtr[i].output.ref.addressLength =
             privateRecipients[i].sparkAddress.length;
-        privateRecipientsPtr[i].output.ref.address =
-            privateRecipients[i].sparkAddress.toNativeUtf8().cast<Char>();
+        privateRecipientsPtr[i].output.ref.address = privateRecipients[i]
+            .sparkAddress
+            .toNativeUtf8()
+            .cast<Char>();
       }
 
       final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
@@ -438,17 +452,17 @@ abstract final class LibSpark {
         serializedCoinsPtr[i].serializedCoin = malloc.allocate<CCDataStream>(
           sizeOf<CCDataStream>(),
         );
-        serializedCoinsPtr[i].serializedCoin.ref.data =
-            b64CoinDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoin.ref.data = b64CoinDecoded
+            .unsignedCharPointer();
         serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
 
         final b64ContextDecoded = base64Decode(
           serializedCoins[i].serializedCoinContext,
         );
-        serializedCoinsPtr[i].serializedCoinContext =
-            malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
-        serializedCoinsPtr[i].serializedCoinContext.ref.data =
-            b64ContextDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoinContext = malloc
+            .allocate<CCDataStream>(sizeOf<CCDataStream>());
+        serializedCoinsPtr[i].serializedCoinContext.ref.data = b64ContextDecoded
+            .unsignedCharPointer();
         serializedCoinsPtr[i].serializedCoinContext.ref.length =
             b64ContextDecoded.length;
 
@@ -472,13 +486,13 @@ abstract final class LibSpark {
             allAnonymitySets[i].set[j].serializedCoin,
           );
           coverSetDataAllPtr[i].cover_set[j].length = b64CoinDecoded.length;
-          coverSetDataAllPtr[i].cover_set[j].data =
-              b64CoinDecoded.unsignedCharPointer();
+          coverSetDataAllPtr[i].cover_set[j].data = b64CoinDecoded
+              .unsignedCharPointer();
         }
 
         final setHash = base64Decode(allAnonymitySets[i].setHash);
-        coverSetDataAllPtr[i].cover_set_representation =
-            setHash.unsignedCharPointer();
+        coverSetDataAllPtr[i].cover_set_representation = setHash
+            .unsignedCharPointer();
         coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
       }
 
@@ -488,13 +502,13 @@ abstract final class LibSpark {
       for (int i = 0; i < idAndBlockHashes.length; i++) {
         assert(idAndBlockHashes[i].blockHash.length == 32);
         idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
-        idAndBlockHashesPtr[i].hash =
-            idAndBlockHashes[i].blockHash.unsignedCharPointer();
+        idAndBlockHashesPtr[i].hash = idAndBlockHashes[i].blockHash
+            .unsignedCharPointer();
       }
 
       final txHashPtr = txHash.unsignedCharPointer();
-      final extensionCommitmentPtr =
-          resolvedExtensionCommitment.unsignedCharPointer();
+      final extensionCommitmentPtr = resolvedExtensionCommitment
+          .unsignedCharPointer();
 
       final result = native_cCreateSparkSpendTransaction(
         privateKeyPtr,
@@ -613,12 +627,14 @@ abstract final class LibSpark {
       );
 
       final List<
-          ({
-            String serializedCoin,
-            String serializedCoinContext,
-            int groupId,
-            int height,
-          })> usedCoins = [];
+        ({
+          String serializedCoin,
+          String serializedCoinContext,
+          int groupId,
+          int height,
+        })
+      >
+      usedCoins = [];
 
       for (int i = 0; i < result.ref.usedCoinsLength; i++) {
         final coinRef = result.ref.usedCoins[i].serializedCoin.ref;
@@ -680,7 +696,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(address=$address,"
+        function +=
+            "(address=$address,"
             "isTestNet=$isTestNet)";
       }
 
@@ -742,11 +759,7 @@ abstract final class LibSpark {
   }) {
     final messageBytes = Uint8List.fromList(utf8.encode(message));
     if (messageBytes.length > 0x7fffffff) {
-      throw ArgumentError.value(
-        message,
-        'message',
-        'is too long',
-      );
+      throw ArgumentError.value(message, 'message', 'is too long');
     }
     RangeError.checkValueInInterval(
       spendKeyIndex,
@@ -793,15 +806,59 @@ abstract final class LibSpark {
         throw Exception('Failed to create Spark address ownership proof');
       }
 
-      return result.ref.proof
-          .toUint8List(result.ref.proofLength)
-          .toHexString();
+      return result.ref.proof.toUint8List(result.ref.proofLength).toHexString();
     } finally {
       if (result.ref.proof.address != nullptr.address) {
         freeNative(result.ref.proof, debugName: 'result.ref.proof');
       }
       freeNative(result, debugName: 'result');
     }
+  }
+
+  static bool verifySparkAddressOwnershipProof({
+    required String message,
+    required String address,
+    required String proof,
+    required bool isTestNet,
+  }) {
+    // A serialized ownership proof is one 34-byte point and three 32-byte scalars.
+    if (proof.length != 260 ||
+        address.isEmpty ||
+        address.contains('\u0000') ||
+        !RegExp(r'^[0-9a-fA-F]+$').hasMatch(proof)) {
+      return false;
+    }
+    final messageBytes = Uint8List.fromList(utf8.encode(message));
+    if (messageBytes.length > 0x7fffffff) {
+      return false;
+    }
+    final proofBytes = Uint8List.fromList(
+      List.generate(
+        proof.length ~/ 2,
+        (i) => int.parse(proof.substring(i * 2, i * 2 + 2), radix: 16),
+      ),
+    );
+    return using((arena) {
+      final messagePtr = arena<UnsignedChar>(messageBytes.length + 1);
+      messagePtr
+          .cast<Uint8>()
+          .asTypedList(messageBytes.length)
+          .setAll(0, messageBytes);
+      final proofPtr = arena<UnsignedChar>(proofBytes.length);
+      proofPtr
+          .cast<Uint8>()
+          .asTypedList(proofBytes.length)
+          .setAll(0, proofBytes);
+      return native_verifySparkAddressOwnershipProof(
+            messagePtr,
+            messageBytes.length,
+            address.toNativeUtf8(allocator: arena).cast<Char>(),
+            proofPtr,
+            proofBytes.length,
+            isTestNet ? 1 : 0,
+          ) ==
+          1;
+    });
   }
 
   static List<String> hashTags({required List<String> base64Tags}) {
@@ -837,8 +894,10 @@ abstract final class LibSpark {
       final List<String> hashes = [];
 
       for (int i = 0; i < base64Tags.length; i++) {
-        final hash =
-            result.elementAt(i * 64).cast<Utf8>().toDartString(length: 64);
+        final hash = result
+            .elementAt(i * 64)
+            .cast<Utf8>()
+            .toDartString(length: 64);
         hashes.add(hash);
       }
 
@@ -904,13 +963,14 @@ abstract final class LibSpark {
     required int sendAmount,
     required bool subtractFeeFromAmount,
     required List<
-            ({
-              String serializedCoin,
-              String serializedCoinContext,
-              int groupId,
-              int height,
-            })>
-        serializedCoins,
+      ({
+        String serializedCoin,
+        String serializedCoinContext,
+        int groupId,
+        int height,
+      })
+    >
+    serializedCoins,
     required int privateRecipientsCount,
     required int utxoNum,
     required int additionalTxSize,
@@ -924,7 +984,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(privateKeyHex=REDACTED,"
+        function +=
+            "(privateKeyHex=REDACTED,"
             "index=$index,"
             "sendAmount=$sendAmount,"
             "subtractFeeFromAmount=$subtractFeeFromAmount,"
@@ -940,8 +1001,9 @@ abstract final class LibSpark {
     }
 
     try {
-      final privateKeyPtr =
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+      final privateKeyPtr = privateKeyHex
+          .to32BytesFromHex()
+          .unsignedCharPointer();
 
       final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
         sizeOf<DartSpendCoinData>() * serializedCoins.length,
@@ -951,17 +1013,17 @@ abstract final class LibSpark {
         serializedCoinsPtr[i].serializedCoin = malloc.allocate<CCDataStream>(
           sizeOf<CCDataStream>(),
         );
-        serializedCoinsPtr[i].serializedCoin.ref.data =
-            b64CoinDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoin.ref.data = b64CoinDecoded
+            .unsignedCharPointer();
         serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
 
         final b64ContextDecoded = base64Decode(
           serializedCoins[i].serializedCoinContext,
         );
-        serializedCoinsPtr[i].serializedCoinContext =
-            malloc.allocate<CCDataStream>(sizeOf<CCDataStream>());
-        serializedCoinsPtr[i].serializedCoinContext.ref.data =
-            b64ContextDecoded.unsignedCharPointer();
+        serializedCoinsPtr[i].serializedCoinContext = malloc
+            .allocate<CCDataStream>(sizeOf<CCDataStream>());
+        serializedCoinsPtr[i].serializedCoinContext.ref.data = b64ContextDecoded
+            .unsignedCharPointer();
         serializedCoinsPtr[i].serializedCoinContext.ref.length =
             b64ContextDecoded.length;
 
@@ -1036,7 +1098,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "("
+        function +=
+            "("
             "sparkNameValidityBlocks=$sparkNameValidityBlocks,"
             "name=$name,"
             "additionalInfo=$additionalInfo,"
@@ -1060,8 +1123,9 @@ abstract final class LibSpark {
       final ownershipDigestPtr = Uint8List.fromList(
         proofInput.inputHex.to32BytesFromHex().reversed.toList(),
       ).unsignedCharPointer();
-      final privateKeyPtr =
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer();
+      final privateKeyPtr = privateKeyHex
+          .to32BytesFromHex()
+          .unsignedCharPointer();
 
       final result = native_createSparkNameScript(
         sparkNameValidityBlocks,
@@ -1101,8 +1165,7 @@ abstract final class LibSpark {
         freeNative(result.ref.script, debugName: "result.ref.script");
       }
 
-      size = result.ref.size +
-          20; // https://github.com/firoorg/firo/blob/dd2a537d52c177736284f568e494dafb55db4924/src/spark/sparkwallet.cpp#L1624C59-L1624C123
+      size = result.ref.size + 20; // https://github.com/firoorg/firo/blob/dd2a537d52c177736284f568e494dafb55db4924/src/spark/sparkwallet.cpp#L1624C59-L1624C123
 
       freeNative(result, debugName: "result");
 
@@ -1139,7 +1202,8 @@ abstract final class LibSpark {
       start = DateTime.now();
       String function = StackTrace.current.functionName;
       if (enableTraceLogging) {
-        function += "(serializedSparkNameDataLength="
+        function +=
+            "(serializedSparkNameDataLength="
             "${serializedSparkNameData.length})";
       }
       Log.l(
@@ -1158,8 +1222,8 @@ abstract final class LibSpark {
         );
       }
 
-      final serializedSparkNameDataPtr =
-          serializedSparkNameData.unsignedCharPointer();
+      final serializedSparkNameDataPtr = serializedSparkNameData
+          .unsignedCharPointer();
       try {
         final result = native_cGetSparkNameCommitment(
           serializedSparkNameDataPtr,
@@ -1361,8 +1425,8 @@ abstract final class LibSpark {
       final ret = LibSparkCoin(
         type: coinType,
         nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
-              length: result.ref.nonceHexLength,
-            ),
+          length: result.ref.nonceHexLength,
+        ),
         address: result.ref.address.cast<Utf8>().toDartString(),
         value: BigInt.from(result.ref.value),
         memo: result.ref.memo.cast<Utf8>().toDartString(),

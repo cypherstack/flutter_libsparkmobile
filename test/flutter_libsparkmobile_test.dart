@@ -128,6 +128,84 @@ void main() {
     expect(RegExp(r'^[0-9a-f]+$').hasMatch(proof), isTrue);
   });
 
+  test(
+    'ownership proofs bind the exact message, address and network',
+    () async {
+      const key =
+          'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+      for (final isTestNet in [false, true]) {
+        final address = await LibSpark.getAddress(
+          privateKey: key.to32BytesFromHex(),
+          index: 1,
+          diversifier: 0,
+          isTestNet: isTestNet,
+        );
+        final otherAddress = await LibSpark.getAddress(
+          privateKey: key.to32BytesFromHex(),
+          index: 1,
+          diversifier: 1,
+          isTestNet: isTestNet,
+        );
+        expect(
+          LibSpark.verifySparkAddressOwnershipProof(
+            message: 'challenge',
+            address: address,
+            proof: '00' * 2097152,
+            isTestNet: isTestNet,
+          ),
+          isFalse,
+        );
+        for (final message in [
+          '',
+          ' challenge\n',
+          '\u03bb\u0000message',
+          'a' * 1025,
+        ]) {
+          final proof = LibSpark.createSparkAddressOwnershipProof(
+            message: message,
+            privateKeyHex: key,
+            spendKeyIndex: 1,
+            diversifier: 0,
+          );
+          bool verify({
+            String? text,
+            String? addr,
+            String? sig,
+            bool? testnet,
+          }) => LibSpark.verifySparkAddressOwnershipProof(
+            message: text ?? message,
+            address: addr ?? address,
+            proof: sig ?? proof,
+            isTestNet: testnet ?? isTestNet,
+          );
+          expect(verify(), isTrue);
+          expect(verify(sig: proof.toUpperCase()), isTrue);
+          expect(verify(text: '${message}x'), isFalse);
+          if (message.trim() != message) {
+            expect(verify(text: message.trim()), isFalse);
+          }
+          expect(verify(addr: otherAddress), isFalse);
+          expect(verify(testnet: !isTestNet), isFalse);
+          expect(verify(addr: '$address\u0000ignored'), isFalse);
+          expect(verify(addr: 'not-an-address'), isFalse);
+          for (final invalidProof in [
+            '',
+            'zz',
+            'a',
+            'g${proof.substring(1)}',
+            '$proof\n',
+            '${proof}00',
+            proof.substring(2),
+            '00' * 130,
+            '${proof.substring(0, 64)}02${proof.substring(66)}',
+          ]) {
+            expect(verify(sig: invalidProof), isFalse);
+          }
+        }
+      }
+    },
+  );
+
   test('mnemonic to address test', () async {
     // Generate key data from the mnemonic.
     //
