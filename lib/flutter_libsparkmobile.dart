@@ -53,7 +53,9 @@ const kStandardSparkNamesFee = [
 ];
 
 bool get enableDebugLogging =>
-    Log.onLog != null && Log.levels.contains(LoggingLevel.debug);
+    Log.onLog != null &&
+    (Log.levels.contains(LoggingLevel.debug) ||
+        Log.levels.contains(LoggingLevel.trace));
 
 bool get enableTraceLogging =>
     Log.onLog != null && Log.levels.contains(LoggingLevel.trace);

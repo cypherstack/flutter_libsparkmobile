@@ -383,4 +383,44 @@ void main() {
       }
     });
   });
+
+  group('Logging', () {
+    late Set<LoggingLevel> previousLevels;
+    late List<(LoggingLevel, Object?)> events;
+    final previousCallback = Log.onLog;
+
+    setUp(() {
+      previousLevels = Log.levels;
+      events = [];
+      Log.onLog = (level, value, {error, stackTrace, required time}) {
+        events.add((level, value));
+      };
+    });
+
+    tearDown(() {
+      Log.levels = previousLevels;
+      Log.onLog = previousCallback;
+    });
+
+    test('delivers only enabled levels', () {
+      Log.levels = {LoggingLevel.warning};
+      Log.d('hidden');
+      Log.w('visible');
+      expect(events, [(LoggingLevel.warning, 'visible')]);
+    });
+
+    test('traces operations when debug is disabled', () async {
+      Log.levels = {LoggingLevel.trace};
+      await LibSpark.getAddress(
+        privateKey: _privateKey.to32BytesFromHex(),
+        index: 1,
+        diversifier: 0,
+      );
+      expect(events, isNotEmpty);
+      expect(events.map((event) => event.$1), everyElement(LoggingLevel.trace));
+      final messages = events.map((event) => event.$2.toString());
+      expect(messages.any((message) => message.startsWith('BEGIN(')), isTrue);
+      expect(messages.any((message) => message.startsWith('END(')), isTrue);
+    });
+  });
 }
