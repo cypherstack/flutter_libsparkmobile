@@ -34,6 +34,3 @@ doc/api/
 
 example/ios/Podfile.lock
 example/macos/Podfile.lock
-
-src/deps/sparkmobile/CMakeLists.txt
-src/deps/sparkmobile/secp256k1/CMakeLists.txt
