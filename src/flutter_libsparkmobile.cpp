@@ -94,6 +94,14 @@ bool isHexCoordinate(const char* value) {
     return false;
 }
 
+void requireSpendCoin(const DartSpendCoinData& coin) {
+    if (!coin.serializedCoin || !coin.serializedCoin->data || coin.serializedCoin->length <= 0 ||
+        !coin.serializedCoinContext || coin.serializedCoinContext->length < 0 ||
+        (coin.serializedCoinContext->length > 0 && !coin.serializedCoinContext->data)) {
+        throw std::invalid_argument("Invalid Spark spend coin");
+    }
+}
+
 void freeCoinData(AggregateCoinData* data) {
     if (!data) return;
     free(data->address);
@@ -493,6 +501,15 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
     const unsigned char* extensionCommitment
 ) {
     try {
+        if (!keyData || !txHashSig || !extensionCommitment || index < 0 || additionalTxSize < 0 ||
+            recipientsLength < 0 || (recipientsLength > 0 && !recipients) ||
+            privateRecipientsLength < 0 || (privateRecipientsLength > 0 && !privateRecipients) ||
+            coinsLength < 0 || (coinsLength > 0 && !coins) ||
+            cover_set_data_allLength < 0 || (cover_set_data_allLength > 0 && !cover_set_data_all) ||
+            idAndBlockHashesLength < 0 || (idAndBlockHashesLength > 0 && !idAndBlockHashes)) {
+            throw std::invalid_argument("Invalid Spark spend arguments");
+        }
+
         // Derive the keys from the key data and index.
         spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         spark::FullViewKey fullViewKey(spendKey);
@@ -509,6 +526,11 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         std::vector<std::pair<spark::OutputCoinData, bool>> cppPrivateRecipients;
         cppPrivateRecipients.reserve(privateRecipientsLength);
         for (int i = 0; i < privateRecipientsLength; i++) {
+            const COutputCoinData* output = privateRecipients[i].output;
+            if (!output || !output->address || output->addressLength < 0 ||
+                output->memoLength < 0 || (output->memoLength > 0 && !output->memo)) {
+                throw std::invalid_argument("Invalid Spark private recipient");
+            }
             spark::OutputCoinData outputCoinData;
             outputCoinData.memo = std::string(privateRecipients[i].output->memo, privateRecipients[i].output->memoLength);
             outputCoinData.v = (uint64_t)privateRecipients[i].output->value;
@@ -520,6 +542,7 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         // Convert CCSparkMintMeta* serializedMintMetas to std::list<CSparkMintMeta> cppCoins.
         std::list<CSparkMintMeta> cppCoins;
         for (int i = 0; i < coinsLength; i++) {
+            requireSpendCoin(coins[i]);
             spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
             std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
             coin.setSerialContext(contextVec);
@@ -533,9 +556,18 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll;
         cppCoverSetDataAll.reserve(cover_set_data_allLength);
         for (int i = 0; i < cover_set_data_allLength; i++) {
+            const CCoverSetData& set = cover_set_data_all[i];
+            if (set.cover_setLength < 0 || (set.cover_setLength > 0 && !set.cover_set) ||
+                set.cover_set_representationLength < 0 ||
+                (set.cover_set_representationLength > 0 && !set.cover_set_representation)) {
+                throw std::invalid_argument("Invalid Spark cover set");
+            }
             spark::CoverSetData cppCoverSetData;
             cppCoverSetData.cover_set.reserve(cover_set_data_all[i].cover_setLength);
             for (int j = 0; j < cover_set_data_all[i].cover_setLength; j++) {
+                if (!set.cover_set[j].data || set.cover_set[j].length <= 0) {
+                    throw std::invalid_argument("Invalid Spark cover set coin");
+                }
                 spark::Coin coin = deserializeCoin(cover_set_data_all[i].cover_set[j].data, cover_set_data_all[i].cover_set[j].length);
                 cppCoverSetData.cover_set.push_back(std::move(coin));
             }
@@ -545,6 +577,7 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 
         std::map<uint64_t, uint256> cppIdAndBlockHashesAll;
         for (int i = 0; i < idAndBlockHashesLength; i++) {
+            if (!idAndBlockHashes[i].hash) throw std::invalid_argument("Missing Spark block hash");
             std::vector<unsigned char> vec(idAndBlockHashes[i].hash, idAndBlockHashes[i].hash + 32);
             cppIdAndBlockHashesAll[idAndBlockHashes[i].id] = uint256(vec);
         }
@@ -645,6 +678,7 @@ SerializedMintContextResult* serializeMintContext(
         CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
         for (int i = 0; i < inputsLength; i++) {
             if (!inputs[i].txHash || inputs[i].txHashLength != 32) return fail("Transaction hashes must be 32 bytes");
+            if (inputs[i].vout < 0) return fail("Output indexes must not be negative");
             std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
             CTxIn input(
                     uint256(vec),
@@ -746,6 +780,11 @@ SparkFeeResult* estimateSparkFee(
         int spendVersion
 ) {
     try {
+        if (!keyData || index < 0 || coinsLength < 0 || (coinsLength > 0 && !coins) ||
+            privateRecipientsLength < 0 || utxoNum < 0 || additionalTxSize < 0) {
+            throw std::invalid_argument("Invalid Spark fee arguments");
+        }
+
         // Derive the keys from the key data and index.
         spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         spark::FullViewKey fullViewKey(spendKey);
@@ -753,6 +792,7 @@ SparkFeeResult* estimateSparkFee(
 
         std::list<CSparkMintMeta> cppCoins;
         for (int i = 0; i < coinsLength; i++) {
+            requireSpendCoin(coins[i]);
             spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
             std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
             coin.setSerialContext(contextVec);
@@ -810,6 +850,11 @@ SparkNameScript* createSparkNameScript(
         int withoutProof
 ) {
     try {
+        if (!spendKeyData || !name || !additionalInfo || !ownershipDigest ||
+            sparkNameValidityBlocks < 0 || spendKeyIndex < 0 || diversifier < 0) {
+            throw std::invalid_argument("Invalid Spark name arguments");
+        }
+
         // Derive the keys from the key data and index.
         spark::SpendKey spendKey = createSpendKeyFromData(spendKeyData, spendKeyIndex);
         spark::FullViewKey fullViewKey(spendKey);
