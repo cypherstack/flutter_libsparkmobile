@@ -70,33 +70,8 @@ external ffi.Pointer<ffi.Char> native_getAddressFromFullViewKey(
   int isTestNet,
 );
 
-/// FFI-friendly wrapper for spark::identifyCoin.
-///
-/// identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
-/// /
-/// //FFI_PLUGIN_EXPORT
-/// //struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
-@ffi.Native<
-  ffi.Pointer<AggregateCoinData> Function(
-    ffi.Pointer<ffi.UnsignedChar>,
-    ffi.Int,
-    ffi.Pointer<ffi.UnsignedChar>,
-    ffi.Int,
-    ffi.Pointer<ffi.UnsignedChar>,
-    ffi.Int,
-    ffi.Int,
-  )
->(symbol: 'idAndRecoverCoin')
-external ffi.Pointer<AggregateCoinData> native_idAndRecoverCoin(
-  ffi.Pointer<ffi.UnsignedChar> serializedCoin,
-  int serializedCoinLength,
-  ffi.Pointer<ffi.UnsignedChar> keyData,
-  int index,
-  ffi.Pointer<ffi.UnsignedChar> context,
-  int contextLength,
-  int isTestNet,
-);
-
+/// Returns the recovered coin, or NULL. NULL with no native_last_error() reason
+/// means the coin is not ours.
 @ffi.Native<
   ffi.Pointer<AggregateCoinData> Function(
     ffi.Pointer<ffi.UnsignedChar>,
@@ -299,62 +274,14 @@ external ffi.Pointer<SparkNameCommitmentResult> native_cGetSparkNameCommitment(
   int serializedSparkNameDataLength,
 );
 
+/// Returns why the most recent call on this thread returned NULL, or NULL when no
+/// reason was recorded. Reading clears the stored reason. The string is malloc'd
+/// and must be released with native_free().
+@ffi.Native<ffi.Pointer<ffi.Char> Function()>()
+external ffi.Pointer<ffi.Char> native_last_error();
+
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
 external void native_free(ffi.Pointer<ffi.Void> ptr);
-
-/// FFI-friendly wrapper for a spark::Coin.
-///
-/// Coin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/coin.h#L66
-final class CCoin extends ffi.Struct {
-  @ffi.Char()
-  external int type;
-
-  external ffi.Pointer<ffi.Char> kHex;
-
-  @ffi.Int()
-  external int kLength;
-
-  external ffi.Pointer<ffi.Char> address;
-
-  @ffi.Uint64()
-  external int v;
-
-  external ffi.Pointer<ffi.Char> memo;
-
-  @ffi.Int()
-  external int memoLength;
-
-  external ffi.Pointer<ffi.UnsignedChar> serial_context;
-
-  @ffi.Int()
-  external int serial_contextLength;
-}
-
-/// FFI-friendly wrapper for a spark::IdentifiedCoinData.
-///
-/// IdentifiedCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/coin.h#L19
-final class CIdentifiedCoinData extends ffi.Struct {
-  @ffi.Uint64()
-  external int i;
-
-  external ffi.Pointer<ffi.UnsignedChar> d;
-
-  @ffi.Int()
-  external int dLength;
-
-  @ffi.Uint64()
-  external int v;
-
-  external ffi.Pointer<ffi.Char> kHex;
-
-  @ffi.Int()
-  external int kLength;
-
-  external ffi.Pointer<ffi.Char> memo;
-
-  @ffi.Int()
-  external int memoLength;
-}
 
 /// FFI-friendly wrapper for a spark::CRecipient.
 ///
@@ -389,13 +316,9 @@ final class CMintedCoinData extends ffi.Struct {
   external int value;
 
   external ffi.Pointer<ffi.Char> memo;
-}
-
-final class PubKeyScript extends ffi.Struct {
-  external ffi.Pointer<ffi.UnsignedChar> bytes;
 
   @ffi.Int()
-  external int length;
+  external int memoLength;
 }
 
 /// FFI-friendly wrapper for a std::pair<CAmount, bool>.
@@ -448,64 +371,10 @@ final class CCDataStream extends ffi.Struct {
   external int length;
 }
 
-/// FFI-friendly wrapper for a spark::CSparkMintMeta.
-///
-/// CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
-final class CCSparkMintMeta extends ffi.Struct {
-  @ffi.Int()
-  external int height;
-
-  @ffi.Int()
-  external int id;
-
-  @ffi.Int()
-  external int isUsed;
-
-  external ffi.Pointer<ffi.UnsignedChar> txid;
-
-  /// Diversifier.
-  @ffi.Uint64()
-  external int i;
-
-  /// Encrypted diversifier.
-  external ffi.Pointer<ffi.UnsignedChar> d;
-
-  @ffi.Int()
-  external int dLength;
-
-  /// Value.
-  @ffi.Uint64()
-  external int v;
-
-  external ffi.Pointer<ffi.Char> nonceHex;
-
-  @ffi.Int()
-  external int nonceHexLength;
-
-  external ffi.Pointer<ffi.Char> memo;
-
-  @ffi.Int()
-  external int memoLength;
-
-  external ffi.Pointer<ffi.UnsignedChar> serial_context;
-
-  @ffi.Int()
-  external int serial_contextLength;
-
-  @ffi.Char()
-  external int type;
-
-  external ffi.Pointer<ffi.UnsignedChar> serializedCoin;
-
-  @ffi.Int()
-  external int serializedCoinLength;
-}
-
 /// FFI-friendly wrapper for a spark::CoverSetData.
 ///
 /// CoverSetData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L28
 final class CCoverSetData extends ffi.Struct {
-  /// vs. struct CCoin* cover_set;
   external ffi.Pointer<CCDataStream> cover_set;
 
   @ffi.Int()
@@ -541,6 +410,9 @@ final class AggregateCoinData extends ffi.Struct {
   external ffi.Pointer<ffi.Char> address;
 
   external ffi.Pointer<ffi.Char> memo;
+
+  @ffi.Int()
+  external int memoLength;
 
   external ffi.Pointer<ffi.Char> lTagHash;
 

@@ -22,6 +22,7 @@ abstract class Log {
     StackTrace? stackTrace,
     DateTime? time,
   }) {
+    if (!levels.contains(level)) return;
     onLog?.call(
       level,
       value,

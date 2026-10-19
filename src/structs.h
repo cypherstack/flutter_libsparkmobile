@@ -8,39 +8,6 @@
 //#endif
 
 /*
- * FFI-friendly wrapper for a spark::Coin.
- *
- * Coin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/coin.h#L66
- */
-struct CCoin {
-    char type;
-    const char *kHex;
-    int kLength;
-    const char *address;
-    uint64_t v;
-    const char *memo;
-    int memoLength;
-    const unsigned char *serial_context;
-    int serial_contextLength;
-};
-
-/*
- * FFI-friendly wrapper for a spark::IdentifiedCoinData.
- *
- * IdentifiedCoinData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/coin.h#L19
- */
-struct CIdentifiedCoinData {
-    uint64_t i;
-    unsigned char *d;
-    int dLength;
-    uint64_t v;
-    const char *kHex;
-    int kLength;
-    const char *memo;
-    int memoLength;
-};
-
-/*
  * FFI-friendly wrapper for a spark::CRecipient.
  *
  * CRecipient: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/include/spark.h#L27
@@ -66,13 +33,8 @@ struct CMintedCoinData {
     const char *address;
     uint64_t value;
     const char *memo;
+    int memoLength;
 };
-
-struct PubKeyScript {
-    unsigned char *bytes;
-    int length;
-};
-
 
 /*
  * FFI-friendly wrapper for a std::pair<CAmount, bool>.
@@ -117,37 +79,12 @@ struct CCDataStream {
 };
 
 /*
- * FFI-friendly wrapper for a spark::CSparkMintMeta.
- *
- * CSparkMintMeta: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/primitives.h#L9
- */
-struct CCSparkMintMeta {
-    int height;
-    int id;
-    int isUsed;
-    unsigned char *txid;
-    uint64_t i; // Diversifier.
-    unsigned char *d; // Encrypted diversifier.
-    int dLength;
-    uint64_t v; // Value.
-    char *nonceHex;
-    int nonceHexLength;
-    char *memo;
-    int memoLength;
-    unsigned char *serial_context;
-    int serial_contextLength;
-    char type;
-    unsigned char* serializedCoin;
-    int serializedCoinLength;
-};
-
-/*
  * FFI-friendly wrapper for a spark::CoverSetData.
  *
  * CoverSetData: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spend_transaction.h#L28
  */
 struct CCoverSetData {
-    struct CCDataStream *cover_set; // vs. struct CCoin* cover_set;
+    struct CCDataStream *cover_set;
     int cover_setLength;
     const unsigned char *cover_set_representation;
     int cover_set_representationLength;
@@ -169,6 +106,7 @@ struct AggregateCoinData {
     uint64_t value;
     char *address;
     char *memo;
+    int memoLength;
     char *lTagHash;
 
     unsigned char *encryptedDiversifier;

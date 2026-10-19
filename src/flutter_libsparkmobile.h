@@ -35,24 +35,9 @@ FFI_PLUGIN_EXPORT
 const char* getAddressFromFullViewKey(void* fullViewKeyVoid, int index, int diversifier, int isTestNet);
 
 /*
- * FFI-friendly wrapper for spark::identifyCoin.
- *
- * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
+ * Returns the recovered coin, or NULL. NULL with no native_last_error() reason
+ * means the coin is not ours.
  */
-//FFI_PLUGIN_EXPORT
-//struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
-
-FFI_PLUGIN_EXPORT
-struct AggregateCoinData* idAndRecoverCoin(
-        const unsigned char* serializedCoin,
-        int serializedCoinLength,
-        unsigned char* keyData,
-        int index,
-        unsigned char* context,
-        int contextLength,
-        int isTestNet
-);
-
 FFI_PLUGIN_EXPORT
 struct AggregateCoinData* idAndRecoverCoinByFullViewKey(
         const unsigned char* serializedCoin,
@@ -172,6 +157,14 @@ struct SparkNameCommitmentResult* cGetSparkNameCommitment(
         const unsigned char* serializedSparkNameData,
         int serializedSparkNameDataLength
 );
+
+/*
+ * Returns why the most recent call on this thread returned NULL, or NULL when no
+ * reason was recorded. Reading clears the stored reason. The string is malloc'd
+ * and must be released with native_free().
+ */
+FFI_PLUGIN_EXPORT
+char* native_last_error(void);
 
 FFI_PLUGIN_EXPORT
 void native_free(void* ptr);

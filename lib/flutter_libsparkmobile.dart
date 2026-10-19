@@ -53,16 +53,20 @@ const kStandardSparkNamesFee = [
 ];
 
 bool get enableDebugLogging =>
-    Log.onLog != null && Log.levels.contains(LoggingLevel.debug);
+    Log.onLog != null &&
+    (Log.levels.contains(LoggingLevel.debug) ||
+        Log.levels.contains(LoggingLevel.trace));
 
 bool get enableTraceLogging =>
     Log.onLog != null && Log.levels.contains(LoggingLevel.trace);
 
+/// Dart bindings for the Spark native library.
+///
+/// Hex-encoded private keys and hashes shorter than 64 characters are
+/// left-padded with zeros before use, and longer ones are rejected. Hex input
+/// that contains anything other than hex digits throws a [FormatException].
 abstract final class LibSpark {
-  // trace call id
   static int _id = 0;
-
-  // SparkMobileBindings methods:
 
   /// Derive an address from the keyData (mnemonic).
   static Future<String> getAddress({
@@ -76,7 +80,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.getAddress';
       if (enableTraceLogging) {
         function +=
             "(privateKey=REDACTED,"
@@ -106,25 +110,28 @@ abstract final class LibSpark {
         );
       }
 
-      final keyDataPointer = privateKey.unsignedCharPointer();
-
-      final addressPointer = native_getAddress(
-        keyDataPointer,
-        index,
-        diversifier,
-        isTestNet ? 1 : 0,
-      );
-
-      final addressString = addressPointer.cast<Utf8>().toDartString();
-
-      freeDart(keyDataPointer, debugName: "keyDataPointer");
-      freeNative(addressPointer, debugName: "addressPointer");
-      return addressString;
+      _checkInt32(index, 'index');
+      _checkInt32(diversifier, 'diversifier');
+      return using<String>((arena) {
+        final address = _requirePointer(
+          native_getAddress(
+            privateKey.unsignedCharPointer(arena),
+            index,
+            diversifier,
+            isTestNet ? 1 : 0,
+          ),
+        );
+        try {
+          return address.cast<Utf8>().toDartString();
+        } finally {
+          freeNative(address, debugName: 'address');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.getAddress"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -137,28 +144,27 @@ abstract final class LibSpark {
     required int diversifier,
     bool isTestNet = false,
   }) async {
+    _checkInt32(index, 'index');
+    _checkInt32(diversifier, 'diversifier');
     final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
     try {
-      final addressPointer = native_getAddressFromFullViewKey(
-        fullViewKey,
-        index,
-        diversifier,
-        isTestNet ? 1 : 0,
+      final address = _requirePointer(
+        native_getAddressFromFullViewKey(
+          fullViewKey,
+          index,
+          diversifier,
+          isTestNet ? 1 : 0,
+        ),
       );
-      final addressString = addressPointer.cast<Utf8>().toDartString();
-      freeNative(addressPointer, debugName: "addressPointer");
-      return addressString;
+      try {
+        return address.cast<Utf8>().toDartString();
+      } finally {
+        freeNative(address, debugName: 'address');
+      }
     } finally {
       _deleteFullViewKey(fullViewKey);
     }
   }
-
-  ///
-  /// Check whether the spark coin is ours and if so recover required data
-  /// and encapsulate into a single object ([LibSparkCoin]).
-  ///
-  /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
-  ///
 
   static Uint8List serializeMintContext({required List<(String, int)> inputs}) {
     DateTime? start;
@@ -167,7 +173,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.serializeMintContext';
       if (enableTraceLogging) {
         function += "(inputs=$inputs)";
       }
@@ -180,39 +186,35 @@ abstract final class LibSpark {
     }
 
     try {
-      final inputsPtr = malloc.allocate<DartInputData>(
-        sizeOf<DartInputData>() * inputs.length,
-      );
-
-      for (int i = 0; i < inputs.length; i++) {
-        final hash = Uint8List.fromList(
-          inputs[i].$1.to32BytesFromHex().reversed.toList(),
+      _checkInt32(inputs.length, 'inputs.length');
+      for (final input in inputs) {
+        _checkInt32(input.$2, 'vout');
+      }
+      return using((arena) {
+        final inputsPtr = arena<DartInputData>(inputs.length);
+        for (int i = 0; i < inputs.length; i++) {
+          final hash = Uint8List.fromList(
+            inputs[i].$1.to32BytesFromHex('inputs[$i] txid').reversed.toList(),
+          );
+          inputsPtr[i].txHashLength = hash.length;
+          inputsPtr[i].txHash = hash.unsignedCharPointer(arena);
+          inputsPtr[i].vout = inputs[i].$2;
+        }
+        final result = _requirePointer(
+          native_serializeMintContext(inputsPtr, inputs.length),
         );
-
-        inputsPtr[i].txHashLength = hash.length;
-        inputsPtr[i].txHash = hash.unsignedCharPointer();
-        inputsPtr[i].vout = inputs[i].$2;
-      }
-
-      final result = native_serializeMintContext(inputsPtr, inputs.length);
-
-      final serialized = result.ref.context.toUint8List(
-        result.ref.contextLength,
-      );
-
-      for (int i = 0; i < inputs.length; i++) {
-        freeDart(inputsPtr[i].txHash, debugName: "inputsPtr[$i].txHash");
-      }
-      freeDart(inputsPtr, debugName: "inputsPtr");
-      freeNative(result.ref.context, debugName: "result.ref.context");
-      freeNative(result, debugName: "result");
-
-      return serialized;
+        try {
+          return result.ref.context.toUint8List(result.ref.contextLength);
+        } finally {
+          freeNative(result.ref.context, debugName: 'result.context');
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.serializeMintContext"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -238,7 +240,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.createSparkMintRecipients';
       if (enableTraceLogging) {
         function +=
             "(outputs=$outputs,"
@@ -254,65 +256,59 @@ abstract final class LibSpark {
     }
 
     try {
-      final outputsPtr = malloc.allocate<CMintedCoinData>(
-        sizeOf<CMintedCoinData>() * outputs.length,
-      );
-
-      for (int i = 0; i < outputs.length; i++) {
-        outputsPtr[i].value = outputs[i].value;
-        outputsPtr[i].address = outputs[i].sparkAddress
-            .toNativeUtf8()
-            .cast<Char>();
-        outputsPtr[i].memo = outputs[i].memo.toNativeUtf8().cast<Char>();
+      _checkInt32(outputs.length, 'outputs.length');
+      _checkInt32(serialContext.length, 'serialContext.length');
+      for (final output in outputs) {
+        _checkCString(output.sparkAddress, 'sparkAddress');
       }
-
-      final serialContextPtr = serialContext.unsignedCharPointer();
-
-      final result = native_cCreateSparkMintRecipients(
-        outputsPtr,
-        outputs.length,
-        serialContextPtr,
-        serialContext.length,
-        generate ? 1 : 0,
-      );
-
-      if (result.address == nullptr.address) {
+      return using((arena) {
+        final outputsPtr = arena<CMintedCoinData>(outputs.length);
         for (int i = 0; i < outputs.length; i++) {
-          freeDart(outputsPtr[i].address, debugName: "outputsPtr[$i].address");
-          freeDart(outputsPtr[i].memo, debugName: "outputsPtr[$i].memo");
+          final memo = utf8.encode(outputs[i].memo);
+          _checkInt32(memo.length, 'memo.length');
+          outputsPtr[i].value = outputs[i].value;
+          outputsPtr[i].address = outputs[i].sparkAddress
+              .toNativeUtf8(allocator: arena)
+              .cast<Char>();
+          outputsPtr[i].memo = memo.unsignedCharPointer(arena).cast<Char>();
+          outputsPtr[i].memoLength = memo.length;
         }
-        freeDart(outputsPtr, debugName: "outputsPtr");
-        throw Exception("createSparkMintRecipients() FFI call returned null!");
-      }
-
-      final List<
-        ({Uint8List scriptPubKey, int amount, bool subtractFeeFromAmount})
-      >
-      ret = [];
-
-      for (int i = 0; i < result.ref.length; i++) {
-        final d = result.ref.list[i];
-        ret.add((
-          scriptPubKey: d.pubKey.toUint8List(d.pubKeyLength),
-          amount: d.cAmount,
-          subtractFeeFromAmount: d.subtractFee > 0,
-        ));
-        freeNative(d.pubKey, debugName: "d.pubKey");
-      }
-
-      freeNative(result.ref.list, debugName: "result.ref.list");
-      freeNative(result, debugName: "result");
-      for (int i = 0; i < outputs.length; i++) {
-        freeDart(outputsPtr[i].address, debugName: "outputsPtr[$i].address");
-        freeDart(outputsPtr[i].memo, debugName: "outputsPtr[$i].memo");
-      }
-      freeDart(outputsPtr, debugName: "outputsPtr");
-      return ret;
+        final result = _requirePointer(
+          native_cCreateSparkMintRecipients(
+            outputsPtr,
+            outputs.length,
+            serialContext.unsignedCharPointer(arena),
+            serialContext.length,
+            generate ? 1 : 0,
+          ),
+        );
+        try {
+          return [
+            for (int i = 0; i < result.ref.length; i++)
+              (
+                scriptPubKey: result.ref.list[i].pubKey.toUint8List(
+                  result.ref.list[i].pubKeyLength,
+                ),
+                amount: result.ref.list[i].cAmount,
+                subtractFeeFromAmount: result.ref.list[i].subtractFee > 0,
+              ),
+          ];
+        } finally {
+          for (int i = 0; i < result.ref.length; i++) {
+            freeNative(
+              result.ref.list[i].pubKey,
+              debugName: 'recipient.pubKey',
+            );
+          }
+          freeNative(result.ref.list, debugName: 'result.list');
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.createSparkMintRecipients"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -381,7 +377,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.createSparkSendTransaction';
       if (enableTraceLogging) {
         function +=
             "(privateKeyHex=REDACTED,"
@@ -403,281 +399,163 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkInt32(index, 'index');
+      _checkInt32(additionalTxSize, 'additionalTxSize');
+      _checkBytes(txHash, 32, 'txHash');
+      _checkInt32(recipients.length, 'recipients.length');
+      _checkInt32(privateRecipients.length, 'privateRecipients.length');
+      _checkInt32(serializedCoins.length, 'serializedCoins.length');
+      _checkInt32(allAnonymitySets.length, 'allAnonymitySets.length');
+      _checkInt32(idAndBlockHashes.length, 'idAndBlockHashes.length');
+      for (final recipient in privateRecipients) {
+        _checkCString(recipient.sparkAddress, 'sparkAddress');
+      }
+      for (final set in allAnonymitySets) {
+        _checkInt32(set.setId, 'setId');
+        _checkInt32(set.set.length, 'set.length');
+      }
+      for (final block in idAndBlockHashes) {
+        _checkBytes(block.blockHash, 32, 'blockHash');
+        _checkInt32(block.setId, 'setId');
+      }
       final resolvedExtensionCommitment = spendVersion
           .resolveExtensionCommitment(extensionCommitment);
-
-      final privateKeyPtr = privateKeyHex
-          .to32BytesFromHex()
-          .unsignedCharPointer();
-
-      final recipientsPtr = malloc.allocate<CRecip>(
-        sizeOf<CRecip>() * recipients.length,
-      );
-      for (int i = 0; i < recipients.length; i++) {
-        recipientsPtr[i].amount = recipients[i].amount;
-        recipientsPtr[i].subtractFee = recipients[i].subtractFeeFromAmount
-            ? 1
-            : 0;
-      }
-
-      final privateRecipientsPtr = malloc.allocate<COutputRecipient>(
-        sizeOf<COutputRecipient>() * privateRecipients.length,
-      );
-      for (int i = 0; i < privateRecipients.length; i++) {
-        privateRecipientsPtr[i].subtractFee =
-            privateRecipients[i].subtractFeeFromAmount ? 1 : 0;
-
-        privateRecipientsPtr[i].output = malloc.allocate<COutputCoinData>(
-          sizeOf<COutputCoinData>(),
-        );
-        privateRecipientsPtr[i].output.ref.value = privateRecipients[i].amount;
-        privateRecipientsPtr[i].output.ref.memoLength =
-            privateRecipients[i].memo.length;
-        privateRecipientsPtr[i].output.ref.memo = privateRecipients[i].memo
-            .toNativeUtf8()
-            .cast<Char>();
-        privateRecipientsPtr[i].output.ref.addressLength =
-            privateRecipients[i].sparkAddress.length;
-        privateRecipientsPtr[i].output.ref.address = privateRecipients[i]
-            .sparkAddress
-            .toNativeUtf8()
-            .cast<Char>();
-      }
-
-      final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
-        sizeOf<DartSpendCoinData>() * serializedCoins.length,
-      );
-      for (int i = 0; i < serializedCoins.length; i++) {
-        final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
-        serializedCoinsPtr[i].serializedCoin = malloc.allocate<CCDataStream>(
-          sizeOf<CCDataStream>(),
-        );
-        serializedCoinsPtr[i].serializedCoin.ref.data = b64CoinDecoded
-            .unsignedCharPointer();
-        serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
-
-        final b64ContextDecoded = base64Decode(
-          serializedCoins[i].serializedCoinContext,
-        );
-        serializedCoinsPtr[i].serializedCoinContext = malloc
-            .allocate<CCDataStream>(sizeOf<CCDataStream>());
-        serializedCoinsPtr[i].serializedCoinContext.ref.data = b64ContextDecoded
-            .unsignedCharPointer();
-        serializedCoinsPtr[i].serializedCoinContext.ref.length =
-            b64ContextDecoded.length;
-
-        serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
-        serializedCoinsPtr[i].height = serializedCoins[i].height;
-      }
-
-      final coverSetDataAllPtr = malloc.allocate<CCoverSetData>(
-        sizeOf<CCoverSetData>() * allAnonymitySets.length,
-      );
-      for (int i = 0; i < allAnonymitySets.length; i++) {
-        coverSetDataAllPtr[i].setId = allAnonymitySets[i].setId;
-
-        coverSetDataAllPtr[i].cover_set = malloc.allocate<CCDataStream>(
-          sizeOf<CCDataStream>() * allAnonymitySets[i].set.length,
-        );
-        coverSetDataAllPtr[i].cover_setLength = allAnonymitySets[i].set.length;
-
-        for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
-          final b64CoinDecoded = base64Decode(
-            allAnonymitySets[i].set[j].serializedCoin,
-          );
-          coverSetDataAllPtr[i].cover_set[j].length = b64CoinDecoded.length;
-          coverSetDataAllPtr[i].cover_set[j].data = b64CoinDecoded
-              .unsignedCharPointer();
+      return using((arena) {
+        final privateKeyPtr = privateKeyHex
+            .to32BytesFromHex('privateKeyHex')
+            .unsignedCharPointer(arena);
+        final recipientsPtr = arena<CRecip>(recipients.length);
+        for (int i = 0; i < recipients.length; i++) {
+          recipientsPtr[i].amount = recipients[i].amount;
+          recipientsPtr[i].subtractFee = recipients[i].subtractFeeFromAmount
+              ? 1
+              : 0;
         }
-
-        final setHash = base64Decode(allAnonymitySets[i].setHash);
-        coverSetDataAllPtr[i].cover_set_representation = setHash
-            .unsignedCharPointer();
-        coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
-      }
-
-      final idAndBlockHashesPtr = malloc.allocate<BlockHashAndId>(
-        sizeOf<BlockHashAndId>() * idAndBlockHashes.length,
-      );
-      for (int i = 0; i < idAndBlockHashes.length; i++) {
-        assert(idAndBlockHashes[i].blockHash.length == 32);
-        idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
-        idAndBlockHashesPtr[i].hash = idAndBlockHashes[i].blockHash
-            .unsignedCharPointer();
-      }
-
-      final txHashPtr = txHash.unsignedCharPointer();
-      final extensionCommitmentPtr = resolvedExtensionCommitment
-          .unsignedCharPointer();
-
-      final result = native_cCreateSparkSpendTransaction(
-        privateKeyPtr,
-        index,
-        recipientsPtr,
-        recipients.length,
-        privateRecipientsPtr,
-        privateRecipients.length,
-        serializedCoinsPtr,
-        serializedCoins.length,
-        coverSetDataAllPtr,
-        allAnonymitySets.length,
-        idAndBlockHashesPtr,
-        idAndBlockHashes.length,
-        txHashPtr,
-        additionalTxSize,
-        spendVersion.nativeValue,
-        extensionCommitmentPtr,
-      );
-
-      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
-      freeDart(recipientsPtr, debugName: "recipientsPtr");
-      for (int i = 0; i < privateRecipients.length; i++) {
-        freeDart(
-          privateRecipientsPtr[i].output.ref.memo,
-          debugName: "privateRecipientsPtr[$i].output.ref.memo",
+        final privateRecipientsPtr = arena<COutputRecipient>(
+          privateRecipients.length,
         );
-        freeDart(
-          privateRecipientsPtr[i].output.ref.address,
-          debugName: "privateRecipientsPtr[$i].output.ref.address",
-        );
-        freeDart(
-          privateRecipientsPtr[i].output,
-          debugName: "privateRecipientsPtr[$i].output",
-        );
-      }
-      freeDart(privateRecipientsPtr, debugName: "privateRecipientsPtr");
-      for (int i = 0; i < serializedCoins.length; i++) {
-        freeDart(
-          serializedCoinsPtr[i].serializedCoinContext.ref.data,
-          debugName: "serializedCoinsPtr[$i].serializedCoinContext.ref.data",
-        );
-        freeDart(
-          serializedCoinsPtr[i].serializedCoinContext,
-          debugName: "serializedCoinsPtr[$i].serializedCoinContext",
-        );
-        freeDart(
-          serializedCoinsPtr[i].serializedCoin.ref.data,
-          debugName: "serializedCoinsPtr[$i].serializedCoin.ref.data",
-        );
-        freeDart(
-          serializedCoinsPtr[i].serializedCoin,
-          debugName: "serializedCoinsPtr[$i].serializedCoin",
-        );
-      }
-      freeDart(serializedCoinsPtr, debugName: "serializedCoinsPtr");
-
-      for (int i = 0; i < allAnonymitySets.length; i++) {
-        for (int j = 0; j < allAnonymitySets[i].set.length; j++) {
-          freeDart(
-            coverSetDataAllPtr[i].cover_set[j].data,
-            debugName: "coverSetDataAllPtr[$i].cover_set[j].data",
-          );
+        for (int i = 0; i < privateRecipients.length; i++) {
+          final recipient = privateRecipients[i];
+          final memo = utf8.encode(recipient.memo);
+          final address = utf8.encode(recipient.sparkAddress);
+          _checkInt32(memo.length, 'memo.length');
+          _checkInt32(address.length, 'address.length');
+          privateRecipientsPtr[i].subtractFee = recipient.subtractFeeFromAmount
+              ? 1
+              : 0;
+          privateRecipientsPtr[i].output = arena<COutputCoinData>();
+          final output = privateRecipientsPtr[i].output.ref;
+          output.value = recipient.amount;
+          output.memoLength = memo.length;
+          output.memo = memo.unsignedCharPointer(arena).cast<Char>();
+          output.addressLength = address.length;
+          output.address = address.unsignedCharPointer(arena).cast<Char>();
         }
-        freeDart(
-          coverSetDataAllPtr[i].cover_set,
-          debugName: "coverSetDataAllPtr[$i].cover_set",
+        final serializedCoinsPtr = _spendCoins(arena, serializedCoins);
+        final coverSetDataAllPtr = arena<CCoverSetData>(
+          allAnonymitySets.length,
         );
-        freeDart(
-          coverSetDataAllPtr[i].cover_set_representation,
-          debugName: "coverSetDataAllPtr[$i].cover_set_representation",
+        for (int i = 0; i < allAnonymitySets.length; i++) {
+          final set = allAnonymitySets[i];
+          coverSetDataAllPtr[i].setId = set.setId;
+          coverSetDataAllPtr[i].cover_set = arena<CCDataStream>(set.set.length);
+          coverSetDataAllPtr[i].cover_setLength = set.set.length;
+          for (int j = 0; j < set.set.length; j++) {
+            final coin = base64Decode(set.set[j].serializedCoin);
+            _checkInt32(coin.length, 'serializedCoin.length');
+            coverSetDataAllPtr[i].cover_set[j].length = coin.length;
+            coverSetDataAllPtr[i].cover_set[j].data = coin.unsignedCharPointer(
+              arena,
+            );
+          }
+          final setHash = base64Decode(set.setHash);
+          _checkInt32(setHash.length, 'setHash.length');
+          coverSetDataAllPtr[i].cover_set_representation = setHash
+              .unsignedCharPointer(arena);
+          coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
+        }
+        final idAndBlockHashesPtr = arena<BlockHashAndId>(
+          idAndBlockHashes.length,
         );
-      }
-      freeDart(coverSetDataAllPtr, debugName: "coverSetDataAllPtr");
-      for (int i = 0; i < idAndBlockHashes.length; i++) {
-        freeDart(
-          idAndBlockHashesPtr[i].hash,
-          debugName: "idAndBlockHashesPtr[$i].hash",
+        for (int i = 0; i < idAndBlockHashes.length; i++) {
+          idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
+          idAndBlockHashesPtr[i].hash = idAndBlockHashes[i].blockHash
+              .unsignedCharPointer(arena);
+        }
+        final result = _requirePointer(
+          native_cCreateSparkSpendTransaction(
+            privateKeyPtr,
+            index,
+            recipientsPtr,
+            recipients.length,
+            privateRecipientsPtr,
+            privateRecipients.length,
+            serializedCoinsPtr,
+            serializedCoins.length,
+            coverSetDataAllPtr,
+            allAnonymitySets.length,
+            idAndBlockHashesPtr,
+            idAndBlockHashes.length,
+            txHash.unsignedCharPointer(arena),
+            additionalTxSize,
+            spendVersion.nativeValue,
+            resolvedExtensionCommitment.unsignedCharPointer(arena),
+          ),
         );
-      }
-      freeDart(idAndBlockHashesPtr, debugName: "idAndBlockHashesPtr");
-      freeDart(txHashPtr, debugName: "txHashPtr");
-      freeDart(extensionCommitmentPtr, debugName: "extensionCommitmentPtr");
-      if (result.address == nullptr.address) {
-        throw Exception(
-          "createSparkSendTransaction() failed for an unknown reason",
-        );
-      }
-
-      final messageBytes = result.ref.data.toUint8List(result.ref.dataLength);
-
-      freeNative(result.ref.data, debugName: "result.ref.data");
-
-      if (result.ref.isError > 0) {
-        final message = utf8.decode(messageBytes);
-        throw Exception(message);
-      }
-
-      final fee = result.ref.fee;
-
-      final List<Uint8List> scripts = [];
-      for (int i = 0; i < result.ref.outputScriptsLength; i++) {
-        final script = result.ref.outputScripts[i].bytes.toUint8List(
-          result.ref.outputScripts[i].length,
-        );
-        freeNative(
-          result.ref.outputScripts[i].bytes,
-          debugName: "result.ref.outputScripts[$i].bytes",
-        );
-        scripts.add(script);
-      }
-
-      freeNative(
-        result.ref.outputScripts,
-        debugName: "result.ref.outputScripts",
-      );
-
-      final List<
-        ({
-          String serializedCoin,
-          String serializedCoinContext,
-          int groupId,
-          int height,
-        })
-      >
-      usedCoins = [];
-
-      for (int i = 0; i < result.ref.usedCoinsLength; i++) {
-        final coinRef = result.ref.usedCoins[i].serializedCoin.ref;
-        final contextRef = result.ref.usedCoins[i].serializedCoinContext.ref;
-
-        usedCoins.add((
-          serializedCoin: coinRef.data.toBase64(coinRef.length),
-          serializedCoinContext: contextRef.data.toBase64(contextRef.length),
-          groupId: result.ref.usedCoins[i].groupId,
-          height: result.ref.usedCoins[i].height,
-        ));
-
-        freeNative(
-          result.ref.usedCoins[i].serializedCoin.ref.data,
-          debugName: "result.ref.usedCoins[$i].serializedCoin.ref.data",
-        );
-        freeNative(
-          result.ref.usedCoins[i].serializedCoin,
-          debugName: "result.ref.usedCoins[$i].serializedCoin",
-        );
-        freeNative(
-          result.ref.usedCoins[i].serializedCoinContext.ref.data,
-          debugName: "result.ref.usedCoins[$i].serializedCoinContext.ref.data",
-        );
-        freeNative(
-          result.ref.usedCoins[i].serializedCoinContext,
-          debugName: "result.ref.usedCoins[$i].serializedCoinContext",
-        );
-      }
-
-      freeNative(result.ref.usedCoins, debugName: "result.ref.usedCoins");
-
-      return (
-        serializedSpendPayload: messageBytes,
-        fee: fee,
-        outputScripts: scripts,
-        usedCoins: usedCoins,
-      );
+        try {
+          final payload = result.ref.data.toUint8List(result.ref.dataLength);
+          if (result.ref.isError > 0) {
+            throw Exception(utf8.decode(payload, allowMalformed: true));
+          }
+          return (
+            serializedSpendPayload: payload,
+            fee: result.ref.fee,
+            outputScripts: [
+              for (int i = 0; i < result.ref.outputScriptsLength; i++)
+                result.ref.outputScripts[i].bytes.toUint8List(
+                  result.ref.outputScripts[i].length,
+                ),
+            ],
+            usedCoins: [
+              for (int i = 0; i < result.ref.usedCoinsLength; i++)
+                (
+                  serializedCoin: result
+                      .ref
+                      .usedCoins[i]
+                      .serializedCoin
+                      .ref
+                      .data
+                      .toBase64(
+                        result.ref.usedCoins[i].serializedCoin.ref.length,
+                      ),
+                  serializedCoinContext: result
+                      .ref
+                      .usedCoins[i]
+                      .serializedCoinContext
+                      .ref
+                      .data
+                      .toBase64(
+                        result
+                            .ref
+                            .usedCoins[i]
+                            .serializedCoinContext
+                            .ref
+                            .length,
+                      ),
+                  groupId: result.ref.usedCoins[i].groupId,
+                  height: result.ref.usedCoins[i].height,
+                ),
+            ],
+          );
+        } finally {
+          _freeSpendResult(result);
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.createSparkSendTransaction"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -694,7 +572,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.validateAddress';
       if (enableTraceLogging) {
         function +=
             "(address=$address,"
@@ -708,43 +586,37 @@ abstract final class LibSpark {
       );
     }
     try {
-      final addressPtr = address.toNativeUtf8().cast<Char>();
-
-      final result = native_isValidSparkAddress(addressPtr, isTestNet ? 1 : 0);
-
-      freeDart(addressPtr, debugName: "addressPtr");
-      if (result.address != nullptr.address) {
-        final isValid = result.ref.isValid > 0;
-        final String message;
-
-        if (result.ref.errorMessage.address == nullptr.address) {
-          message = "";
-        } else {
-          message = result.ref.errorMessage.cast<Utf8>().toDartString();
-          freeNative(
-            result.ref.errorMessage,
-            debugName: "result.ref.errorMessage",
-          );
-        }
-        freeNative(result, debugName: "result");
-
-        if (message.isNotEmpty) {
-          Log.w("validateAddress error message: $message");
-        }
-
-        return isValid;
-      } else {
-        // some error occurred result in null being returned which should happen
-        // but is checked anyways
-        Log.w("validateAddress ffi called returned nullptr");
-
+      if (address.contains('\u0000')) {
         return false;
       }
+      return using((arena) {
+        final result = native_isValidSparkAddress(
+          address.toNativeUtf8(allocator: arena).cast<Char>(),
+          isTestNet ? 1 : 0,
+        );
+        if (result == nullptr) {
+          Log.w(
+            'validateAddress failed: ${_takeLastError() ?? 'unknown reason'}',
+          );
+          return false;
+        }
+        try {
+          if (result.ref.errorMessage != nullptr) {
+            Log.w(
+              'validateAddress error message: ${result.ref.errorMessage.cast<Utf8>().toDartString()}',
+            );
+          }
+          return result.ref.isValid > 0;
+        } finally {
+          freeNative(result.ref.errorMessage, debugName: 'result.errorMessage');
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.validateAddress"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -757,62 +629,40 @@ abstract final class LibSpark {
     required int spendKeyIndex,
     required int diversifier,
   }) {
-    final messageBytes = Uint8List.fromList(utf8.encode(message));
-    if (messageBytes.length > 0x7fffffff) {
-      throw ArgumentError.value(message, 'message', 'is too long');
-    }
-    RangeError.checkValueInInterval(
-      spendKeyIndex,
-      0,
-      0x7fffffff,
-      'spendKeyIndex',
-    );
-    RangeError.checkValueInInterval(diversifier, 0, 0x7fffffff, 'diversifier');
-
-    final privateKeyBytes = privateKeyHex.to32BytesFromHex();
-    final messagePtr = messageBytes.isEmpty
-        ? nullptr.cast<UnsignedChar>()
-        : messageBytes.unsignedCharPointer();
-    final privateKeyPtr = privateKeyBytes.unsignedCharPointer();
-
-    late Pointer<SparkAddressOwnershipProofResult> result;
-    try {
-      result = native_createSparkAddressOwnershipProof(
-        messagePtr,
-        messageBytes.length,
-        privateKeyPtr,
-        spendKeyIndex,
-        diversifier,
+    final messageBytes = utf8.encode(message);
+    _checkInt32(messageBytes.length, 'message.length');
+    _checkInt32(spendKeyIndex, 'spendKeyIndex');
+    _checkInt32(diversifier, 'diversifier');
+    return using((arena) {
+      final result = _requirePointer(
+        native_createSparkAddressOwnershipProof(
+          messageBytes.unsignedCharPointer(arena),
+          messageBytes.length,
+          privateKeyHex
+              .to32BytesFromHex('privateKeyHex')
+              .unsignedCharPointer(arena),
+          spendKeyIndex,
+          diversifier,
+        ),
       );
-    } finally {
-      if (messagePtr.address != nullptr.address) {
-        freeDart(messagePtr, debugName: 'messagePtr');
+      try {
+        if (result.ref.error != nullptr) {
+          throw Exception(result.ref.error.cast<Utf8>().toDartString());
+        }
+        _requirePointer(result.ref.proof);
+        if (result.ref.proofLength <= 0) {
+          throw Exception('Failed to create Spark address ownership proof');
+        }
+        return result.ref.proof
+            .cast<Uint8>()
+            .asTypedList(result.ref.proofLength)
+            .toHexString();
+      } finally {
+        freeNative(result.ref.error, debugName: 'result.error');
+        freeNative(result.ref.proof, debugName: 'result.proof');
+        freeNative(result, debugName: 'result');
       }
-      freeDart(privateKeyPtr, debugName: 'privateKeyPtr');
-    }
-
-    if (result.address == nullptr.address) {
-      throw Exception('Internal memory allocation failed');
-    }
-
-    try {
-      if (result.ref.error.address != nullptr.address) {
-        final error = result.ref.error.cast<Utf8>().toDartString();
-        freeNative(result.ref.error, debugName: 'result.ref.error');
-        throw Exception(error);
-      }
-      if (result.ref.proof.address == nullptr.address ||
-          result.ref.proofLength <= 0) {
-        throw Exception('Failed to create Spark address ownership proof');
-      }
-
-      return result.ref.proof.toUint8List(result.ref.proofLength).toHexString();
-    } finally {
-      if (result.ref.proof.address != nullptr.address) {
-        freeNative(result.ref.proof, debugName: 'result.ref.proof');
-      }
-      freeNative(result, debugName: 'result');
-    }
+    });
   }
 
   static bool verifySparkAddressOwnershipProof({
@@ -821,14 +671,13 @@ abstract final class LibSpark {
     required String proof,
     required bool isTestNet,
   }) {
-    // A serialized ownership proof is one 34-byte point and three 32-byte scalars.
     if (proof.length != 260 ||
         address.isEmpty ||
         address.contains('\u0000') ||
         !RegExp(r'^[0-9a-fA-F]+$').hasMatch(proof)) {
       return false;
     }
-    final messageBytes = Uint8List.fromList(utf8.encode(message));
+    final messageBytes = utf8.encode(message);
     if (messageBytes.length > 0x7fffffff) {
       return false;
     }
@@ -839,21 +688,11 @@ abstract final class LibSpark {
       ),
     );
     return using((arena) {
-      final messagePtr = arena<UnsignedChar>(messageBytes.length + 1);
-      messagePtr
-          .cast<Uint8>()
-          .asTypedList(messageBytes.length)
-          .setAll(0, messageBytes);
-      final proofPtr = arena<UnsignedChar>(proofBytes.length);
-      proofPtr
-          .cast<Uint8>()
-          .asTypedList(proofBytes.length)
-          .setAll(0, proofBytes);
       return native_verifySparkAddressOwnershipProof(
-            messagePtr,
+            messageBytes.unsignedCharPointer(arena),
             messageBytes.length,
             address.toNativeUtf8(allocator: arena).cast<Char>(),
-            proofPtr,
+            proofBytes.unsignedCharPointer(arena),
             proofBytes.length,
             isTestNet ? 1 : 0,
           ) ==
@@ -868,7 +707,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.hashTags';
       if (enableTraceLogging) {
         function += "(base64Tags=$base64Tags)";
       }
@@ -883,32 +722,32 @@ abstract final class LibSpark {
       if (base64Tags.isEmpty) {
         return [];
       }
-
-      final bytesPointer = Uint8List.fromList(
-        base64Tags.expand((e) => base64Decode(e)).toList(),
-      ).unsignedCharPointer();
-
-      final result = native_hashTags(bytesPointer, base64Tags.length);
-
-      freeDart(bytesPointer, debugName: "bytesPointer");
-      final List<String> hashes = [];
-
-      for (int i = 0; i < base64Tags.length; i++) {
-        final hash = result
-            .elementAt(i * 64)
-            .cast<Utf8>()
-            .toDartString(length: 64);
-        hashes.add(hash);
-      }
-
-      freeNative(result, debugName: "result");
-
-      return hashes;
+      _checkInt32(base64Tags.length, 'base64Tags.length');
+      return using((arena) {
+        final tags = arena<Uint8>(base64Tags.length * 34);
+        final bytes = tags.asTypedList(base64Tags.length * 34);
+        for (int i = 0; i < base64Tags.length; i++) {
+          final tag = base64Decode(base64Tags[i]);
+          _checkBytes(tag, 34, 'tag');
+          bytes.setRange(i * 34, (i + 1) * 34, tag);
+        }
+        final result = _requirePointer(
+          native_hashTags(tags.cast<UnsignedChar>(), base64Tags.length),
+        );
+        try {
+          return [
+            for (int i = 0; i < base64Tags.length; i++)
+              (result + i * 64).cast<Utf8>().toDartString(length: 64),
+          ];
+        } finally {
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.hashTags"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -922,7 +761,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.hashTag';
       if (enableTraceLogging) {
         function += "(x=$x, y=$y)";
       }
@@ -935,22 +774,26 @@ abstract final class LibSpark {
     }
 
     try {
-      final xPtr = x.toNativeUtf8().cast<Char>();
-      final yPtr = y.toNativeUtf8().cast<Char>();
-
-      final result = native_hashTag(xPtr, yPtr);
-      final hash = result.cast<Utf8>().toDartString();
-
-      freeDart(xPtr, debugName: "xPtr");
-      freeDart(yPtr, debugName: "yPtr");
-      freeNative(result, debugName: "result");
-
-      return hash;
+      _checkCString(x, 'x');
+      _checkCString(y, 'y');
+      return using((arena) {
+        final result = _requirePointer(
+          native_hashTag(
+            x.toNativeUtf8(allocator: arena).cast<Char>(),
+            y.toNativeUtf8(allocator: arena).cast<Char>(),
+          ),
+        );
+        try {
+          return result.cast<Utf8>().toDartString();
+        } finally {
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.hashTag"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -982,7 +825,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.estimateSparkFee';
       if (enableTraceLogging) {
         function +=
             "(privateKeyHex=REDACTED,"
@@ -1001,77 +844,45 @@ abstract final class LibSpark {
     }
 
     try {
-      final privateKeyPtr = privateKeyHex
-          .to32BytesFromHex()
-          .unsignedCharPointer();
-
-      final serializedCoinsPtr = malloc.allocate<DartSpendCoinData>(
-        sizeOf<DartSpendCoinData>() * serializedCoins.length,
-      );
-      for (int i = 0; i < serializedCoins.length; i++) {
-        final b64CoinDecoded = base64Decode(serializedCoins[i].serializedCoin);
-        serializedCoinsPtr[i].serializedCoin = malloc.allocate<CCDataStream>(
-          sizeOf<CCDataStream>(),
+      _checkInt32(index, 'index');
+      _checkInt32(privateRecipientsCount, 'privateRecipientsCount');
+      _checkInt32(utxoNum, 'utxoNum');
+      _checkInt32(additionalTxSize, 'additionalTxSize');
+      _checkInt32(serializedCoins.length, 'serializedCoins.length');
+      return using((arena) {
+        final privateKeyPtr = privateKeyHex
+            .to32BytesFromHex('privateKeyHex')
+            .unsignedCharPointer(arena);
+        final serializedCoinsPtr = _spendCoins(arena, serializedCoins);
+        final result = _requirePointer(
+          native_estimateSparkFee(
+            privateKeyPtr,
+            index,
+            sendAmount,
+            subtractFeeFromAmount ? 1 : 0,
+            serializedCoinsPtr,
+            serializedCoins.length,
+            privateRecipientsCount,
+            utxoNum,
+            additionalTxSize,
+            spendVersion.nativeValue,
+          ),
         );
-        serializedCoinsPtr[i].serializedCoin.ref.data = b64CoinDecoded
-            .unsignedCharPointer();
-        serializedCoinsPtr[i].serializedCoin.ref.length = b64CoinDecoded.length;
-
-        final b64ContextDecoded = base64Decode(
-          serializedCoins[i].serializedCoinContext,
-        );
-        serializedCoinsPtr[i].serializedCoinContext = malloc
-            .allocate<CCDataStream>(sizeOf<CCDataStream>());
-        serializedCoinsPtr[i].serializedCoinContext.ref.data = b64ContextDecoded
-            .unsignedCharPointer();
-        serializedCoinsPtr[i].serializedCoinContext.ref.length =
-            b64ContextDecoded.length;
-
-        serializedCoinsPtr[i].groupId = serializedCoins[i].groupId;
-        serializedCoinsPtr[i].height = serializedCoins[i].height;
-      }
-
-      final result = native_estimateSparkFee(
-        privateKeyPtr,
-        index,
-        sendAmount,
-        subtractFeeFromAmount ? 1 : 0,
-        serializedCoinsPtr,
-        serializedCoins.length,
-        privateRecipientsCount,
-        utxoNum,
-        additionalTxSize,
-        spendVersion.nativeValue,
-      );
-
-      for (int i = 0; i < serializedCoins.length; i++) {
-        freeDart(
-          serializedCoinsPtr[i].serializedCoinContext,
-          debugName: "serializedCoinsPtr[$i].serializedCoinContext",
-        );
-        freeDart(
-          serializedCoinsPtr[i].serializedCoin,
-          debugName: "serializedCoinsPtr[$i].serializedCoin",
-        );
-      }
-      freeDart(serializedCoinsPtr, debugName: "serializedCoinsPtr");
-      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
-
-      if (result.ref.error.address != nullptr.address) {
-        final ex = Exception(result.ref.error.cast<Utf8>().toDartString());
-        freeNative(result.ref.error, debugName: "result.ref.error");
-        freeNative(result, debugName: "result");
-        throw ex;
-      } else {
-        final fee = result.ref.fee;
-        freeNative(result, debugName: "result");
-        return fee;
-      }
+        try {
+          if (result.ref.error != nullptr) {
+            throw Exception(result.ref.error.cast<Utf8>().toDartString());
+          }
+          return result.ref.fee;
+        } finally {
+          freeNative(result.ref.error, debugName: 'result.error');
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.estimateSparkFee"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -1096,7 +907,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.createSparkNameScript';
       if (enableTraceLogging) {
         function +=
             "("
@@ -1104,6 +915,7 @@ abstract final class LibSpark {
             "name=$name,"
             "additionalInfo=$additionalInfo,"
             "spendVersion=${proofInput.spendVersion},"
+            "proofInputHex=${proofInput.inputHex},"
             "privateKeyPtr=REDACTED,"
             "spendKeyIndex=$spendKeyIndex,"
             "diversifier=$diversifier,"
@@ -1118,69 +930,56 @@ abstract final class LibSpark {
     }
 
     try {
-      final namePtr = name.toNativeUtf8().cast<Char>();
-      final additionalInfoPtr = additionalInfo.toNativeUtf8().cast<Char>();
-      final ownershipDigestPtr = Uint8List.fromList(
-        proofInput.inputHex.to32BytesFromHex().reversed.toList(),
-      ).unsignedCharPointer();
-      final privateKeyPtr = privateKeyHex
-          .to32BytesFromHex()
-          .unsignedCharPointer();
-
-      final result = native_createSparkNameScript(
-        sparkNameValidityBlocks,
-        namePtr,
-        additionalInfoPtr,
-        ownershipDigestPtr,
-        proofInput.spendVersion.nativeValue,
-        privateKeyPtr,
-        spendKeyIndex,
-        diversifier,
-        isTestNet ? 1 : 0,
-        hashFailSafe,
-        ignoreProof ? 1 : 0,
-      );
-
-      freeDart(namePtr, debugName: "namePtr");
-      freeDart(additionalInfoPtr, debugName: "additionalInfoPtr");
-      freeDart(ownershipDigestPtr, debugName: "ownershipDigestPtr");
-      freeDart(privateKeyPtr, debugName: "privateKeyPtr");
-
-      if (result.address == nullptr.address) {
-        throw Exception("Internal memory allocation likely failed");
-      }
-
-      Uint8List? script;
-      String? errorMessage;
-      int? size;
-
-      if (result.ref.error.address != nullptr.address) {
-        errorMessage = result.ref.error.cast<Utf8>().toDartString();
-        freeNative(result.ref.error, debugName: "result.ref.error");
-      }
-
-      if (result.ref.script.address != nullptr.address) {
-        script = result.ref.script.toUint8List(result.ref.scriptLength);
-
-        freeNative(result.ref.script, debugName: "result.ref.script");
-      }
-
-      size = result.ref.size + 20; // https://github.com/firoorg/firo/blob/dd2a537d52c177736284f568e494dafb55db4924/src/spark/sparkwallet.cpp#L1624C59-L1624C123
-
-      freeNative(result, debugName: "result");
-
-      if (script == null) {
-        errorMessage ??=
-            "Internal memory allocation for error message likely failed";
-        throw Exception(errorMessage);
-      }
-
-      return (script: script, size: size);
+      _checkInt32(sparkNameValidityBlocks, 'sparkNameValidityBlocks');
+      _checkInt32(spendKeyIndex, 'spendKeyIndex');
+      _checkInt32(diversifier, 'diversifier');
+      _checkInt32(hashFailSafe, 'hashFailSafe', signed: true);
+      _checkCString(name, 'name');
+      _checkCString(additionalInfo, 'additionalInfo');
+      return using((arena) {
+        final ownershipDigest = Uint8List.fromList(
+          proofInput.inputHex
+              .to32BytesFromHex('proofInput.inputHex')
+              .reversed
+              .toList(),
+        );
+        final result = _requirePointer(
+          native_createSparkNameScript(
+            sparkNameValidityBlocks,
+            name.toNativeUtf8(allocator: arena).cast<Char>(),
+            additionalInfo.toNativeUtf8(allocator: arena).cast<Char>(),
+            ownershipDigest.unsignedCharPointer(arena),
+            proofInput.spendVersion.nativeValue,
+            privateKeyHex
+                .to32BytesFromHex('privateKeyHex')
+                .unsignedCharPointer(arena),
+            spendKeyIndex,
+            diversifier,
+            isTestNet ? 1 : 0,
+            hashFailSafe,
+            ignoreProof ? 1 : 0,
+          ),
+        );
+        try {
+          if (result.ref.error != nullptr) {
+            throw Exception(result.ref.error.cast<Utf8>().toDartString());
+          }
+          _requirePointer(result.ref.script);
+          return (
+            script: result.ref.script.toUint8List(result.ref.scriptLength),
+            size: result.ref.size + 20,
+          );
+        } finally {
+          freeNative(result.ref.error, debugName: 'result.error');
+          freeNative(result.ref.script, debugName: 'result.script');
+          freeNative(result, debugName: 'result');
+        }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.createSparkNameScript"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -1200,7 +999,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.getSparkNameCommitment';
       if (enableTraceLogging) {
         function +=
             "(serializedSparkNameDataLength="
@@ -1217,67 +1016,150 @@ abstract final class LibSpark {
       if (serializedSparkNameData.isEmpty) {
         throw ArgumentError.value(
           serializedSparkNameData,
-          "serializedSparkNameData",
-          "must not be empty",
+          'serializedSparkNameData',
+          'must not be empty',
         );
       }
-
-      final serializedSparkNameDataPtr = serializedSparkNameData
-          .unsignedCharPointer();
-      try {
-        final result = native_cGetSparkNameCommitment(
-          serializedSparkNameDataPtr,
-          serializedSparkNameData.length,
+      _checkInt32(
+        serializedSparkNameData.length,
+        'serializedSparkNameData.length',
+      );
+      return using((arena) {
+        final result = _requirePointer(
+          native_cGetSparkNameCommitment(
+            serializedSparkNameData.unsignedCharPointer(arena),
+            serializedSparkNameData.length,
+          ),
         );
-        if (result.address == nullptr.address) {
-          throw Exception("Internal memory allocation likely failed");
-        }
-
         try {
-          if (result.ref.error.address != nullptr.address) {
-            final error = result.ref.error.cast<Utf8>().toDartString();
-            freeNative(result.ref.error, debugName: "result.ref.error");
-            throw Exception(error);
+          if (result.ref.error != nullptr) {
+            throw Exception(result.ref.error.cast<Utf8>().toDartString());
           }
-
-          if (result.ref.commitment.address == nullptr.address) {
-            throw Exception("Internal memory allocation likely failed");
-          }
-
-          try {
-            if (result.ref.commitmentLength != 32) {
-              throw Exception(
-                "Unexpected Spark Name commitment length: "
-                "${result.ref.commitmentLength}",
-              );
-            }
-            return result.ref.commitment.toUint8List(
-              result.ref.commitmentLength,
-            );
-          } finally {
-            freeNative(
-              result.ref.commitment,
-              debugName: "result.ref.commitment",
+          _requirePointer(result.ref.commitment);
+          if (result.ref.commitmentLength != 32) {
+            throw Exception(
+              'Unexpected Spark Name commitment length: ${result.ref.commitmentLength}',
             );
           }
+          return result.ref.commitment.toUint8List(result.ref.commitmentLength);
         } finally {
-          freeNative(result, debugName: "result");
+          freeNative(result.ref.error, debugName: 'result.error');
+          freeNative(result.ref.commitment, debugName: 'result.commitment');
+          freeNative(result, debugName: 'result');
         }
-      } finally {
-        freeDart(
-          serializedSparkNameDataPtr,
-          debugName: "serializedSparkNameDataPtr",
-        );
-      }
+      });
     } finally {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.getSparkNameCommitment"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
     }
+  }
+
+  static void _checkInt32(int value, String name, {bool signed = false}) {
+    RangeError.checkValueInInterval(
+      value,
+      signed ? -0x80000000 : 0,
+      0x7fffffff,
+      name,
+    );
+  }
+
+  static void _checkBytes(Uint8List bytes, int length, String name) {
+    if (bytes.length != length) {
+      throw ArgumentError.value(bytes.length, name, 'must be $length bytes');
+    }
+  }
+
+  static void _checkCString(String value, String name) {
+    if (value.contains('\u0000')) {
+      throw ArgumentError.value(value, name, 'must not contain NUL');
+    }
+  }
+
+  static Pointer<T> _requirePointer<T extends NativeType>(Pointer<T> pointer) {
+    if (pointer == nullptr) {
+      throw Exception(_takeLastError() ?? 'Native call failed');
+    }
+    return pointer;
+  }
+
+  /// Returns and clears the reason the last native call on this thread failed.
+  static String? _takeLastError() {
+    final error = native_last_error();
+    if (error == nullptr) {
+      return null;
+    }
+    try {
+      return utf8.decode(
+        error.cast<Uint8>().asTypedList(error.cast<Utf8>().length),
+        allowMalformed: true,
+      );
+    } finally {
+      freeNative(error, debugName: 'error');
+    }
+  }
+
+  static Pointer<DartSpendCoinData> _spendCoins(
+    Arena arena,
+    List<
+      ({
+        String serializedCoin,
+        String serializedCoinContext,
+        int groupId,
+        int height,
+      })
+    >
+    coins,
+  ) {
+    final pointer = arena<DartSpendCoinData>(coins.length);
+    for (int i = 0; i < coins.length; i++) {
+      _checkInt32(coins[i].groupId, 'groupId');
+      _checkInt32(coins[i].height, 'height', signed: true);
+      final coin = base64Decode(coins[i].serializedCoin);
+      final context = base64Decode(coins[i].serializedCoinContext);
+      _checkInt32(coin.length, 'serializedCoin.length');
+      _checkInt32(context.length, 'serializedCoinContext.length');
+      pointer[i].serializedCoin = arena<CCDataStream>();
+      pointer[i].serializedCoin.ref.data = coin.unsignedCharPointer(arena);
+      pointer[i].serializedCoin.ref.length = coin.length;
+      pointer[i].serializedCoinContext = arena<CCDataStream>();
+      pointer[i].serializedCoinContext.ref.data = context.unsignedCharPointer(
+        arena,
+      );
+      pointer[i].serializedCoinContext.ref.length = context.length;
+      pointer[i].groupId = coins[i].groupId;
+      pointer[i].height = coins[i].height;
+    }
+    return pointer;
+  }
+
+  static void _freeSpendResult(Pointer<SparkSpendTransactionResult> result) {
+    if (result.ref.isError == 0) {
+      for (int i = 0; i < result.ref.outputScriptsLength; i++) {
+        freeNative(
+          result.ref.outputScripts[i].bytes,
+          debugName: 'outputScript.bytes',
+        );
+      }
+      freeNative(result.ref.outputScripts, debugName: 'result.outputScripts');
+      for (int i = 0; i < result.ref.usedCoinsLength; i++) {
+        final coin = result.ref.usedCoins[i];
+        freeNative(coin.serializedCoin.ref.data, debugName: 'usedCoin.data');
+        freeNative(coin.serializedCoin, debugName: 'usedCoin');
+        freeNative(
+          coin.serializedCoinContext.ref.data,
+          debugName: 'usedCoinContext.data',
+        );
+        freeNative(coin.serializedCoinContext, debugName: 'usedCoinContext');
+      }
+      freeNative(result.ref.usedCoins, debugName: 'result.usedCoins');
+    }
+    freeNative(result.ref.data, debugName: 'result.data');
+    freeNative(result, debugName: 'result');
   }
 
   static void freeNative<T extends NativeType>(
@@ -1294,71 +1176,56 @@ abstract final class LibSpark {
     native_free(pointer.cast());
   }
 
-  static void freeDart<T extends NativeType>(
-    Pointer<T> pointer, {
-    required String debugName,
-  }) {
-    if (enableDebugLogging) {
-      Log.l(
-        enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-        "Freeing $debugName $pointer using Dart's `malloc.free`",
-        stackTrace: enableTraceLogging ? StackTrace.current : null,
-      );
-    }
-    malloc.free(pointer);
-  }
-
   static String getFullViewKeyHexFromPrivateKeyData({
     required String privateKeyHex,
     required int index,
   }) {
-    final privateKeyData = privateKeyHex.to32BytesFromHex();
-    final privateKeyDataPtr = privateKeyData.unsignedCharPointer();
-    final fullViewKeyPtr = native_getFullViewKeyFromPrivateKeyData(
-      privateKeyDataPtr,
-      index,
-    );
-    // Prepare to receive the size of the serialized key
-    final sizePtr = malloc.allocate<Int>(sizeOf<Int>());
-    final serializedPtr = native_serializeFullViewKey(fullViewKeyPtr, sizePtr);
-    final size = sizePtr.value;
-    // Convert to Dart Uint8List using the extension
-    final fullViewKeyBytes = serializedPtr.toUint8List(size);
-    // Convert to hex string using the extension
-    final fullViewKeyHex = fullViewKeyBytes.toHexString();
-    // Free all native memory
-    freeDart(privateKeyDataPtr, debugName: "privateKeyDataPtr");
-    freeNative(serializedPtr, debugName: "serializedPtr");
-    freeNative(fullViewKeyPtr, debugName: "fullViewKeyPtr");
-    malloc.free(sizePtr);
-    return fullViewKeyHex;
+    _checkInt32(index, 'index');
+    return using((arena) {
+      final fullViewKey = _requirePointer(
+        native_getFullViewKeyFromPrivateKeyData(
+          privateKeyHex
+              .to32BytesFromHex('privateKeyHex')
+              .unsignedCharPointer(arena),
+          index,
+        ),
+      );
+      try {
+        final size = arena<Int>();
+        final serialized = _requirePointer(
+          native_serializeFullViewKey(fullViewKey, size),
+        );
+        try {
+          return serialized.cast<Uint8>().asTypedList(size.value).toHexString();
+        } finally {
+          freeNative(serialized, debugName: 'serialized');
+        }
+      } finally {
+        _deleteFullViewKey(fullViewKey);
+      }
+    });
   }
 
-  /// Creates a FullViewKey from key data.
-  ///
-  /// Returns a pointer to a FullViewKey that must be freed using [_deleteFullViewKey].
   static Pointer<Void> _deserializeFullViewKey({
     required String fullViewKeyHex,
   }) {
-    // This is *not* converting to int32s, and it supports lengths above 32 bytes.
-    final fullViewKeyData = fullViewKeyHex.to32OrMoreBytesFromHex();
-    final fullViewKeyDataPtr = fullViewKeyData.unsignedCharPointer();
-    final result = native_deserializeFullViewKey(
-      fullViewKeyDataPtr,
-      fullViewKeyData.length,
+    final bytes = fullViewKeyHex.to32OrMoreBytesFromHex('fullViewKeyHex');
+    _checkInt32(bytes.length, 'fullViewKey.length');
+    return using(
+      (arena) => _requirePointer(
+        native_deserializeFullViewKey(
+          bytes.unsignedCharPointer(arena),
+          bytes.length,
+        ),
+      ),
     );
-
-    if (result.address == nullptr.address) {
-      throw Exception("Failed to deserialize full view key");
-    }
-
-    return result;
   }
 
   /// Check whether the spark coin is ours and if so recover required data
   /// and encapsulate into a single object ([LibSparkCoin]).
   ///
   /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
+  /// A coin that cannot be parsed is not ours. Throws if recovery fails.
   static LibSparkCoin? identifyAndRecoverCoin(
     String serializedCoin, {
     required String privateKeyHex,
@@ -1366,93 +1233,106 @@ abstract final class LibSpark {
     required Uint8List context,
     bool isTestNet = false,
   }) {
-    final fullViewKeyHex = getFullViewKeyHexFromPrivateKeyData(
-      privateKeyHex: privateKeyHex,
-      index: index,
-    );
-
-    return identifyAndRecoverCoinByFullViewKey(
-      serializedCoin: serializedCoin,
-      fullViewKeyHex: fullViewKeyHex,
-      context: context,
-      isTestNet: isTestNet,
-    );
+    _checkInt32(index, 'index');
+    _checkInt32(context.length, 'context.length');
+    return using((arena) {
+      final fullViewKey = _requirePointer(
+        native_getFullViewKeyFromPrivateKeyData(
+          privateKeyHex
+              .to32BytesFromHex('privateKeyHex')
+              .unsignedCharPointer(arena),
+          index,
+        ),
+      );
+      try {
+        return _recoverCoin(serializedCoin, fullViewKey, context, isTestNet);
+      } finally {
+        _deleteFullViewKey(fullViewKey);
+      }
+    });
   }
 
   /// Identifies and recovers a coin using a FullViewKey.
   ///
   /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
+  /// A coin that cannot be parsed is not ours. Throws if recovery fails.
+  /// Bytes after the coin, such as a mint script's value proof, are ignored.
   static LibSparkCoin? identifyAndRecoverCoinByFullViewKey({
     required String serializedCoin,
     required String fullViewKeyHex,
     required Uint8List context,
     bool isTestNet = false,
   }) {
+    _checkInt32(context.length, 'context.length');
     final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
     try {
-      final b64CoinDecoded = base64Decode(serializedCoin).sublist(0, 244);
-      final serializedCoinPtr = b64CoinDecoded.unsignedCharPointer();
-      final contextPtr = context.unsignedCharPointer();
-
-      final result = native_idAndRecoverCoinByFullViewKey(
-        serializedCoinPtr,
-        b64CoinDecoded.length,
-        fullViewKey,
-        contextPtr,
-        context.length,
-        isTestNet ? 1 : 0,
-      );
-
-      freeDart(serializedCoinPtr, debugName: "serializedCoinPtr");
-      freeDart(contextPtr, debugName: "contextPtr");
-
-      if (result.address == nullptr.address) {
-        return null;
-      }
-
-      final LibSparkCoinType coinType;
-      switch (result.ref.type) {
-        case 0:
-          coinType = LibSparkCoinType.mint;
-          break;
-        case 1:
-          coinType = LibSparkCoinType.spend;
-          break;
-        default:
-          throw Exception("Unknown coin type \"${result.ref.type}\" found.");
-      }
-
-      final ret = LibSparkCoin(
-        type: coinType,
-        nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
-          length: result.ref.nonceHexLength,
-        ),
-        address: result.ref.address.cast<Utf8>().toDartString(),
-        value: BigInt.from(result.ref.value),
-        memo: result.ref.memo.cast<Utf8>().toDartString(),
-        diversifier: BigInt.from(result.ref.diversifier),
-        encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
-          result.ref.encryptedDiversifierLength,
-        ),
-        serial: result.ref.serial.toUint8List(result.ref.serialLength),
-        lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
-      );
-
-      freeNative(result.ref.address, debugName: "result.ref.address");
-      freeNative(result.ref.memo, debugName: "result.ref.memo");
-      freeNative(result.ref.lTagHash, debugName: "result.ref.lTagHash");
-      freeNative(
-        result.ref.encryptedDiversifier,
-        debugName: "result.ref.encryptedDiversifier",
-      );
-      freeNative(result.ref.serial, debugName: "result.ref.serial");
-      freeNative(result.ref.nonceHex, debugName: "result.ref.nonceHex");
-      freeNative(result, debugName: "result");
-
-      return ret;
+      return _recoverCoin(serializedCoin, fullViewKey, context, isTestNet);
     } finally {
       _deleteFullViewKey(fullViewKey);
     }
+  }
+
+  static LibSparkCoin? _recoverCoin(
+    String serializedCoin,
+    Pointer<Void> fullViewKey,
+    Uint8List context,
+    bool isTestNet,
+  ) {
+    return using((arena) {
+      final coin = base64Decode(serializedCoin);
+      _checkInt32(coin.length, 'serializedCoin.length');
+      final result = native_idAndRecoverCoinByFullViewKey(
+        coin.unsignedCharPointer(arena),
+        coin.length,
+        fullViewKey,
+        context.unsignedCharPointer(arena),
+        context.length,
+        isTestNet ? 1 : 0,
+      );
+      if (result == nullptr) {
+        final error = _takeLastError();
+        if (error != null) {
+          throw Exception(error);
+        }
+        return null;
+      }
+      try {
+        final type = switch (result.ref.type) {
+          0 => LibSparkCoinType.mint,
+          1 => LibSparkCoinType.spend,
+          _ => throw Exception('Unknown coin type "${result.ref.type}" found.'),
+        };
+        return LibSparkCoin(
+          type: type,
+          nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
+            length: result.ref.nonceHexLength,
+          ),
+          address: result.ref.address.cast<Utf8>().toDartString(),
+          value: BigInt.from(result.ref.value).toUnsigned(64),
+          memo: utf8.decode(
+            result.ref.memo.cast<Uint8>().asTypedList(result.ref.memoLength),
+            allowMalformed: true,
+          ),
+          diversifier: BigInt.from(result.ref.diversifier).toUnsigned(64),
+          encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
+            result.ref.encryptedDiversifierLength,
+          ),
+          serial: result.ref.serial.toUint8List(result.ref.serialLength),
+          lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
+        );
+      } finally {
+        freeNative(result.ref.address, debugName: 'result.address');
+        freeNative(result.ref.memo, debugName: 'result.memo');
+        freeNative(result.ref.lTagHash, debugName: 'result.lTagHash');
+        freeNative(
+          result.ref.encryptedDiversifier,
+          debugName: 'result.encryptedDiversifier',
+        );
+        freeNative(result.ref.serial, debugName: 'result.serial');
+        freeNative(result.ref.nonceHex, debugName: 'result.nonceHex');
+        freeNative(result, debugName: 'result');
+      }
+    });
   }
 
   /// Deletes a FullViewKey.
@@ -1463,7 +1343,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark._deleteFullViewKey';
       if (enableTraceLogging) {
         function += "(fullViewKey=$fullViewKey)";
       }
@@ -1481,7 +1361,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark._deleteFullViewKey"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -1491,19 +1371,17 @@ abstract final class LibSpark {
 
 extension on Pointer<UnsignedChar> {
   Uint8List toUint8List(int length) {
-    // TODO needs free?
     return Uint8List.fromList(cast<Uint8>().asTypedList(length));
   }
 
   String toBase64(int length) {
-    final data = toUint8List(length);
-    return base64.encode(data);
+    return base64.encode(cast<Uint8>().asTypedList(length));
   }
 }
 
 extension on Uint8List {
-  Pointer<UnsignedChar> unsignedCharPointer() {
-    final pointer = malloc.allocate<Uint8>(sizeOf<Uint8>() * lengthInBytes);
+  Pointer<UnsignedChar> unsignedCharPointer(Allocator allocator) {
+    final pointer = allocator<Uint8>(lengthInBytes == 0 ? 1 : lengthInBytes);
     pointer.asTypedList(lengthInBytes).setAll(0, this);
     return pointer.cast<UnsignedChar>();
   }
