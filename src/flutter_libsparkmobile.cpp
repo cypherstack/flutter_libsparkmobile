@@ -67,6 +67,18 @@ char* copyString(const std::string& value) {
     return result;
 }
 
+// The secp256k1 field prime, big-endian, for rejecting non-canonical x coordinates.
+constexpr unsigned char fieldPrimeBytes[32] = {
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xfc, 0x2f,
+};
+
+// A serialized tag is x (32 bytes), a 0/1 oddness byte, and a 0/1 infinity byte.
+bool isCanonicalTag(const unsigned char* tag) {
+    return memcmp(tag, fieldPrimeBytes, 32) < 0 && tag[32] <= 1 && tag[33] == 0;
+}
+
 bool isHexCoordinate(const char* value) {
     if (!value || !*value) return false;
     if (strspn(value, "0123456789abcdefABCDEF") != strlen(value)) return false;
@@ -689,8 +701,12 @@ const char* hashTags(unsigned char* tags, int tagCount) {
         std::unique_ptr<char, decltype(&free)> result(
             allocate<char>(static_cast<size_t>(tagCount) * 64), free);
         for (int i = 0; i < tagCount; i++) {
+            const unsigned char* encoded = tags + (static_cast<size_t>(i) * 34);
+            if (!isCanonicalTag(encoded)) {
+                return fail("Tags must encode a canonical point on the curve");
+            }
             secp_primitives::GroupElement tag;
-            tag.deserialize(tags + (static_cast<size_t>(i) * 34));
+            tag.deserialize(encoded);
             std::string hex = primitives::GetLTagHash(tag).GetHex();
             memcpy(result.get() + (static_cast<size_t>(i) * 64), hex.data(), 64);
         }

@@ -11,6 +11,12 @@ const _generatorX =
     '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798';
 const _generatorY =
     '483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8';
+const _fieldPrime =
+    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f';
+
+Matcher throwsExceptionContaining(String fragment) => throwsA(
+  isA<Exception>().having((e) => e.toString(), 'message', contains(fragment)),
+);
 
 void _createSpend({
   required Uint8List txHash,
@@ -171,6 +177,36 @@ void main() {
       final expected = LibSpark.hashTag(x, y);
       expect(LibSpark.hashTag(x.toUpperCase(), y.toUpperCase()), expected);
       expect(LibSpark.hashTag('00$x', '00$y'), expected);
+    });
+
+    test('rejects non-canonical batch tags like coordinate hashing', () {
+      final x = _generatorX.to32BytesFromHex();
+      final p = _fieldPrime.to32BytesFromHex();
+      for (final tag in [
+        [...x, 0, 1],
+        [...x, 1, 1],
+        [...x, 2, 0],
+        [...p, 0, 0],
+        [...p, 1, 0],
+      ]) {
+        expect(
+          () => LibSpark.hashTags(
+            base64Tags: [base64Encode(Uint8List.fromList(tag))],
+          ),
+          throwsExceptionContaining('canonical'),
+        );
+      }
+    });
+
+    test('batch hashing honours the oddness byte', () {
+      final negatedY =
+          (BigInt.parse(_fieldPrime, radix: 16) -
+                  BigInt.parse(_generatorY, radix: 16))
+              .toRadixString(16);
+      final tag = Uint8List.fromList([..._generatorX.to32BytesFromHex(), 1, 0]);
+      final hash = LibSpark.hashTags(base64Tags: [base64Encode(tag)]).single;
+      expect(hash, LibSpark.hashTag(_generatorX, negatedY));
+      expect(hash, isNot(LibSpark.hashTag(_generatorX, _generatorY)));
     });
 
     test('batch hashing agrees with coordinate hashing', () {
@@ -515,14 +551,6 @@ void main() {
   });
 
   group('Native errors', () {
-    Matcher throwsExceptionContaining(String fragment) => throwsA(
-      isA<Exception>().having(
-        (e) => e.toString(),
-        'message',
-        contains(fragment),
-      ),
-    );
-
     test('carry the native reason for a rejected mint address', () {
       expect(
         () => LibSpark.createSparkMintRecipients(
