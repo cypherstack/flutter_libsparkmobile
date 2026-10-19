@@ -381,8 +381,12 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkBytes(txHash, 32, 'txHash');
       for (final recipient in privateRecipients) {
         _checkCString(recipient.sparkAddress, 'sparkAddress');
+      }
+      for (final block in idAndBlockHashes) {
+        _checkBytes(block.blockHash, 32, 'blockHash');
       }
       final resolvedExtensionCommitment = spendVersion
           .resolveExtensionCommitment(extensionCommitment);
@@ -442,7 +446,6 @@ abstract final class LibSpark {
           idAndBlockHashes.length,
         );
         for (int i = 0; i < idAndBlockHashes.length; i++) {
-          assert(idAndBlockHashes[i].blockHash.length == 32);
           idAndBlockHashesPtr[i].id = idAndBlockHashes[i].setId;
           idAndBlockHashesPtr[i].hash = idAndBlockHashes[i].blockHash
               .unsignedCharPointer(arena);
@@ -689,6 +692,9 @@ abstract final class LibSpark {
         return [];
       }
       final tags = base64Tags.map(base64Decode).toList();
+      for (final tag in tags) {
+        _checkBytes(tag, 34, 'tag');
+      }
       final bytes = Uint8List.fromList(tags.expand((tag) => tag).toList());
       return using((arena) {
         final result = _requirePointer(
@@ -997,6 +1003,12 @@ abstract final class LibSpark {
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
+    }
+  }
+
+  static void _checkBytes(Uint8List bytes, int length, String name) {
+    if (bytes.length != length) {
+      throw ArgumentError.value(bytes.length, name, 'must be $length bytes');
     }
   }
 

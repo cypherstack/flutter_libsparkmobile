@@ -7,7 +7,69 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _privateKey =
     'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+void _createSpend({
+  required Uint8List txHash,
+  List<({int setId, Uint8List blockHash})> blockHashes = const [],
+}) {
+  LibSpark.createSparkSendTransaction(
+    privateKeyHex: _privateKey,
+    recipients: [],
+    privateRecipients: [],
+    serializedCoins: [],
+    allAnonymitySets: [],
+    idAndBlockHashes: blockHashes,
+    txHash: txHash,
+    additionalTxSize: 0,
+    spendVersion: SparkSpendVersion.chaumV2,
+  );
+}
+
 void main() {
+  group('Spend input validation', () {
+    test('rejects transaction hashes that are not 32 bytes', () {
+      for (final length in [0, 1, 31, 33, 64]) {
+        expect(
+          () => _createSpend(txHash: Uint8List(length)),
+          throwsArgumentError,
+        );
+      }
+    });
+
+    test('rejects block hashes that are not 32 bytes', () {
+      for (final length in [0, 1, 31, 33, 64]) {
+        expect(
+          () => _createSpend(
+            txHash: Uint8List(32),
+            blockHashes: [(setId: 1, blockHash: Uint8List(length))],
+          ),
+          throwsArgumentError,
+        );
+      }
+    });
+  });
+
+  group('Tag hashing', () {
+    test('checks every decoded tag length', () {
+      for (final length in [0, 1, 33, 35, 68]) {
+        expect(
+          () =>
+              LibSpark.hashTags(base64Tags: [base64Encode(Uint8List(length))]),
+          throwsArgumentError,
+        );
+      }
+      expect(
+        () => LibSpark.hashTags(
+          base64Tags: [
+            base64Encode(Uint8List(33)),
+            base64Encode(Uint8List(35)),
+          ],
+        ),
+        throwsArgumentError,
+      );
+      expect(LibSpark.hashTags(base64Tags: []), isEmpty);
+    });
+  });
+
   group('Full view keys', () {
     late String fullViewKey;
 

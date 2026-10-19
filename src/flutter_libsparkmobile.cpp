@@ -552,6 +552,7 @@ SerializedMintContextResult* serializeMintContext(
         if (inputsLength < 0 || (inputsLength > 0 && !inputs)) return nullptr;
         CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
         for (int i = 0; i < inputsLength; i++) {
+            if (!inputs[i].txHash || inputs[i].txHashLength != 32) return nullptr;
             std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
             CTxIn input(
                     uint256(vec),
