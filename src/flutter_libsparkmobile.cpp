@@ -11,7 +11,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <iostream> // Just for printing.
 
 namespace {
 
@@ -34,6 +33,14 @@ char* copyString(const std::string& value) {
     return result;
 }
 
+bool isHexCoordinate(const char* value) {
+    if (!value || !*value) return false;
+    bool negative = *value == '-';
+    const char* digits = value + (negative ? 1 : 0);
+    if (!*digits || strspn(digits, "0123456789abcdefABCDEF") != strlen(digits)) return false;
+    while (*digits == '0') ++digits;
+    return strlen(digits) <= 64 && (!negative || *digits);
+}
 
 void freeCoinData(AggregateCoinData* data) {
     if (!data) return;
@@ -90,29 +97,26 @@ extern "C" {
  */
 FFI_PLUGIN_EXPORT
 const char* getAddress(unsigned char* keyData, int index, int diversifier, int isTestNet) {
-    // Use the hex string directly to create the SpendKey.
-    spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
-
-    spark::FullViewKey fullViewKey(spendKey);
-    return getAddressFromFullViewKey(reinterpret_cast<void*>(&fullViewKey), index, diversifier, isTestNet);
+    try {
+        if (!keyData || index < 0 || diversifier < 0) return nullptr;
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
+        spark::FullViewKey fullViewKey(spendKey);
+        return getAddressFromFullViewKey(&fullViewKey, index, diversifier, isTestNet);
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 FFI_PLUGIN_EXPORT
 const char* getAddressFromFullViewKey(void* fullViewKeyVoid, int index, int diversifier, int isTestNet) {
     try {
+        if (!fullViewKeyVoid || index < 0 || diversifier < 0) return nullptr;
         spark::IncomingViewKey incomingViewKey(*static_cast<spark::FullViewKey*>(fullViewKeyVoid));
         spark::Address address(incomingViewKey, static_cast<uint64_t>(diversifier));
 
-        // Encode the Address object into a string using the appropriate network.
         std::string encodedAddress = address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
-
-        // Allocate memory for the C-style string. This MUST be done with malloc so it can be freed with freeNative().
-        char* cstr = static_cast<char*>(malloc(encodedAddress.length() + 1));
-        std::strcpy(cstr, encodedAddress.c_str());
-
-        return cstr;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        return copyString(encodedAddress);
+    } catch (...) {
         return nullptr;
     }
 }
@@ -172,9 +176,15 @@ SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
         memcpy(result->proof, proofStream.data(), proofStream.size());
     } catch (const std::exception& e) {
         result->error = static_cast<char*>(malloc(strlen(e.what()) + 1));
-        if (result->error) {
-            strcpy(result->error, e.what());
+        if (!result->error) {
+            free(result);
+            return nullptr;
         }
+        strcpy(result->error, e.what());
+    } catch (...) {
+        free(result->proof);
+        free(result);
+        return nullptr;
     }
 
     return result;
@@ -221,17 +231,20 @@ int verifySparkAddressOwnershipProof(
         Scalar messageScalar;
         messageScalar.SetHex(messageHash.GetHash().GetHex());
         return address.verify_own(messageScalar, proof) ? 1 : 0;
-    } catch (const std::exception&) {
+    } catch (...) {
         return 0;
     }
 }
 
 FFI_PLUGIN_EXPORT
 void* getFullViewKeyFromPrivateKeyData(unsigned char* keyData, int index) {
-    spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
-    spark::FullViewKey* fullViewKey = new spark::FullViewKey(spendKey);
-
-    return static_cast<void*>(fullViewKey);
+    try {
+        if (!keyData || index < 0) return nullptr;
+        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
+        return new spark::FullViewKey(spendKey);
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 FFI_PLUGIN_EXPORT
@@ -578,10 +591,11 @@ ValidateAddressResult* isValidSparkAddress(
         const char* addressCStr,
         int isTestNet
 ) {
-    spark::Address address;
-    ValidateAddressResult* result = (ValidateAddressResult*) malloc(sizeof(ValidateAddressResult));
-    result->isValid = false;
+    auto* result = static_cast<ValidateAddressResult*>(calloc(1, sizeof(ValidateAddressResult)));
+    if (!result) return nullptr;
     try {
+        if (!addressCStr) throw std::invalid_argument("Invalid address");
+        spark::Address address;
         std::string addressString(addressCStr);
         unsigned char network = address.decode(addressString);
         result->isValid = network == (isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
@@ -589,32 +603,45 @@ ValidateAddressResult* isValidSparkAddress(
         return result;
     } catch (const std::exception& e) {
         result->errorMessage = (char*) malloc(sizeof(char) * (strlen(e.what()) + 1));
+        if (!result->errorMessage) {
+            free(result);
+            return nullptr;
+        }
         strcpy(result->errorMessage, e.what());
         return result;
+    } catch (...) {
+        free(result);
+        return nullptr;
     }
 }
 
 FFI_PLUGIN_EXPORT
 const char* hashTags(unsigned char* tags, int tagCount) {
-    char* result = (char*) malloc(sizeof(char) * 64 * tagCount);
-    for (int i = 0; i < tagCount; i++) {
-        secp_primitives::GroupElement tag;
-        tag.deserialize(tags + (i * 34));
-        uint256 hash = primitives::GetLTagHash(tag);
-        std::string hex = hash.GetHex();
-        memcpy(result + (i * 64), hex.c_str(), 64);
+    try {
+        if (tagCount < 0 || (tagCount > 0 && !tags)) return nullptr;
+        std::unique_ptr<char, decltype(&free)> result(
+            allocate<char>(static_cast<size_t>(tagCount) * 64), free);
+        for (int i = 0; i < tagCount; i++) {
+            secp_primitives::GroupElement tag;
+            tag.deserialize(tags + (static_cast<size_t>(i) * 34));
+            std::string hex = primitives::GetLTagHash(tag).GetHex();
+            memcpy(result.get() + (static_cast<size_t>(i) * 64), hex.data(), 64);
+        }
+        return result.release();
+    } catch (...) {
+        return nullptr;
     }
-    return result;
 }
 
 FFI_PLUGIN_EXPORT
 const char* hashTag(const char* x, const char* y) {
-    secp_primitives::GroupElement tag = secp_primitives::GroupElement(x, y, 16);
-    uint256 hash = primitives::GetLTagHash(tag);
-    std::string hex = hash.GetHex();
-    char* result = (char*) malloc(sizeof(char) * (hex.length() + 1));
-    strcpy(result, hex.c_str());
-    return result;
+    try {
+        if (!isHexCoordinate(x) || !isHexCoordinate(y)) return nullptr;
+        secp_primitives::GroupElement tag(x, y, 16);
+        return copyString(primitives::GetLTagHash(tag).GetHex());
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 FFI_PLUGIN_EXPORT
@@ -658,18 +685,25 @@ SparkFeeResult* estimateSparkFee(
                 static_cast<spark::SpendTransactionVersion>(spendVersion)
         );
 
-        SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
+        SparkFeeResult *result = allocate<SparkFeeResult>();
         result->error = nullptr;
         result->fee = estimated.first;
 
         return result;
     } catch (const std::exception& e) {
         SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
+        if (!result) return nullptr;
         result->fee = 0;
         result->error = (char*)malloc(sizeof(char) * (strlen(e.what()) + 1));
+        if (!result->error) {
+            free(result);
+            return nullptr;
+        }
         strcpy(result->error, e.what());
 
         return result;
+    } catch (...) {
+        return nullptr;
     }
 }
 
@@ -774,9 +808,14 @@ SparkNameScript* createSparkNameScript(
         result->error = (char*)malloc(strlen(e.what()) + 1);
         if (result->error) {
             strcpy(result->error, e.what());
+        } else {
+            free(result);
+            return nullptr;
         }
 
         return result;
+    } catch (...) {
+        return nullptr;
     }
 }
 
@@ -832,6 +871,10 @@ FFI_PLUGIN_EXPORT
         }
         strcpy(result->error, e.what());
         return result;
+    } catch (...) {
+        free(result->commitment);
+        free(result);
+        return nullptr;
     }
 }
 

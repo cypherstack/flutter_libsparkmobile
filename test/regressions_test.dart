@@ -7,6 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _privateKey =
     'cb02b05c71a69080b083484f1cdf407677fac00ced6438df16925e2a29b4eebf';
+const _generatorX =
+    '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798';
+const _generatorY =
+    '483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8';
+
 void _createSpend({
   required Uint8List txHash,
   List<({int setId, Uint8List blockHash})> blockHashes = const [],
@@ -67,6 +72,29 @@ void main() {
         throwsArgumentError,
       );
       expect(LibSpark.hashTags(base64Tags: []), isEmpty);
+    });
+
+    test('reports malformed tags and coordinates as Dart errors', () {
+      expect(() => LibSpark.hashTag('invalid', 'invalid'), throwsException);
+      expect(
+        () => LibSpark.hashTags(base64Tags: [base64Encode(Uint8List(34))]),
+        throwsException,
+      );
+    });
+
+    test('batch hashing agrees with coordinate hashing', () {
+      final bytes = Uint8List.fromList([
+        ..._generatorX.to32BytesFromHex(),
+        0,
+        0,
+      ]);
+      final expected = LibSpark.hashTag(_generatorX, _generatorY);
+      expect(
+        LibSpark.hashTags(
+          base64Tags: [base64Encode(bytes), base64Encode(bytes)],
+        ),
+        [expected, expected],
+      );
     });
   });
 
@@ -161,6 +189,16 @@ void main() {
       expect(coin, isNotNull);
       expect(coin!.memo, '\ufffd\u0000after');
       expect(coin.value, BigInt.from(100000000));
+    });
+
+    test('rejects invalid mint addresses without terminating the process', () {
+      expect(
+        () => LibSpark.createSparkMintRecipients(
+          outputs: [(sparkAddress: 'invalid', value: 100000, memo: '')],
+          serialContext: Uint8List.fromList([1, 2, 3]),
+        ),
+        throwsException,
+      );
     });
 
     test('rejects address suffixes hidden by NUL', () async {
