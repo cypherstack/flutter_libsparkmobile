@@ -663,7 +663,7 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         if (!result) return fail("Out of memory");
         result->isError = true;
         result->dataLength = strlen(e.what());
-        result->data = (unsigned char*)malloc(sizeof(unsigned char) * result->dataLength);
+        result->data = (unsigned char*)malloc(result->dataLength ? result->dataLength : 1);
         if (!result->data) {
             free(result);
             return fail("Out of memory");
@@ -920,7 +920,7 @@ SparkNameScript* createSparkNameScript(
 
         result->scriptLength = outputScript.size();
         result->error = nullptr;
-        result->script = (unsigned char*)malloc(outputScript.size());
+        result->script = (unsigned char*)malloc(outputScript.empty() ? 1 : outputScript.size());
         result->size = sparkNameTxDataSize;
         if (!result->script) {
             free(result);
