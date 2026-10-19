@@ -1410,46 +1410,53 @@ abstract final class LibSpark {
         return null;
       }
 
-      final LibSparkCoinType coinType;
-      switch (result.ref.type) {
-        case 0:
-          coinType = LibSparkCoinType.mint;
-          break;
-        case 1:
-          coinType = LibSparkCoinType.spend;
-          break;
-        default:
-          throw Exception("Unknown coin type \"${result.ref.type}\" found.");
+      try {
+        final LibSparkCoinType coinType;
+        switch (result.ref.type) {
+          case 0:
+            coinType = LibSparkCoinType.mint;
+            break;
+          case 1:
+            coinType = LibSparkCoinType.spend;
+            break;
+          default:
+            throw Exception("Unknown coin type \"${result.ref.type}\" found.");
+        }
+
+        final ret = LibSparkCoin(
+          type: coinType,
+          nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
+            length: result.ref.nonceHexLength,
+          ),
+          address: result.ref.address.cast<Utf8>().toDartString(),
+          value: BigInt.from(result.ref.value),
+          memo: utf8.decode(
+            result.ref.memo.cast<Uint8>().asTypedList(
+              result.ref.memo.cast<Utf8>().length,
+            ),
+            allowMalformed: true,
+          ),
+          diversifier: BigInt.from(result.ref.diversifier),
+          encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
+            result.ref.encryptedDiversifierLength,
+          ),
+          serial: result.ref.serial.toUint8List(result.ref.serialLength),
+          lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
+        );
+
+        return ret;
+      } finally {
+        freeNative(result.ref.address, debugName: "result.ref.address");
+        freeNative(result.ref.memo, debugName: "result.ref.memo");
+        freeNative(result.ref.lTagHash, debugName: "result.ref.lTagHash");
+        freeNative(
+          result.ref.encryptedDiversifier,
+          debugName: "result.ref.encryptedDiversifier",
+        );
+        freeNative(result.ref.serial, debugName: "result.ref.serial");
+        freeNative(result.ref.nonceHex, debugName: "result.ref.nonceHex");
+        freeNative(result, debugName: "result");
       }
-
-      final ret = LibSparkCoin(
-        type: coinType,
-        nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
-          length: result.ref.nonceHexLength,
-        ),
-        address: result.ref.address.cast<Utf8>().toDartString(),
-        value: BigInt.from(result.ref.value),
-        memo: result.ref.memo.cast<Utf8>().toDartString(),
-        diversifier: BigInt.from(result.ref.diversifier),
-        encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
-          result.ref.encryptedDiversifierLength,
-        ),
-        serial: result.ref.serial.toUint8List(result.ref.serialLength),
-        lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
-      );
-
-      freeNative(result.ref.address, debugName: "result.ref.address");
-      freeNative(result.ref.memo, debugName: "result.ref.memo");
-      freeNative(result.ref.lTagHash, debugName: "result.ref.lTagHash");
-      freeNative(
-        result.ref.encryptedDiversifier,
-        debugName: "result.ref.encryptedDiversifier",
-      );
-      freeNative(result.ref.serial, debugName: "result.ref.serial");
-      freeNative(result.ref.nonceHex, debugName: "result.ref.nonceHex");
-      freeNative(result, debugName: "result");
-
-      return ret;
     } finally {
       _deleteFullViewKey(fullViewKey);
     }
