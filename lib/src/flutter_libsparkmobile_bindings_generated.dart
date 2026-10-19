@@ -70,6 +70,8 @@ external ffi.Pointer<ffi.Char> native_getAddressFromFullViewKey(
   int isTestNet,
 );
 
+/// Returns the recovered coin, or NULL. NULL with no native_last_error() reason
+/// means the coin is not ours.
 @ffi.Native<
   ffi.Pointer<AggregateCoinData> Function(
     ffi.Pointer<ffi.UnsignedChar>,

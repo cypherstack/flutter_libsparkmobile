@@ -339,21 +339,32 @@ AggregateCoinData* idAndRecoverCoinByFullViewKey(
         int contextLength,
         int isTestNet) {
     try {
-        if (!serializedCoin || serializedCoinLength <= 0 || !fullViewKeyVoid ||
+        if (serializedCoinLength < 0 || (serializedCoinLength > 0 && !serializedCoin) || !fullViewKeyVoid ||
             contextLength < 0 || (contextLength > 0 && !context)) {
             return fail("Serialized coin, full view key, and context are required");
         }
         spark::FullViewKey* fullViewKey = static_cast<spark::FullViewKey*>(fullViewKeyVoid);
-        spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
 
         std::vector<unsigned char> contextVec;
         if (contextLength) contextVec.assign(context, context + contextLength);
-        coin.setSerialContext(contextVec);
 
         // Derive the incoming view key from the full view key
         spark::IncomingViewKey incomingViewKey(*fullViewKey);
 
-        spark::IdentifiedCoinData identifiedCoinData = coin.identify(incomingViewKey);
+        spark::Coin coin;
+        spark::IdentifiedCoinData identifiedCoinData;
+        try {
+            coin = deserializeCoin(serializedCoin, serializedCoinLength);
+            coin.setSerialContext(contextVec);
+            identifiedCoinData = coin.identify(incomingViewKey);
+        } catch (const std::bad_alloc&) {
+            throw;
+        } catch (const std::exception&) {
+            // A coin that does not parse or decrypt with this key is not ours,
+            // so return no result without recording an error.
+            lastError[0] = '\0';
+            return nullptr;
+        }
 
         spark::RecoveredCoinData data = coin.recover(*fullViewKey, identifiedCoinData);
 

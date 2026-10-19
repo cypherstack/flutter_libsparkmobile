@@ -1210,6 +1210,7 @@ abstract final class LibSpark {
   /// and encapsulate into a single object ([LibSparkCoin]).
   ///
   /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
+  /// A coin that cannot be parsed is not ours. Throws if recovery fails.
   static LibSparkCoin? identifyAndRecoverCoin(
     String serializedCoin, {
     required String privateKeyHex,
@@ -1237,6 +1238,8 @@ abstract final class LibSpark {
   /// Identifies and recovers a coin using a FullViewKey.
   ///
   /// Returns a [LibSparkCoin] if the coin belongs to us, or null otherwise.
+  /// A coin that cannot be parsed is not ours. Throws if recovery fails.
+  /// Bytes after the coin, such as a mint script's value proof, are ignored.
   static LibSparkCoin? identifyAndRecoverCoinByFullViewKey({
     required String serializedCoin,
     required String fullViewKeyHex,
@@ -1259,7 +1262,8 @@ abstract final class LibSpark {
     bool isTestNet,
   ) {
     return using((arena) {
-      final coin = Uint8List.sublistView(base64Decode(serializedCoin), 0, 244);
+      final coin = base64Decode(serializedCoin);
+      _checkInt32(coin.length, 'serializedCoin.length');
       final result = native_idAndRecoverCoinByFullViewKey(
         coin.unsignedCharPointer(arena),
         coin.length,
@@ -1269,8 +1273,10 @@ abstract final class LibSpark {
         isTestNet ? 1 : 0,
       );
       if (result == nullptr) {
-        // Drop the reason so a later call cannot report it as its own.
-        _takeLastError();
+        final error = _takeLastError();
+        if (error != null) {
+          throw Exception(error);
+        }
         return null;
       }
       try {

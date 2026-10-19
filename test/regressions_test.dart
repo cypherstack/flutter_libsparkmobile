@@ -366,6 +366,19 @@ void main() {
       }
     });
 
+    test('treats short coins as foreign instead of throwing', () {
+      for (final length in [0, 1, 243]) {
+        expect(
+          LibSpark.identifyAndRecoverCoinByFullViewKey(
+            serializedCoin: base64Encode(Uint8List(length)),
+            fullViewKeyHex: fullViewKey,
+            context: Uint8List(0),
+          ),
+          isNull,
+        );
+      }
+    });
+
     test('preserves Unicode and embedded NUL in private spend memos', () async {
       final address = await LibSpark.getAddressFromFullViewKey(
         fullViewKeyHex: fullViewKey,

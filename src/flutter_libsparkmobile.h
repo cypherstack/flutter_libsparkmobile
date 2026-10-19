@@ -34,6 +34,10 @@ const char* getAddress(unsigned char* keyData, int index, int diversifier, int i
 FFI_PLUGIN_EXPORT
 const char* getAddressFromFullViewKey(void* fullViewKeyVoid, int index, int diversifier, int isTestNet);
 
+/*
+ * Returns the recovered coin, or NULL. NULL with no native_last_error() reason
+ * means the coin is not ours.
+ */
 FFI_PLUGIN_EXPORT
 struct AggregateCoinData* idAndRecoverCoinByFullViewKey(
         const unsigned char* serializedCoin,
