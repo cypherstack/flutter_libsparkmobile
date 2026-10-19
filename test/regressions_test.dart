@@ -225,6 +225,36 @@ void main() {
     });
   });
 
+  group('Hex parsing', () {
+    test('rejects signs, whitespace, and other non-hex characters', () {
+      final prefix = _privateKey.substring(2);
+      for (final invalid in ['$prefix-f', '$prefix+f', '$prefix f', 'gg']) {
+        expect(
+          () => LibSpark.getFullViewKeyHexFromPrivateKeyData(
+            privateKeyHex: invalid,
+            index: 1,
+          ),
+          throwsFormatException,
+        );
+      }
+    });
+
+    test('rejects odd-length hex longer than 32 bytes', () async {
+      final fullViewKey = LibSpark.getFullViewKeyHexFromPrivateKeyData(
+        privateKeyHex: _privateKey,
+        index: 1,
+      );
+      await expectLater(
+        LibSpark.getAddressFromFullViewKey(
+          fullViewKeyHex: '${fullViewKey}0',
+          index: 1,
+          diversifier: 0,
+        ),
+        throwsFormatException,
+      );
+    });
+  });
+
   group('Full view keys', () {
     late String fullViewKey;
 

@@ -60,6 +60,11 @@ bool get enableDebugLogging =>
 bool get enableTraceLogging =>
     Log.onLog != null && Log.levels.contains(LoggingLevel.trace);
 
+/// Dart bindings for the Spark native library.
+///
+/// Hex-encoded private keys and hashes shorter than 64 characters are
+/// left-padded with zeros before use, and longer ones are rejected. Hex input
+/// that contains anything other than hex digits throws a [FormatException].
 abstract final class LibSpark {
   static int _id = 0;
 
