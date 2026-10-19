@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <utility>
 
 namespace {
 
@@ -22,14 +23,17 @@ T* allocate(size_t count = 1) {
 }
 
 unsigned char* copyBytes(const void* source, size_t length) {
-    auto* result = allocate<unsigned char>(length);
+    auto* result = static_cast<unsigned char*>(malloc(length ? length : 1));
+    if (!result) throw std::bad_alloc();
     if (length) memcpy(result, source, length);
     return result;
 }
 
 char* copyString(const std::string& value) {
-    auto* result = allocate<char>(value.size() + 1);
+    auto* result = static_cast<char*>(malloc(value.size() + 1));
+    if (!result) throw std::bad_alloc();
     memcpy(result, value.data(), value.size());
+    result[value.size()] = '\0';
     return result;
 }
 
@@ -213,13 +217,14 @@ int verifySparkAddressOwnershipProof(
             return 0;
         }
 
-        std::vector<unsigned char> bytes(proofData, proofData + proofLength);
-        CDataStream stream(bytes, SER_NETWORK, PROTOCOL_VERSION);
+        const char* bytes = reinterpret_cast<const char*>(proofData);
+        CDataStream stream(bytes, bytes + proofLength, SER_NETWORK, PROTOCOL_VERSION);
         stream >> proof;
         // Reject alternate encodings as well as truncated or trailing data.
         CDataStream canonical(SER_NETWORK, PROTOCOL_VERSION);
         canonical << proof;
-        if (bytes != std::vector<unsigned char>(canonical.begin(), canonical.end())) {
+        if (canonical.size() != static_cast<size_t>(proofLength) ||
+            memcmp(canonical.data(), proofData, proofLength) != 0) {
             return 0;
         }
 
@@ -362,6 +367,7 @@ CCRecipientList* cCreateSparkMintRecipients(
         if (outputsLength < 0 || (outputsLength > 0 && !cOutputs) ||
             serial_contextLength < 0 || (serial_contextLength > 0 && !serial_context)) return nullptr;
         std::vector<spark::MintedCoinData> outputs;
+        outputs.reserve(outputsLength);
         for (int i = 0; i < outputsLength; i++) {
             if (!cOutputs[i].address || cOutputs[i].memoLength < 0 ||
                 (cOutputs[i].memoLength > 0 && !cOutputs[i].memo)) return nullptr;
@@ -369,7 +375,7 @@ CCRecipientList* cCreateSparkMintRecipients(
             if (cOutputs[i].memoLength) data.memo.assign(cOutputs[i].memo, cOutputs[i].memoLength);
             data.address = decodeAddress(cOutputs[i].address);
             data.v = cOutputs[i].value;
-            outputs.push_back(data);
+            outputs.push_back(std::move(data));
         }
 
         std::vector<unsigned char> serialVec;
@@ -425,19 +431,21 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
 
         // Convert CRecipient* recipients to std::vector<std::pair<CAmount, bool>> cppRecipients.
         std::vector<std::pair<CAmount, bool>> cppRecipients;
+        cppRecipients.reserve(recipientsLength);
         for (int i = 0; i < recipientsLength; i++) {
-            cppRecipients.push_back(std::make_pair(recipients[i].amount, recipients[i].subtractFee));
+            cppRecipients.emplace_back(recipients[i].amount, recipients[i].subtractFee);
         }
 
         // Convert COutputRecipient* privateRecipients to std::vector<std::pair<spark::OutputCoinData, bool>> cppPrivateRecipients.
         std::vector<std::pair<spark::OutputCoinData, bool>> cppPrivateRecipients;
+        cppPrivateRecipients.reserve(privateRecipientsLength);
         for (int i = 0; i < privateRecipientsLength; i++) {
             spark::OutputCoinData outputCoinData;
             outputCoinData.memo = std::string(privateRecipients[i].output->memo, privateRecipients[i].output->memoLength);
             outputCoinData.v = (uint64_t)privateRecipients[i].output->value;
             std::string addrString(privateRecipients[i].output->address, privateRecipients[i].output->addressLength);
             outputCoinData.address = decodeAddress(addrString);
-            cppPrivateRecipients.push_back(std::make_pair(outputCoinData, privateRecipients[i].subtractFee));
+            cppPrivateRecipients.emplace_back(std::move(outputCoinData), privateRecipients[i].subtractFee);
         }
 
         // Convert CCSparkMintMeta* serializedMintMetas to std::list<CSparkMintMeta> cppCoins.
@@ -449,19 +457,21 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
             meta.nId = coins[i].groupId;
             meta.nHeight = coins[i].height;
-            meta.coin = coin;
-            cppCoins.push_back(meta);
+            meta.coin = std::move(coin);
+            cppCoins.push_back(std::move(meta));
         }
 
         std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll;
+        cppCoverSetDataAll.reserve(cover_set_data_allLength);
         for (int i = 0; i < cover_set_data_allLength; i++) {
             spark::CoverSetData cppCoverSetData;
+            cppCoverSetData.cover_set.reserve(cover_set_data_all[i].cover_setLength);
             for (int j = 0; j < cover_set_data_all[i].cover_setLength; j++) {
                 spark::Coin coin = deserializeCoin(cover_set_data_all[i].cover_set[j].data, cover_set_data_all[i].cover_set[j].length);
-                cppCoverSetData.cover_set.push_back(coin);
+                cppCoverSetData.cover_set.push_back(std::move(coin));
             }
             cppCoverSetData.cover_set_representation = std::vector<unsigned char>(cover_set_data_all[i].cover_set_representation, cover_set_data_all[i].cover_set_representation + cover_set_data_all[i].cover_set_representationLength);
-            cppCoverSetDataAll[cover_set_data_all[i].setId] = cppCoverSetData;
+            cppCoverSetDataAll[cover_set_data_all[i].setId] = std::move(cppCoverSetData);
         }
 
         std::map<uint64_t, uint256> cppIdAndBlockHashesAll;
@@ -491,7 +501,7 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             incomingViewKey,
             cppRecipients,
             cppPrivateRecipients,
-            cppCoins,
+            std::move(cppCoins),
             cppCoverSetDataAll,
             cppIdAndBlockHashesAll,
             cppTxHashSig,
@@ -671,14 +681,14 @@ SparkFeeResult* estimateSparkFee(
             CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
             meta.nId = coins[i].groupId;
             meta.nHeight = coins[i].height;
-            meta.coin = coin;
-            cppCoins.push_back(meta);
+            meta.coin = std::move(coin);
+            cppCoins.push_back(std::move(meta));
         }
 
         std::pair<CAmount, std::vector<CSparkMintMeta>> estimated = SelectSparkCoins(
                 sendAmount,
                 subtractFeeFromAmount > 0,
-                cppCoins,
+                std::move(cppCoins),
                 privateRecipientsLength,
                 utxoNum,
                 additionalTxSize,
@@ -838,10 +848,9 @@ FFI_PLUGIN_EXPORT
                     "Serialized Spark Name data must not be empty");
         }
 
-        std::vector<unsigned char> serialized(
-                serializedSparkNameData,
-                serializedSparkNameData + serializedSparkNameDataLength);
-        CDataStream stream(serialized, SER_NETWORK, PROTOCOL_VERSION);
+        const char* serialized = reinterpret_cast<const char*>(serializedSparkNameData);
+        CDataStream stream(serialized, serialized + serializedSparkNameDataLength,
+                           SER_NETWORK, PROTOCOL_VERSION);
         spark::CSparkNameTxData nameTxData;
         stream >> nameTxData;
         if (!stream.empty()) {
