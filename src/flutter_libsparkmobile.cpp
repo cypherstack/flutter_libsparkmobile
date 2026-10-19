@@ -102,6 +102,26 @@ void requireSpendCoin(const DartSpendCoinData& coin) {
     }
 }
 
+// Converts the wallet's coins into the metadata Spark selects spend inputs from.
+std::list<CSparkMintMeta> toMintMetas(
+        const DartSpendCoinData* coins,
+        int coinsLength,
+        const spark::IncomingViewKey& incomingViewKey) {
+    std::list<CSparkMintMeta> metas;
+    for (int i = 0; i < coinsLength; i++) {
+        requireSpendCoin(coins[i]);
+        spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
+        std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
+        coin.setSerialContext(contextVec);
+        CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
+        meta.nId = coins[i].groupId;
+        meta.nHeight = coins[i].height;
+        meta.coin = std::move(coin);
+        metas.push_back(std::move(meta));
+    }
+    return metas;
+}
+
 void freeCoinData(AggregateCoinData* data) {
     if (!data) return;
     free(data->address);
@@ -539,19 +559,7 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             cppPrivateRecipients.emplace_back(std::move(outputCoinData), privateRecipients[i].subtractFee);
         }
 
-        // Convert CCSparkMintMeta* serializedMintMetas to std::list<CSparkMintMeta> cppCoins.
-        std::list<CSparkMintMeta> cppCoins;
-        for (int i = 0; i < coinsLength; i++) {
-            requireSpendCoin(coins[i]);
-            spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
-            std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
-            coin.setSerialContext(contextVec);
-            CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
-            meta.nId = coins[i].groupId;
-            meta.nHeight = coins[i].height;
-            meta.coin = std::move(coin);
-            cppCoins.push_back(std::move(meta));
-        }
+        std::list<CSparkMintMeta> cppCoins = toMintMetas(coins, coinsLength, incomingViewKey);
 
         std::unordered_map<uint64_t, spark::CoverSetData> cppCoverSetDataAll;
         cppCoverSetDataAll.reserve(cover_set_data_allLength);
@@ -790,18 +798,7 @@ SparkFeeResult* estimateSparkFee(
         spark::FullViewKey fullViewKey(spendKey);
         spark::IncomingViewKey incomingViewKey(fullViewKey);
 
-        std::list<CSparkMintMeta> cppCoins;
-        for (int i = 0; i < coinsLength; i++) {
-            requireSpendCoin(coins[i]);
-            spark::Coin coin = deserializeCoin(coins[i].serializedCoin->data, coins[i].serializedCoin->length);
-            std::vector<unsigned char> contextVec(coins[i].serializedCoinContext->data, coins[i].serializedCoinContext->data + coins[i].serializedCoinContext->length);
-            coin.setSerialContext(contextVec);
-            CSparkMintMeta meta = getMetadata(coin, incomingViewKey);
-            meta.nId = coins[i].groupId;
-            meta.nHeight = coins[i].height;
-            meta.coin = std::move(coin);
-            cppCoins.push_back(std::move(meta));
-        }
+        std::list<CSparkMintMeta> cppCoins = toMintMetas(coins, coinsLength, incomingViewKey);
 
         std::pair<CAmount, std::vector<CSparkMintMeta>> estimated = SelectSparkCoins(
                 sendAmount,
