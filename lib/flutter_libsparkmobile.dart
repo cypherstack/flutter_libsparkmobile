@@ -1251,12 +1251,12 @@ abstract final class LibSpark {
               length: result.ref.nonceHexLength,
             ),
             address: result.ref.address.cast<Utf8>().toDartString(),
-            value: BigInt.from(result.ref.value),
+            value: BigInt.from(result.ref.value).toUnsigned(64),
             memo: utf8.decode(
               result.ref.memo.cast<Uint8>().asTypedList(result.ref.memoLength),
               allowMalformed: true,
             ),
-            diversifier: BigInt.from(result.ref.diversifier),
+            diversifier: BigInt.from(result.ref.diversifier).toUnsigned(64),
             encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
               result.ref.encryptedDiversifierLength,
             ),

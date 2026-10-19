@@ -235,7 +235,7 @@ void main() {
       },
     );
 
-    test('recovers arbitrary memo bytes', () {
+    test('recovers arbitrary memo bytes and unsigned diversifiers', () {
       const serializedCoin =
           'AQHiMWMbOkZUYra2YgPR6zlbpTRsTiEO2h5u14q3hh9hAQA87JhV2gEG0KdLImBgfP/olSJr7Sw0elGrr7x52i25bAEArUsP/GJEIid3EAcG1q0JaCM7v6KqLmPSfjWL/gj+258BAFokEjKkKOtsN+pvBwzDZ3wQ3me6xT1Pjmb5VN7MVQ6Knsn6CQb33jv5okWIs2t+InRYODCwFw+Lsv6ATpY+nzx/n/Vr2N8n0sQZWYBn89cwkUZS+8d5Gi6VT+kQMKy5tPxEi1hwg3QUXxFZQyB/FRTeZwrL5doyrMgZRqFP+DDR4pncEM98CU68TSvyPg==';
       final coin = LibSpark.identifyAndRecoverCoinByFullViewKey(
@@ -245,6 +245,7 @@ void main() {
       );
       expect(coin, isNotNull);
       expect(coin!.memo, '\ufffd\u0000after');
+      expect(coin.diversifier, BigInt.parse('18446744073709551615'));
       expect(coin.value, BigInt.from(100000000));
     });
 
