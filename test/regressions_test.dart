@@ -191,6 +191,82 @@ void main() {
       expect(coin.value, BigInt.from(100000000));
     });
 
+    test('preserves Unicode and embedded NUL in private spend memos', () async {
+      final address = await LibSpark.getAddressFromFullViewKey(
+        fullViewKeyHex: fullViewKey,
+        index: 1,
+        diversifier: 7,
+      );
+      final mintContext = LibSpark.serializeMintContext(inputs: [('01', 0)]);
+      final mint = LibSpark.createSparkMintRecipients(
+        outputs: [(sparkAddress: address, value: 100000000, memo: '')],
+        serialContext: mintContext,
+        generate: true,
+      ).single;
+      final serializedCoin = base64Encode(mint.scriptPubKey.sublist(1, 245));
+      final serializedCoins = [
+        (
+          serializedCoin: serializedCoin,
+          serializedCoinContext: base64Encode(mintContext),
+          groupId: 1,
+          height: 1,
+        ),
+      ];
+      final txHash = Uint8List(32);
+      const memo = 'é🦊\u0000after';
+      final estimatedFee = LibSpark.estimateSparkFee(
+        privateKeyHex: _privateKey,
+        sendAmount: 10000000,
+        subtractFeeFromAmount: false,
+        serializedCoins: serializedCoins,
+        privateRecipientsCount: 1,
+        utxoNum: 0,
+        additionalTxSize: 0,
+        spendVersion: SparkSpendVersion.chaumV2,
+      );
+      final spend = LibSpark.createSparkSendTransaction(
+        privateKeyHex: _privateKey,
+        recipients: [],
+        privateRecipients: [
+          (
+            sparkAddress: address,
+            amount: 10000000,
+            subtractFeeFromAmount: false,
+            memo: memo,
+          ),
+        ],
+        serializedCoins: serializedCoins,
+        allAnonymitySets: [
+          (
+            setId: 1,
+            setHash: base64Encode(Uint8List(32)),
+            set: [(serializedCoin: serializedCoin, txHash: '00' * 32)],
+          ),
+        ],
+        idAndBlockHashes: [(setId: 1, blockHash: Uint8List(32))],
+        txHash: txHash,
+        additionalTxSize: 0,
+        spendVersion: SparkSpendVersion.chaumV2,
+      );
+      expect(spend.serializedSpendPayload.sublist(0, 3), [2, 1, 2]);
+      final spendContext = Uint8List.fromList([
+        1,
+        ...spend.serializedSpendPayload.sublist(160, 194),
+      ]);
+      final recovered = spend.outputScripts.map(
+        (script) => LibSpark.identifyAndRecoverCoinByFullViewKey(
+          serializedCoin: base64Encode(script.sublist(1)),
+          fullViewKeyHex: fullViewKey,
+          context: spendContext,
+        ),
+      );
+      final recipient = recovered.singleWhere((coin) => coin?.memo == memo)!;
+      expect(recipient.value, BigInt.from(10000000));
+      expect(spend.serializedSpendPayload, isNotEmpty);
+      expect(spend.fee, greaterThan(0));
+      expect(spend.fee, estimatedFee);
+    });
+
     test('rejects invalid mint addresses without terminating the process', () {
       expect(
         () => LibSpark.createSparkMintRecipients(

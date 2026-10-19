@@ -416,9 +416,9 @@ abstract final class LibSpark {
           privateRecipientsPtr[i].output = arena<COutputCoinData>();
           final output = privateRecipientsPtr[i].output.ref;
           output.value = recipient.amount;
-          output.memoLength = recipient.memo.length;
+          output.memoLength = memo.length;
           output.memo = memo.unsignedCharPointer(arena).cast<Char>();
-          output.addressLength = recipient.sparkAddress.length;
+          output.addressLength = address.length;
           output.address = address.unsignedCharPointer(arena).cast<Char>();
         }
         final serializedCoinsPtr = _spendCoins(arena, serializedCoins);
