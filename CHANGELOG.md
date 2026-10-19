@@ -2,6 +2,7 @@
 
 * Fix memory leaks and unsafe frees across the FFI boundary.
 * Validate arguments, hashes, tags, and hex strings before native calls.
+* Keep private keys and other hex input out of exception messages.
 * Preserve memo bytes and recover unsigned coin values and diversifiers.
 * Report the native reason when a call fails instead of a generic message.
 * Treat coins that cannot be parsed as foreign, and throw when recovering a coin fails.

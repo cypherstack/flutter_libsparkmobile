@@ -194,7 +194,7 @@ abstract final class LibSpark {
         final inputsPtr = arena<DartInputData>(inputs.length);
         for (int i = 0; i < inputs.length; i++) {
           final hash = Uint8List.fromList(
-            inputs[i].$1.to32BytesFromHex().reversed.toList(),
+            inputs[i].$1.to32BytesFromHex('inputs[$i] txid').reversed.toList(),
           );
           inputsPtr[i].txHashLength = hash.length;
           inputsPtr[i].txHash = hash.unsignedCharPointer(arena);
@@ -422,7 +422,7 @@ abstract final class LibSpark {
           .resolveExtensionCommitment(extensionCommitment);
       return using((arena) {
         final privateKeyPtr = privateKeyHex
-            .to32BytesFromHex()
+            .to32BytesFromHex('privateKeyHex')
             .unsignedCharPointer(arena);
         final recipientsPtr = arena<CRecip>(recipients.length);
         for (int i = 0; i < recipients.length; i++) {
@@ -638,7 +638,9 @@ abstract final class LibSpark {
         native_createSparkAddressOwnershipProof(
           messageBytes.unsignedCharPointer(arena),
           messageBytes.length,
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer(arena),
+          privateKeyHex
+              .to32BytesFromHex('privateKeyHex')
+              .unsignedCharPointer(arena),
           spendKeyIndex,
           diversifier,
         ),
@@ -849,7 +851,7 @@ abstract final class LibSpark {
       _checkInt32(serializedCoins.length, 'serializedCoins.length');
       return using((arena) {
         final privateKeyPtr = privateKeyHex
-            .to32BytesFromHex()
+            .to32BytesFromHex('privateKeyHex')
             .unsignedCharPointer(arena);
         final serializedCoinsPtr = _spendCoins(arena, serializedCoins);
         final result = _requirePointer(
@@ -913,6 +915,7 @@ abstract final class LibSpark {
             "name=$name,"
             "additionalInfo=$additionalInfo,"
             "spendVersion=${proofInput.spendVersion},"
+            "proofInputHex=${proofInput.inputHex},"
             "privateKeyPtr=REDACTED,"
             "spendKeyIndex=$spendKeyIndex,"
             "diversifier=$diversifier,"
@@ -935,7 +938,10 @@ abstract final class LibSpark {
       _checkCString(additionalInfo, 'additionalInfo');
       return using((arena) {
         final ownershipDigest = Uint8List.fromList(
-          proofInput.inputHex.to32BytesFromHex().reversed.toList(),
+          proofInput.inputHex
+              .to32BytesFromHex('proofInput.inputHex')
+              .reversed
+              .toList(),
         );
         final result = _requirePointer(
           native_createSparkNameScript(
@@ -944,7 +950,9 @@ abstract final class LibSpark {
             additionalInfo.toNativeUtf8(allocator: arena).cast<Char>(),
             ownershipDigest.unsignedCharPointer(arena),
             proofInput.spendVersion.nativeValue,
-            privateKeyHex.to32BytesFromHex().unsignedCharPointer(arena),
+            privateKeyHex
+                .to32BytesFromHex('privateKeyHex')
+                .unsignedCharPointer(arena),
             spendKeyIndex,
             diversifier,
             isTestNet ? 1 : 0,
@@ -1176,7 +1184,9 @@ abstract final class LibSpark {
     return using((arena) {
       final fullViewKey = _requirePointer(
         native_getFullViewKeyFromPrivateKeyData(
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer(arena),
+          privateKeyHex
+              .to32BytesFromHex('privateKeyHex')
+              .unsignedCharPointer(arena),
           index,
         ),
       );
@@ -1199,7 +1209,7 @@ abstract final class LibSpark {
   static Pointer<Void> _deserializeFullViewKey({
     required String fullViewKeyHex,
   }) {
-    final bytes = fullViewKeyHex.to32OrMoreBytesFromHex();
+    final bytes = fullViewKeyHex.to32OrMoreBytesFromHex('fullViewKeyHex');
     _checkInt32(bytes.length, 'fullViewKey.length');
     return using(
       (arena) => _requirePointer(
@@ -1228,7 +1238,9 @@ abstract final class LibSpark {
     return using((arena) {
       final fullViewKey = _requirePointer(
         native_getFullViewKeyFromPrivateKeyData(
-          privateKeyHex.to32BytesFromHex().unsignedCharPointer(arena),
+          privateKeyHex
+              .to32BytesFromHex('privateKeyHex')
+              .unsignedCharPointer(arena),
           index,
         ),
       );

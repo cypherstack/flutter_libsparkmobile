@@ -239,6 +239,25 @@ void main() {
       }
     });
 
+    test('names the argument but never includes the value in errors', () {
+      final prefix = _privateKey.substring(2);
+      for (final invalid in ['${_privateKey}00', '$prefix-f']) {
+        expect(
+          () => LibSpark.getFullViewKeyHexFromPrivateKeyData(
+            privateKeyHex: invalid,
+            index: 1,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              allOf(contains('privateKeyHex'), isNot(contains(prefix))),
+            ),
+          ),
+        );
+      }
+    });
+
     test('rejects odd-length hex longer than 32 bytes', () async {
       final fullViewKey = LibSpark.getFullViewKeyHexFromPrivateKeyData(
         privateKeyHex: _privateKey,
