@@ -1198,17 +1198,21 @@ abstract final class LibSpark {
     required Uint8List context,
     bool isTestNet = false,
   }) {
-    final fullViewKeyHex = getFullViewKeyHexFromPrivateKeyData(
-      privateKeyHex: privateKeyHex,
-      index: index,
-    );
-
-    return identifyAndRecoverCoinByFullViewKey(
-      serializedCoin: serializedCoin,
-      fullViewKeyHex: fullViewKeyHex,
-      context: context,
-      isTestNet: isTestNet,
-    );
+    _checkInt32(index, 'index');
+    _checkInt32(context.length, 'context.length');
+    return using((arena) {
+      final fullViewKey = _requirePointer(
+        native_getFullViewKeyFromPrivateKeyData(
+          privateKeyHex.to32BytesFromHex().unsignedCharPointer(arena),
+          index,
+        ),
+      );
+      try {
+        return _recoverCoin(serializedCoin, fullViewKey, context, isTestNet);
+      } finally {
+        _deleteFullViewKey(fullViewKey);
+      }
+    });
   }
 
   /// Identifies and recovers a coin using a FullViewKey.
@@ -1223,61 +1227,68 @@ abstract final class LibSpark {
     _checkInt32(context.length, 'context.length');
     final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
     try {
-      return using((arena) {
-        final coin = base64Decode(serializedCoin).sublist(0, 244);
-        final result = native_idAndRecoverCoinByFullViewKey(
-          coin.unsignedCharPointer(arena),
-          coin.length,
-          fullViewKey,
-          context.unsignedCharPointer(arena),
-          context.length,
-          isTestNet ? 1 : 0,
-        );
-        if (result == nullptr) {
-          return null;
-        }
-        try {
-          final type = switch (result.ref.type) {
-            0 => LibSparkCoinType.mint,
-            1 => LibSparkCoinType.spend,
-            _ => throw Exception(
-              'Unknown coin type "${result.ref.type}" found.',
-            ),
-          };
-          return LibSparkCoin(
-            type: type,
-            nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
-              length: result.ref.nonceHexLength,
-            ),
-            address: result.ref.address.cast<Utf8>().toDartString(),
-            value: BigInt.from(result.ref.value).toUnsigned(64),
-            memo: utf8.decode(
-              result.ref.memo.cast<Uint8>().asTypedList(result.ref.memoLength),
-              allowMalformed: true,
-            ),
-            diversifier: BigInt.from(result.ref.diversifier).toUnsigned(64),
-            encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
-              result.ref.encryptedDiversifierLength,
-            ),
-            serial: result.ref.serial.toUint8List(result.ref.serialLength),
-            lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
-          );
-        } finally {
-          freeNative(result.ref.address, debugName: 'result.address');
-          freeNative(result.ref.memo, debugName: 'result.memo');
-          freeNative(result.ref.lTagHash, debugName: 'result.lTagHash');
-          freeNative(
-            result.ref.encryptedDiversifier,
-            debugName: 'result.encryptedDiversifier',
-          );
-          freeNative(result.ref.serial, debugName: 'result.serial');
-          freeNative(result.ref.nonceHex, debugName: 'result.nonceHex');
-          freeNative(result, debugName: 'result');
-        }
-      });
+      return _recoverCoin(serializedCoin, fullViewKey, context, isTestNet);
     } finally {
       _deleteFullViewKey(fullViewKey);
     }
+  }
+
+  static LibSparkCoin? _recoverCoin(
+    String serializedCoin,
+    Pointer<Void> fullViewKey,
+    Uint8List context,
+    bool isTestNet,
+  ) {
+    return using((arena) {
+      final coin = Uint8List.sublistView(base64Decode(serializedCoin), 0, 244);
+      final result = native_idAndRecoverCoinByFullViewKey(
+        coin.unsignedCharPointer(arena),
+        coin.length,
+        fullViewKey,
+        context.unsignedCharPointer(arena),
+        context.length,
+        isTestNet ? 1 : 0,
+      );
+      if (result == nullptr) {
+        return null;
+      }
+      try {
+        final type = switch (result.ref.type) {
+          0 => LibSparkCoinType.mint,
+          1 => LibSparkCoinType.spend,
+          _ => throw Exception('Unknown coin type "${result.ref.type}" found.'),
+        };
+        return LibSparkCoin(
+          type: type,
+          nonceHex: result.ref.nonceHex.cast<Utf8>().toDartString(
+            length: result.ref.nonceHexLength,
+          ),
+          address: result.ref.address.cast<Utf8>().toDartString(),
+          value: BigInt.from(result.ref.value).toUnsigned(64),
+          memo: utf8.decode(
+            result.ref.memo.cast<Uint8>().asTypedList(result.ref.memoLength),
+            allowMalformed: true,
+          ),
+          diversifier: BigInt.from(result.ref.diversifier).toUnsigned(64),
+          encryptedDiversifier: result.ref.encryptedDiversifier.toUint8List(
+            result.ref.encryptedDiversifierLength,
+          ),
+          serial: result.ref.serial.toUint8List(result.ref.serialLength),
+          lTagHash: result.ref.lTagHash.cast<Utf8>().toDartString(),
+        );
+      } finally {
+        freeNative(result.ref.address, debugName: 'result.address');
+        freeNative(result.ref.memo, debugName: 'result.memo');
+        freeNative(result.ref.lTagHash, debugName: 'result.lTagHash');
+        freeNative(
+          result.ref.encryptedDiversifier,
+          debugName: 'result.encryptedDiversifier',
+        );
+        freeNative(result.ref.serial, debugName: 'result.serial');
+        freeNative(result.ref.nonceHex, debugName: 'result.nonceHex');
+        freeNative(result, debugName: 'result');
+      }
+    });
   }
 
   /// Deletes a FullViewKey.

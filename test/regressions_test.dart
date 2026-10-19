@@ -231,6 +231,19 @@ void main() {
           expect(coin.value, BigInt.from(100000));
           expect(coin.diversifier, BigInt.from(7));
           expect(coin.address, address);
+          final fromPrivateKey = LibSpark.identifyAndRecoverCoin(
+            base64Encode(mint.scriptPubKey.sublist(1)),
+            privateKeyHex: _privateKey,
+            index: 1,
+            context: context,
+          );
+          expect(fromPrivateKey, isNotNull);
+          expect(fromPrivateKey!.memo, coin.memo);
+          expect(fromPrivateKey.value, coin.value);
+          expect(fromPrivateKey.diversifier, coin.diversifier);
+          expect(fromPrivateKey.address, coin.address);
+          expect(fromPrivateKey.serial, coin.serial);
+          expect(fromPrivateKey.lTagHash, coin.lTagHash);
         }
       },
     );
@@ -247,6 +260,46 @@ void main() {
       expect(coin!.memo, '\ufffd\u0000after');
       expect(coin.diversifier, BigInt.parse('18446744073709551615'));
       expect(coin.value, BigInt.from(100000000));
+    });
+
+    test('both recovery methods reject foreign and malformed coins', () async {
+      final address = await LibSpark.getAddressFromFullViewKey(
+        fullViewKeyHex: fullViewKey,
+        index: 1,
+        diversifier: 7,
+      );
+      final context = LibSpark.serializeMintContext(inputs: [('01', 0)]);
+      final mint = LibSpark.createSparkMintRecipients(
+        outputs: [(sparkAddress: address, value: 100000, memo: '')],
+        serialContext: context,
+        generate: true,
+      ).single;
+      final foreignKey = LibSpark.getFullViewKeyHexFromPrivateKeyData(
+        privateKeyHex: _privateKey,
+        index: 2,
+      );
+      for (final serializedCoin in [
+        base64Encode(mint.scriptPubKey.sublist(1)),
+        base64Encode(Uint8List(244)),
+      ]) {
+        expect(
+          LibSpark.identifyAndRecoverCoin(
+            serializedCoin,
+            privateKeyHex: _privateKey,
+            index: 2,
+            context: context,
+          ),
+          isNull,
+        );
+        expect(
+          LibSpark.identifyAndRecoverCoinByFullViewKey(
+            serializedCoin: serializedCoin,
+            fullViewKeyHex: foreignKey,
+            context: context,
+          ),
+          isNull,
+        );
+      }
     });
 
     test('preserves Unicode and embedded NUL in private spend memos', () async {
