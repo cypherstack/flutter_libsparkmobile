@@ -259,7 +259,7 @@ abstract final class LibSpark {
       return using((arena) {
         final outputsPtr = arena<CMintedCoinData>(outputs.length);
         for (int i = 0; i < outputs.length; i++) {
-          final memo = Uint8List.fromList(utf8.encode(outputs[i].memo));
+          final memo = utf8.encode(outputs[i].memo);
           _checkInt32(memo.length, 'memo.length');
           outputsPtr[i].value = outputs[i].value;
           outputsPtr[i].address = outputs[i].sparkAddress
@@ -405,10 +405,6 @@ abstract final class LibSpark {
       for (final recipient in privateRecipients) {
         _checkCString(recipient.sparkAddress, 'sparkAddress');
       }
-      for (final coin in serializedCoins) {
-        _checkInt32(coin.groupId, 'groupId');
-        _checkInt32(coin.height, 'height', signed: true);
-      }
       for (final set in allAnonymitySets) {
         _checkInt32(set.setId, 'setId');
         _checkInt32(set.set.length, 'set.length');
@@ -435,10 +431,8 @@ abstract final class LibSpark {
         );
         for (int i = 0; i < privateRecipients.length; i++) {
           final recipient = privateRecipients[i];
-          final memo = Uint8List.fromList(utf8.encode(recipient.memo));
-          final address = Uint8List.fromList(
-            utf8.encode(recipient.sparkAddress),
-          );
+          final memo = utf8.encode(recipient.memo);
+          final address = utf8.encode(recipient.sparkAddress);
           _checkInt32(memo.length, 'memo.length');
           _checkInt32(address.length, 'address.length');
           privateRecipientsPtr[i].subtractFee = recipient.subtractFeeFromAmount
@@ -627,7 +621,7 @@ abstract final class LibSpark {
     required int spendKeyIndex,
     required int diversifier,
   }) {
-    final messageBytes = Uint8List.fromList(utf8.encode(message));
+    final messageBytes = utf8.encode(message);
     _checkInt32(messageBytes.length, 'message.length');
     _checkInt32(spendKeyIndex, 'spendKeyIndex');
     _checkInt32(diversifier, 'diversifier');
@@ -650,7 +644,8 @@ abstract final class LibSpark {
           throw Exception('Failed to create Spark address ownership proof');
         }
         return result.ref.proof
-            .toUint8List(result.ref.proofLength)
+            .cast<Uint8>()
+            .asTypedList(result.ref.proofLength)
             .toHexString();
       } finally {
         freeNative(result.ref.error, debugName: 'result.error');
@@ -672,7 +667,7 @@ abstract final class LibSpark {
         !RegExp(r'^[0-9a-fA-F]+$').hasMatch(proof)) {
       return false;
     }
-    final messageBytes = Uint8List.fromList(utf8.encode(message));
+    final messageBytes = utf8.encode(message);
     if (messageBytes.length > 0x7fffffff) {
       return false;
     }
@@ -718,18 +713,20 @@ abstract final class LibSpark {
         return [];
       }
       _checkInt32(base64Tags.length, 'base64Tags.length');
-      final tags = base64Tags.map(base64Decode).toList();
-      for (final tag in tags) {
-        _checkBytes(tag, 34, 'tag');
-      }
-      final bytes = Uint8List.fromList(tags.expand((tag) => tag).toList());
       return using((arena) {
+        final tags = arena<Uint8>(base64Tags.length * 34);
+        final bytes = tags.asTypedList(base64Tags.length * 34);
+        for (int i = 0; i < base64Tags.length; i++) {
+          final tag = base64Decode(base64Tags[i]);
+          _checkBytes(tag, 34, 'tag');
+          bytes.setRange(i * 34, (i + 1) * 34, tag);
+        }
         final result = _requirePointer(
-          native_hashTags(bytes.unsignedCharPointer(arena), tags.length),
+          native_hashTags(tags.cast<UnsignedChar>(), base64Tags.length),
         );
         try {
           return [
-            for (int i = 0; i < tags.length; i++)
+            for (int i = 0; i < base64Tags.length; i++)
               (result + i * 64).cast<Utf8>().toDartString(length: 64),
           ];
         } finally {
@@ -1165,7 +1162,7 @@ abstract final class LibSpark {
           native_serializeFullViewKey(fullViewKey, size),
         );
         try {
-          return serialized.toUint8List(size.value).toHexString();
+          return serialized.cast<Uint8>().asTypedList(size.value).toHexString();
         } finally {
           freeNative(serialized, debugName: 'serialized');
         }
@@ -1323,8 +1320,7 @@ extension on Pointer<UnsignedChar> {
   }
 
   String toBase64(int length) {
-    final data = toUint8List(length);
-    return base64.encode(data);
+    return base64.encode(cast<Uint8>().asTypedList(length));
   }
 }
 
