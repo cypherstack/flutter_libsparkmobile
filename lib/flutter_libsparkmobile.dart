@@ -75,7 +75,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.getAddress';
       if (enableTraceLogging) {
         function +=
             "(privateKey=REDACTED,"
@@ -126,7 +126,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.getAddress"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -168,7 +168,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.serializeMintContext';
       if (enableTraceLogging) {
         function += "(inputs=$inputs)";
       }
@@ -209,7 +209,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.serializeMintContext"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -235,7 +235,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.createSparkMintRecipients';
       if (enableTraceLogging) {
         function +=
             "(outputs=$outputs,"
@@ -303,7 +303,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.createSparkMintRecipients"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -372,7 +372,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.createSparkSendTransaction';
       if (enableTraceLogging) {
         function +=
             "(privateKeyHex=REDACTED,"
@@ -550,7 +550,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.createSparkSendTransaction"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -567,7 +567,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.validateAddress';
       if (enableTraceLogging) {
         function +=
             "(address=$address,"
@@ -608,7 +608,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.validateAddress"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -697,7 +697,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.hashTags';
       if (enableTraceLogging) {
         function += "(base64Tags=$base64Tags)";
       }
@@ -737,7 +737,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.hashTags"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -751,7 +751,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.hashTag';
       if (enableTraceLogging) {
         function += "(x=$x, y=$y)";
       }
@@ -783,7 +783,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.hashTag"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -815,7 +815,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.estimateSparkFee';
       if (enableTraceLogging) {
         function +=
             "(privateKeyHex=REDACTED,"
@@ -872,7 +872,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.estimateSparkFee"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -897,7 +897,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.createSparkNameScript';
       if (enableTraceLogging) {
         function +=
             "("
@@ -963,7 +963,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.createSparkNameScript"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -983,7 +983,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark.getSparkNameCommitment';
       if (enableTraceLogging) {
         function +=
             "(serializedSparkNameDataLength="
@@ -1036,7 +1036,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark.getSparkNameCommitment"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
@@ -1299,7 +1299,7 @@ abstract final class LibSpark {
     if (enableDebugLogging) {
       id = _id++;
       start = DateTime.now();
-      String function = StackTrace.current.functionName;
+      String function = 'LibSpark._deleteFullViewKey';
       if (enableTraceLogging) {
         function += "(fullViewKey=$fullViewKey)";
       }
@@ -1317,7 +1317,7 @@ abstract final class LibSpark {
       if (enableDebugLogging) {
         Log.l(
           enableTraceLogging ? LoggingLevel.trace : LoggingLevel.debug,
-          "END($id) ${StackTrace.current.functionName}"
+          "END($id) LibSpark._deleteFullViewKey"
           " Duration=${DateTime.now().difference(start!)}",
         );
       }
