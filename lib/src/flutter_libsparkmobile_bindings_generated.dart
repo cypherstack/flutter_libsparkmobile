@@ -272,6 +272,12 @@ external ffi.Pointer<SparkNameCommitmentResult> native_cGetSparkNameCommitment(
   int serializedSparkNameDataLength,
 );
 
+/// Returns why the most recent call on this thread returned NULL, or NULL when no
+/// reason was recorded. Reading clears the stored reason. The string is malloc'd
+/// and must be released with native_free().
+@ffi.Native<ffi.Pointer<ffi.Char> Function()>()
+external ffi.Pointer<ffi.Char> native_last_error();
+
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
 external void native_free(ffi.Pointer<ffi.Void> ptr);
 

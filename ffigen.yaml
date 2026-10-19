@@ -9,6 +9,7 @@ ffi-native:
 functions:
   rename:
     'native_free': 'native_free'
+    'native_last_error': 'native_last_error'
     '(.+)': 'native_$1'
 headers:
   entry-points:

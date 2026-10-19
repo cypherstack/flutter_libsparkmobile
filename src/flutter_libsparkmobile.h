@@ -154,6 +154,14 @@ struct SparkNameCommitmentResult* cGetSparkNameCommitment(
         int serializedSparkNameDataLength
 );
 
+/*
+ * Returns why the most recent call on this thread returned NULL, or NULL when no
+ * reason was recorded. Reading clears the stored reason. The string is malloc'd
+ * and must be released with native_free().
+ */
+FFI_PLUGIN_EXPORT
+char* native_last_error(void);
+
 FFI_PLUGIN_EXPORT
 void native_free(void* ptr);
 

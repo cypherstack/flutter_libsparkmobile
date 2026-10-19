@@ -8,12 +8,42 @@
 #include "transaction.h"
 #include "deps/sparkmobile/bitcoin/script.h"  // For CScript.
 #include "deps/sparkmobile/bitcoin/serialize.h"
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <memory>
 #include <utility>
 
 namespace {
+
+// The reason for the most recent failed call on this thread. Dart reads it
+// synchronously after the failing call, so a per-thread buffer needs no locking.
+thread_local char lastError[512] = {};
+
+void setLastError(const char* message) {
+    if (!message || !*message) message = "Unknown native error";
+    strncpy(lastError, message, sizeof(lastError) - 1);
+    lastError[sizeof(lastError) - 1] = '\0';
+}
+
+// Records a failure reason; converts to any pointer return type.
+std::nullptr_t fail(const char* message) {
+    setLastError(message);
+    return nullptr;
+}
+
+// Records the exception being handled; only valid inside a catch block.
+std::nullptr_t failWithException() {
+    try {
+        throw;
+    } catch (const std::exception& e) {
+        setLastError(e.what());
+    } catch (...) {
+        setLastError("Unknown native exception");
+    }
+    return nullptr;
+}
 
 template<typename T>
 T* allocate(size_t count = 1) {
@@ -108,26 +138,30 @@ extern "C" {
 FFI_PLUGIN_EXPORT
 const char* getAddress(unsigned char* keyData, int index, int diversifier, int isTestNet) {
     try {
-        if (!keyData || index < 0 || diversifier < 0) return nullptr;
+        if (!keyData || index < 0 || diversifier < 0) {
+            return fail("Private key data, index, and diversifier are required");
+        }
         spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         spark::FullViewKey fullViewKey(spendKey);
         return getAddressFromFullViewKey(&fullViewKey, index, diversifier, isTestNet);
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
 FFI_PLUGIN_EXPORT
 const char* getAddressFromFullViewKey(void* fullViewKeyVoid, int index, int diversifier, int isTestNet) {
     try {
-        if (!fullViewKeyVoid || index < 0 || diversifier < 0) return nullptr;
+        if (!fullViewKeyVoid || index < 0 || diversifier < 0) {
+            return fail("Full view key, index, and diversifier are required");
+        }
         spark::IncomingViewKey incomingViewKey(*static_cast<spark::FullViewKey*>(fullViewKeyVoid));
         spark::Address address(incomingViewKey, static_cast<uint64_t>(diversifier));
 
         std::string encodedAddress = address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
         return copyString(encodedAddress);
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -141,7 +175,7 @@ SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
 ) {
     SparkAddressOwnershipProofResult* result =
         static_cast<SparkAddressOwnershipProofResult*>(malloc(sizeof(SparkAddressOwnershipProofResult)));
-    if (!result) return nullptr;
+    if (!result) return fail("Out of memory");
 
     result->proof = nullptr;
     result->proofLength = 0;
@@ -181,20 +215,20 @@ SparkAddressOwnershipProofResult* createSparkAddressOwnershipProof(
         result->proof = static_cast<unsigned char*>(malloc(proofStream.size()));
         if (!result->proof) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
         memcpy(result->proof, proofStream.data(), proofStream.size());
     } catch (const std::exception& e) {
         result->error = static_cast<char*>(malloc(strlen(e.what()) + 1));
         if (!result->error) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
         strcpy(result->error, e.what());
     } catch (...) {
         free(result->proof);
         free(result);
-        return nullptr;
+        return failWithException();
     }
 
     return result;
@@ -250,44 +284,44 @@ int verifySparkAddressOwnershipProof(
 FFI_PLUGIN_EXPORT
 void* getFullViewKeyFromPrivateKeyData(unsigned char* keyData, int index) {
     try {
-        if (!keyData || index < 0) return nullptr;
+        if (!keyData || index < 0) return fail("Private key data and index are required");
         spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
         return new spark::FullViewKey(spendKey);
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
 FFI_PLUGIN_EXPORT
 void* deserializeFullViewKey(unsigned char* keyData, int keyDataLength) {
     try {
-        if (!keyData || keyDataLength <= 0) return nullptr;
+        if (!keyData || keyDataLength <= 0) return fail("Full view key data must not be empty");
         auto fullViewKey = std::make_unique<spark::FullViewKey>(spark::Params::get_default());
         if (GetSerializeSize(*fullViewKey, SER_NETWORK, PROTOCOL_VERSION) != static_cast<size_t>(keyDataLength)) {
-            return nullptr;
+            return fail("Full view key has an unexpected length");
         }
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream.write(reinterpret_cast<char*>(keyData), keyDataLength);
         stream >> *fullViewKey;
         return fullViewKey.release();
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
 FFI_PLUGIN_EXPORT
 unsigned char* serializeFullViewKey(void* fullViewKeyVoid, int* serializedSize) {
-    if (!serializedSize) return nullptr;
+    if (!serializedSize) return fail("Serialized size output is required");
     *serializedSize = 0;
     try {
-        if (!fullViewKeyVoid) return nullptr;
+        if (!fullViewKeyVoid) return fail("Full view key is required");
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << *static_cast<spark::FullViewKey*>(fullViewKeyVoid);
         auto* result = copyBytes(stream.data(), stream.size());
         *serializedSize = stream.size();
         return result;
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -306,7 +340,9 @@ AggregateCoinData* idAndRecoverCoinByFullViewKey(
         int isTestNet) {
     try {
         if (!serializedCoin || serializedCoinLength <= 0 || !fullViewKeyVoid ||
-            contextLength < 0 || (contextLength > 0 && !context)) return nullptr;
+            contextLength < 0 || (contextLength > 0 && !context)) {
+            return fail("Serialized coin, full view key, and context are required");
+        }
         spark::FullViewKey* fullViewKey = static_cast<spark::FullViewKey*>(fullViewKeyVoid);
         spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
 
@@ -352,7 +388,7 @@ AggregateCoinData* idAndRecoverCoinByFullViewKey(
 
         return result.release();
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -371,12 +407,16 @@ CCRecipientList* cCreateSparkMintRecipients(
 ) {
     try {
         if (outputsLength < 0 || (outputsLength > 0 && !cOutputs) ||
-            serial_contextLength < 0 || (serial_contextLength > 0 && !serial_context)) return nullptr;
+            serial_contextLength < 0 || (serial_contextLength > 0 && !serial_context)) {
+            return fail("Mint outputs and serial context are required");
+        }
         std::vector<spark::MintedCoinData> outputs;
         outputs.reserve(outputsLength);
         for (int i = 0; i < outputsLength; i++) {
             if (!cOutputs[i].address || cOutputs[i].memoLength < 0 ||
-                (cOutputs[i].memoLength > 0 && !cOutputs[i].memo)) return nullptr;
+                (cOutputs[i].memoLength > 0 && !cOutputs[i].memo)) {
+                return fail("Each mint output needs an address and a valid memo length");
+            }
             spark::MintedCoinData data;
             if (cOutputs[i].memoLength) data.memo.assign(cOutputs[i].memo, cOutputs[i].memoLength);
             data.address = decodeAddress(cOutputs[i].address);
@@ -401,7 +441,7 @@ CCRecipientList* cCreateSparkMintRecipients(
         }
         return data.release();
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -556,19 +596,19 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
         return result.release();
     } catch (const std::exception& e) {
         auto* result = static_cast<SparkSpendTransactionResult*>(calloc(1, sizeof(SparkSpendTransactionResult)));
-        if (!result) return nullptr;
+        if (!result) return fail("Out of memory");
         result->isError = true;
         result->dataLength = strlen(e.what());
         result->data = (unsigned char*)malloc(sizeof(unsigned char) * result->dataLength);
         if (!result->data) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
         memcpy(result->data, e.what(), result->dataLength);
 
         return result;
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -578,10 +618,10 @@ SerializedMintContextResult* serializeMintContext(
         int inputsLength
 ) {
     try {
-        if (inputsLength < 0 || (inputsLength > 0 && !inputs)) return nullptr;
+        if (inputsLength < 0 || (inputsLength > 0 && !inputs)) return fail("Mint context inputs are required");
         CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
         for (int i = 0; i < inputsLength; i++) {
-            if (!inputs[i].txHash || inputs[i].txHashLength != 32) return nullptr;
+            if (!inputs[i].txHash || inputs[i].txHashLength != 32) return fail("Transaction hashes must be 32 bytes");
             std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
             CTxIn input(
                     uint256(vec),
@@ -598,7 +638,7 @@ SerializedMintContextResult* serializeMintContext(
         result->context = copyBytes(serialContextStream.data(), serialContextStream.size());
         return result.release();
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -608,7 +648,7 @@ ValidateAddressResult* isValidSparkAddress(
         int isTestNet
 ) {
     auto* result = static_cast<ValidateAddressResult*>(calloc(1, sizeof(ValidateAddressResult)));
-    if (!result) return nullptr;
+    if (!result) return fail("Out of memory");
     try {
         if (!addressCStr) throw std::invalid_argument("Invalid address");
         spark::Address address;
@@ -621,20 +661,20 @@ ValidateAddressResult* isValidSparkAddress(
         result->errorMessage = (char*) malloc(sizeof(char) * (strlen(e.what()) + 1));
         if (!result->errorMessage) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
         strcpy(result->errorMessage, e.what());
         return result;
     } catch (...) {
         free(result);
-        return nullptr;
+        return failWithException();
     }
 }
 
 FFI_PLUGIN_EXPORT
 const char* hashTags(unsigned char* tags, int tagCount) {
     try {
-        if (tagCount < 0 || (tagCount > 0 && !tags)) return nullptr;
+        if (tagCount < 0 || (tagCount > 0 && !tags)) return fail("Tags are required");
         std::unique_ptr<char, decltype(&free)> result(
             allocate<char>(static_cast<size_t>(tagCount) * 64), free);
         for (int i = 0; i < tagCount; i++) {
@@ -645,19 +685,23 @@ const char* hashTags(unsigned char* tags, int tagCount) {
         }
         return result.release();
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
 FFI_PLUGIN_EXPORT
 const char* hashTag(const char* x, const char* y) {
     try {
-        if (!isHexCoordinate(x) || !isHexCoordinate(y)) return nullptr;
+        if (!isHexCoordinate(x) || !isHexCoordinate(y)) {
+            return fail("Tag coordinates must be hex values below the field prime");
+        }
         secp_primitives::GroupElement tag(x, y, 16);
-        if (!tag.isMember() || tag.isInfinity()) return nullptr;
+        if (!tag.isMember() || tag.isInfinity()) {
+            return fail("Tag coordinates do not describe a point on the curve");
+        }
         return copyString(primitives::GetLTagHash(tag).GetHex());
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -709,18 +753,18 @@ SparkFeeResult* estimateSparkFee(
         return result;
     } catch (const std::exception& e) {
         SparkFeeResult *result = (SparkFeeResult*)malloc(sizeof(SparkFeeResult));
-        if (!result) return nullptr;
+        if (!result) return fail("Out of memory");
         result->fee = 0;
         result->error = (char*)malloc(sizeof(char) * (strlen(e.what()) + 1));
         if (!result->error) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
         strcpy(result->error, e.what());
 
         return result;
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -774,7 +818,7 @@ SparkNameScript* createSparkNameScript(
                     getSparkNameOwnershipMessage(cppOwnershipDigest, cppSpendVersion);
                 } catch (const std::exception&) {
                     SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
-                    if (!result) return nullptr;
+                    if (!result) return fail("Out of memory");
 
                     const char* error = "hash fail";
 
@@ -782,9 +826,11 @@ SparkNameScript* createSparkNameScript(
                     result->scriptLength = 0;
                     result->size = 0;
                     result->error = (char*)malloc(strlen(error) + 1);
-                    if (result->error) {
-                        strcpy(result->error, error);
+                    if (!result->error) {
+                        free(result);
+                        return fail("Out of memory");
                     }
+                    strcpy(result->error, error);
 
                     return result;
                 }
@@ -801,7 +847,7 @@ SparkNameScript* createSparkNameScript(
         std::size_t sparkNameTxDataSize = getSparkNameTxDataSize(nameTxData);
 
         SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
-        if (!result) return nullptr;
+        if (!result) return fail("Out of memory");
 
         result->scriptLength = outputScript.size();
         result->error = nullptr;
@@ -809,7 +855,7 @@ SparkNameScript* createSparkNameScript(
         result->size = sparkNameTxDataSize;
         if (!result->script) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
 
         memcpy(result->script, outputScript.data(), outputScript.size());
@@ -817,7 +863,7 @@ SparkNameScript* createSparkNameScript(
         return result;
     } catch (const std::exception& e) {
         SparkNameScript* result = (SparkNameScript*)malloc(sizeof(SparkNameScript));
-        if (!result) return nullptr;
+        if (!result) return fail("Out of memory");
 
         result->script = nullptr;
         result->scriptLength = 0;
@@ -827,12 +873,12 @@ SparkNameScript* createSparkNameScript(
             strcpy(result->error, e.what());
         } else {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
 
         return result;
     } catch (...) {
-        return nullptr;
+        return failWithException();
     }
 }
 
@@ -843,7 +889,7 @@ FFI_PLUGIN_EXPORT
 ) {
     SparkNameCommitmentResult* result =
     (SparkNameCommitmentResult*)malloc(sizeof(SparkNameCommitmentResult));
-    if (!result) return nullptr;
+    if (!result) return fail("Out of memory");
 
     result->commitment = nullptr;
     result->commitmentLength = 0;
@@ -871,7 +917,7 @@ FFI_PLUGIN_EXPORT
                 (unsigned char*)malloc(result->commitmentLength);
         if (!result->commitment) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
 
         memcpy(
@@ -883,15 +929,24 @@ FFI_PLUGIN_EXPORT
         result->error = (char*)malloc(strlen(e.what()) + 1);
         if (!result->error) {
             free(result);
-            return nullptr;
+            return fail("Out of memory");
         }
         strcpy(result->error, e.what());
         return result;
     } catch (...) {
         free(result->commitment);
         free(result);
-        return nullptr;
+        return failWithException();
     }
+}
+
+FFI_PLUGIN_EXPORT
+char* native_last_error(void) {
+    if (!lastError[0]) return nullptr;
+    char* message = static_cast<char*>(malloc(strlen(lastError) + 1));
+    if (message) strcpy(message, lastError);
+    lastError[0] = '\0';
+    return message;
 }
 
 FFI_PLUGIN_EXPORT

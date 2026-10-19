@@ -4,13 +4,8 @@
 #include "deps/sparkmobile/src/coin.h"
 
 spark::SpendKey createSpendKeyFromData(unsigned char *keyData, int index) {
-    try {
-        SpendKeyData data(keyData, index);
-        return createSpendKey(data);
-    } catch (const std::exception& e) {
-        // We can't return here, so just throw the exception again.
-        throw e;
-    }
+    SpendKeyData data(keyData, index);
+    return createSpendKey(data);
 }
 
 spark::Address decodeAddress(const std::string& str) {

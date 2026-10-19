@@ -501,6 +501,61 @@ void main() {
     });
   });
 
+  group('Native errors', () {
+    Matcher throwsExceptionContaining(String fragment) => throwsA(
+      isA<Exception>().having(
+        (e) => e.toString(),
+        'message',
+        contains(fragment),
+      ),
+    );
+
+    test('carry the native reason for a rejected mint address', () {
+      expect(
+        () => LibSpark.createSparkMintRecipients(
+          outputs: [(sparkAddress: 'invalid', value: 100000, memo: '')],
+          serialContext: Uint8List.fromList([1, 2, 3]),
+        ),
+        throwsExceptionContaining('Bad address encoding'),
+      );
+    });
+
+    test('carry the reason for each kind of rejected tag', () {
+      expect(
+        () => LibSpark.hashTag('invalid', 'invalid'),
+        throwsExceptionContaining('field prime'),
+      );
+      expect(
+        () => LibSpark.hashTag(_generatorX, '0'),
+        throwsExceptionContaining('point on the curve'),
+      );
+      expect(
+        () => LibSpark.hashTags(base64Tags: [base64Encode(Uint8List(34))]),
+        throwsExceptionContaining('deserialize failed'),
+      );
+    });
+
+    test('carry the reason for a full view key of the wrong length', () async {
+      await expectLater(
+        LibSpark.getAddressFromFullViewKey(
+          fullViewKeyHex: '00',
+          index: 1,
+          diversifier: 0,
+        ),
+        throwsExceptionContaining('unexpected length'),
+      );
+    });
+
+    test('report the latest failure after intervening calls', () {
+      expect(() => LibSpark.hashTag('invalid', 'invalid'), throwsException);
+      expect(LibSpark.hashTag(_generatorX, _generatorY), isNotEmpty);
+      expect(
+        () => LibSpark.hashTag(_generatorX, '0'),
+        throwsExceptionContaining('point on the curve'),
+      );
+    });
+  });
+
   group('Logging', () {
     late Set<LoggingLevel> previousLevels;
     late List<(LoggingLevel, Object?)> events;
