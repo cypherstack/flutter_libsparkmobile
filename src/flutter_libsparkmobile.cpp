@@ -39,11 +39,17 @@ char* copyString(const std::string& value) {
 
 bool isHexCoordinate(const char* value) {
     if (!value || !*value) return false;
-    bool negative = *value == '-';
-    const char* digits = value + (negative ? 1 : 0);
-    if (!*digits || strspn(digits, "0123456789abcdefABCDEF") != strlen(digits)) return false;
-    while (*digits == '0') ++digits;
-    return strlen(digits) <= 64 && (!negative || *digits);
+    if (strspn(value, "0123456789abcdefABCDEF") != strlen(value)) return false;
+    while (*value == '0') ++value;
+    const size_t length = strlen(value);
+    if (length != 64) return length < 64;
+    static constexpr char fieldPrime[] =
+        "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
+    for (size_t i = 0; i < length; ++i) {
+        const char digit = value[i] | 0x20; // Fold validated ASCII hex to lowercase.
+        if (digit != fieldPrime[i]) return digit < fieldPrime[i];
+    }
+    return false;
 }
 
 void freeCoinData(AggregateCoinData* data) {
@@ -648,6 +654,7 @@ const char* hashTag(const char* x, const char* y) {
     try {
         if (!isHexCoordinate(x) || !isHexCoordinate(y)) return nullptr;
         secp_primitives::GroupElement tag(x, y, 16);
+        if (!tag.isMember() || tag.isInfinity()) return nullptr;
         return copyString(primitives::GetLTagHash(tag).GetHex());
     } catch (...) {
         return nullptr;

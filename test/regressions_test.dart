@@ -109,6 +109,70 @@ void main() {
       );
     });
 
+    test('rejects off-curve coordinates, including compressed tag aliases', () {
+      for (final (x, y) in [
+        ('0', '0'),
+        (_generatorX, '0'),
+        (_generatorX, '1'),
+        (_generatorX, '2'),
+      ]) {
+        expect(() => LibSpark.hashTag(x, y), throwsException);
+      }
+    });
+
+    test('rejects negative and out-of-field coordinates', () {
+      const fieldPrime =
+          'fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f';
+      const pointAtOneY =
+          '4218f20ae6c646b363db68605822fb14264ca8d2587fdd6fbc750d587e76a7ee';
+      expect(LibSpark.hashTag('1', pointAtOneY), isNotEmpty);
+      for (final coordinate in [
+        '-0',
+        '-1',
+        '-$_generatorX',
+        fieldPrime,
+        fieldPrime.toUpperCase(),
+        '00$fieldPrime',
+        'fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30',
+        'f' * 64,
+        '1' * 65,
+      ]) {
+        expect(
+          () => LibSpark.hashTag(coordinate, pointAtOneY),
+          throwsException,
+        );
+        expect(
+          () => LibSpark.hashTag(_generatorX, coordinate),
+          throwsException,
+        );
+      }
+    });
+
+    test(
+      'preserves valid hashes for uppercase and leading-zero coordinates',
+      () {
+        const expected =
+            '19b567e8409caeadc4b177ce20d9dddaa3444decdba75d72df4d7aa6d5767181';
+        for (final (x, y) in [
+          (_generatorX, _generatorY),
+          (_generatorX.toUpperCase(), _generatorY.toUpperCase()),
+          ('00$_generatorX', '00$_generatorY'),
+        ]) {
+          expect(LibSpark.hashTag(x, y), expected);
+        }
+      },
+    );
+
+    test('accepts a valid point near the field boundary', () {
+      const x =
+          'fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c';
+      const y =
+          '0e994b14ea72f8c3eb95c71ef692575e775058332d7e52d0995cf8038871b67d';
+      final expected = LibSpark.hashTag(x, y);
+      expect(LibSpark.hashTag(x.toUpperCase(), y.toUpperCase()), expected);
+      expect(LibSpark.hashTag('00$x', '00$y'), expected);
+    });
+
     test('batch hashing agrees with coordinate hashing', () {
       final bytes = Uint8List.fromList([
         ..._generatorX.to32BytesFromHex(),
