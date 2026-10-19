@@ -160,29 +160,6 @@ int verifySparkAddressOwnershipProof(
     }
 }
 
-/*
- * FFI-friendly wrapper for spark:identifyCoin.
- *
- * identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
- */
-//FFI_PLUGIN_EXPORT
-//CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index) {
-//    try {
-//        spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
-//
-//        // Derive the incoming view key from the key data and index.
-//        spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
-//        spark::FullViewKey fullViewKey(spendKey);
-//        spark::IncomingViewKey incomingViewKey(fullViewKey);
-//
-//        spark::IdentifiedCoinData identifiedCoinData = coin.identify(incomingViewKey);
-//        return toFFI(identifiedCoinData);
-//    } catch (const std::exception& e) {
-//        std::cerr << "Exception: " << e.what() << std::endl;
-//        return CIdentifiedCoinData();
-//    }
-//}
-
 FFI_PLUGIN_EXPORT
 void* getFullViewKeyFromPrivateKeyData(unsigned char* keyData, int index) {
     spark::SpendKey spendKey = createSpendKeyFromData(keyData, index);
@@ -236,38 +213,6 @@ unsigned char* serializeFullViewKey(void* fullViewKeyVoid, int* serializedSize) 
 FFI_PLUGIN_EXPORT
 void deleteFullViewKey(void* fullViewKey) {
     delete static_cast<spark::FullViewKey*>(fullViewKey);
-}
-
-FFI_PLUGIN_EXPORT
-AggregateCoinData* idAndRecoverCoin(
-        const unsigned char* serializedCoin,
-        int serializedCoinLength,
-        unsigned char* privateKeyData,
-        int index,
-        unsigned char* context,
-        int contextLength,
-        int isTestNet) {
-    // Derive the keys from the key data and index.
-    void* fullViewKeyVoid = nullptr;
-    try {
-        fullViewKeyVoid = getFullViewKeyFromPrivateKeyData(privateKeyData, index);
-    } catch (const std::exception& e) {
-        return nullptr;
-    }
-
-    spark::FullViewKey* fullViewKey = static_cast<spark::FullViewKey*>(fullViewKeyVoid);
-
-    AggregateCoinData* result = idAndRecoverCoinByFullViewKey(
-        serializedCoin,
-        serializedCoinLength,
-        fullViewKeyVoid,
-        context,
-        contextLength,
-        isTestNet
-    );
-
-    deleteFullViewKey(fullViewKeyVoid);
-    return result;
 }
 
 FFI_PLUGIN_EXPORT

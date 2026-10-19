@@ -70,33 +70,6 @@ external ffi.Pointer<ffi.Char> native_getAddressFromFullViewKey(
   int isTestNet,
 );
 
-/// FFI-friendly wrapper for spark::identifyCoin.
-///
-/// identifyCoin: https://github.com/firoorg/sparkmobile/blob/8bf17cd3deba6c3b0d10e89282e02936d7e71cdd/src/spark.cpp#L400
-/// /
-/// //FFI_PLUGIN_EXPORT
-/// //struct CIdentifiedCoinData identifyCoin(const unsigned char* serializedCoin, int serializedCoinLength, unsigned char* keyData, int index);
-@ffi.Native<
-  ffi.Pointer<AggregateCoinData> Function(
-    ffi.Pointer<ffi.UnsignedChar>,
-    ffi.Int,
-    ffi.Pointer<ffi.UnsignedChar>,
-    ffi.Int,
-    ffi.Pointer<ffi.UnsignedChar>,
-    ffi.Int,
-    ffi.Int,
-  )
->(symbol: 'idAndRecoverCoin')
-external ffi.Pointer<AggregateCoinData> native_idAndRecoverCoin(
-  ffi.Pointer<ffi.UnsignedChar> serializedCoin,
-  int serializedCoinLength,
-  ffi.Pointer<ffi.UnsignedChar> keyData,
-  int index,
-  ffi.Pointer<ffi.UnsignedChar> context,
-  int contextLength,
-  int isTestNet,
-);
-
 @ffi.Native<
   ffi.Pointer<AggregateCoinData> Function(
     ffi.Pointer<ffi.UnsignedChar>,
