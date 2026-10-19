@@ -308,6 +308,9 @@ final class CMintedCoinData extends ffi.Struct {
   external int value;
 
   external ffi.Pointer<ffi.Char> memo;
+
+  @ffi.Int()
+  external int memoLength;
 }
 
 /// FFI-friendly wrapper for a std::pair<CAmount, bool>.
@@ -399,6 +402,9 @@ final class AggregateCoinData extends ffi.Struct {
   external ffi.Pointer<ffi.Char> address;
 
   external ffi.Pointer<ffi.Char> memo;
+
+  @ffi.Int()
+  external int memoLength;
 
   external ffi.Pointer<ffi.Char> lTagHash;
 

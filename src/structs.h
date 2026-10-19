@@ -33,6 +33,7 @@ struct CMintedCoinData {
     const char *address;
     uint64_t value;
     const char *memo;
+    int memoLength;
 };
 
 /*
@@ -105,6 +106,7 @@ struct AggregateCoinData {
     uint64_t value;
     char *address;
     char *memo;
+    int memoLength;
     char *lTagHash;
 
     unsigned char *encryptedDiversifier;

@@ -28,6 +28,12 @@ unsigned char* copyBytes(const void* source, size_t length) {
     return result;
 }
 
+char* copyString(const std::string& value) {
+    auto* result = allocate<char>(value.size() + 1);
+    memcpy(result, value.data(), value.size());
+    return result;
+}
+
 }
 
 using namespace spark;
@@ -259,8 +265,8 @@ AggregateCoinData* idAndRecoverCoinByFullViewKey(
         result->address = (char*)malloc((addressString.length() + 1) * sizeof(char));
         std::strcpy(result->address, addressString.c_str());
 
-        result->memo = (char*)malloc((identifiedCoinData.memo.length() + 1) * sizeof(char));
-        std::strcpy(result->memo, identifiedCoinData.memo.c_str());
+        result->memoLength = identifiedCoinData.memo.size();
+        result->memo = copyString(identifiedCoinData.memo);
 
         uint256 lTagHash = primitives::GetLTagHash(data.T);
         result->lTagHash = (char*)malloc((lTagHash.GetHex().length() + 1) * sizeof(char));
@@ -303,7 +309,7 @@ CCRecipientList* cCreateSparkMintRecipients(
     // Copy the data from the array to the vector.
     for (int i = 0; i < outputsLength; i++) {
         spark::MintedCoinData data;
-        data.memo = cOutputs[i].memo;
+        if (cOutputs[i].memoLength) data.memo.assign(cOutputs[i].memo, cOutputs[i].memoLength);
         data.address = decodeAddress(cOutputs[i].address);
         data.v = cOutputs[i].value;
         outputs.push_back(data);

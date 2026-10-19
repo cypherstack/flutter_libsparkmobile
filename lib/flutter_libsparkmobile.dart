@@ -254,6 +254,9 @@ abstract final class LibSpark {
     }
 
     try {
+      for (final output in outputs) {
+        _checkCString(output.sparkAddress, 'sparkAddress');
+      }
       final outputsPtr = malloc.allocate<CMintedCoinData>(
         sizeOf<CMintedCoinData>() * outputs.length,
       );
@@ -264,6 +267,7 @@ abstract final class LibSpark {
             .toNativeUtf8()
             .cast<Char>();
         outputsPtr[i].memo = outputs[i].memo.toNativeUtf8().cast<Char>();
+        outputsPtr[i].memoLength = utf8.encode(outputs[i].memo).length;
       }
 
       final serialContextPtr = serialContext.unsignedCharPointer();
@@ -403,6 +407,9 @@ abstract final class LibSpark {
     }
 
     try {
+      for (final recipient in privateRecipients) {
+        _checkCString(recipient.sparkAddress, 'sparkAddress');
+      }
       final resolvedExtensionCommitment = spendVersion
           .resolveExtensionCommitment(extensionCommitment);
 
@@ -708,6 +715,7 @@ abstract final class LibSpark {
       );
     }
     try {
+      if (address.contains('\u0000')) return false;
       final addressPtr = address.toNativeUtf8().cast<Char>();
 
       final result = native_isValidSparkAddress(addressPtr, isTestNet ? 1 : 0);
@@ -935,6 +943,8 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkCString(x, 'x');
+      _checkCString(y, 'y');
       final xPtr = x.toNativeUtf8().cast<Char>();
       final yPtr = y.toNativeUtf8().cast<Char>();
 
@@ -1118,6 +1128,8 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkCString(name, 'name');
+      _checkCString(additionalInfo, 'additionalInfo');
       final namePtr = name.toNativeUtf8().cast<Char>();
       final additionalInfoPtr = additionalInfo.toNativeUtf8().cast<Char>();
       final ownershipDigestPtr = Uint8List.fromList(
@@ -1280,6 +1292,12 @@ abstract final class LibSpark {
     }
   }
 
+  static void _checkCString(String value, String name) {
+    if (value.contains('\u0000')) {
+      throw ArgumentError.value(value, name, 'must not contain NUL');
+    }
+  }
+
   static void freeNative<T extends NativeType>(
     Pointer<T> pointer, {
     required String debugName,
@@ -1431,9 +1449,7 @@ abstract final class LibSpark {
           address: result.ref.address.cast<Utf8>().toDartString(),
           value: BigInt.from(result.ref.value),
           memo: utf8.decode(
-            result.ref.memo.cast<Uint8>().asTypedList(
-              result.ref.memo.cast<Utf8>().length,
-            ),
+            result.ref.memo.cast<Uint8>().asTypedList(result.ref.memoLength),
             allowMalformed: true,
           ),
           diversifier: BigInt.from(result.ref.diversifier),
