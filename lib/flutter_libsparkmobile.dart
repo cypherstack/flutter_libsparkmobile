@@ -103,6 +103,8 @@ abstract final class LibSpark {
         );
       }
 
+      _checkInt32(index, 'index');
+      _checkInt32(diversifier, 'diversifier');
       return using<String>((arena) {
         final address = _requirePointer(
           native_getAddress(
@@ -135,6 +137,8 @@ abstract final class LibSpark {
     required int diversifier,
     bool isTestNet = false,
   }) async {
+    _checkInt32(index, 'index');
+    _checkInt32(diversifier, 'diversifier');
     final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
     try {
       final address = _requirePointer(
@@ -175,6 +179,10 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkInt32(inputs.length, 'inputs.length');
+      for (final input in inputs) {
+        _checkInt32(input.$2, 'vout');
+      }
       return using((arena) {
         final inputsPtr = arena<DartInputData>(inputs.length);
         for (int i = 0; i < inputs.length; i++) {
@@ -241,6 +249,8 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkInt32(outputs.length, 'outputs.length');
+      _checkInt32(serialContext.length, 'serialContext.length');
       for (final output in outputs) {
         _checkCString(output.sparkAddress, 'sparkAddress');
       }
@@ -248,6 +258,7 @@ abstract final class LibSpark {
         final outputsPtr = arena<CMintedCoinData>(outputs.length);
         for (int i = 0; i < outputs.length; i++) {
           final memo = Uint8List.fromList(utf8.encode(outputs[i].memo));
+          _checkInt32(memo.length, 'memo.length');
           outputsPtr[i].value = outputs[i].value;
           outputsPtr[i].address = outputs[i].sparkAddress
               .toNativeUtf8(allocator: arena)
@@ -381,12 +392,28 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkInt32(index, 'index');
+      _checkInt32(additionalTxSize, 'additionalTxSize');
       _checkBytes(txHash, 32, 'txHash');
+      _checkInt32(recipients.length, 'recipients.length');
+      _checkInt32(privateRecipients.length, 'privateRecipients.length');
+      _checkInt32(serializedCoins.length, 'serializedCoins.length');
+      _checkInt32(allAnonymitySets.length, 'allAnonymitySets.length');
+      _checkInt32(idAndBlockHashes.length, 'idAndBlockHashes.length');
       for (final recipient in privateRecipients) {
         _checkCString(recipient.sparkAddress, 'sparkAddress');
       }
+      for (final coin in serializedCoins) {
+        _checkInt32(coin.groupId, 'groupId');
+        _checkInt32(coin.height, 'height', signed: true);
+      }
+      for (final set in allAnonymitySets) {
+        _checkInt32(set.setId, 'setId');
+        _checkInt32(set.set.length, 'set.length');
+      }
       for (final block in idAndBlockHashes) {
         _checkBytes(block.blockHash, 32, 'blockHash');
+        _checkInt32(block.setId, 'setId');
       }
       final resolvedExtensionCommitment = spendVersion
           .resolveExtensionCommitment(extensionCommitment);
@@ -410,6 +437,8 @@ abstract final class LibSpark {
           final address = Uint8List.fromList(
             utf8.encode(recipient.sparkAddress),
           );
+          _checkInt32(memo.length, 'memo.length');
+          _checkInt32(address.length, 'address.length');
           privateRecipientsPtr[i].subtractFee = recipient.subtractFeeFromAmount
               ? 1
               : 0;
@@ -432,12 +461,14 @@ abstract final class LibSpark {
           coverSetDataAllPtr[i].cover_setLength = set.set.length;
           for (int j = 0; j < set.set.length; j++) {
             final coin = base64Decode(set.set[j].serializedCoin);
+            _checkInt32(coin.length, 'serializedCoin.length');
             coverSetDataAllPtr[i].cover_set[j].length = coin.length;
             coverSetDataAllPtr[i].cover_set[j].data = coin.unsignedCharPointer(
               arena,
             );
           }
           final setHash = base64Decode(set.setHash);
+          _checkInt32(setHash.length, 'setHash.length');
           coverSetDataAllPtr[i].cover_set_representation = setHash
               .unsignedCharPointer(arena);
           coverSetDataAllPtr[i].cover_set_representationLength = setHash.length;
@@ -595,16 +626,9 @@ abstract final class LibSpark {
     required int diversifier,
   }) {
     final messageBytes = Uint8List.fromList(utf8.encode(message));
-    if (messageBytes.length > 0x7fffffff) {
-      throw ArgumentError.value(message, 'message', 'is too long');
-    }
-    RangeError.checkValueInInterval(
-      spendKeyIndex,
-      0,
-      0x7fffffff,
-      'spendKeyIndex',
-    );
-    RangeError.checkValueInInterval(diversifier, 0, 0x7fffffff, 'diversifier');
+    _checkInt32(messageBytes.length, 'message.length');
+    _checkInt32(spendKeyIndex, 'spendKeyIndex');
+    _checkInt32(diversifier, 'diversifier');
     return using((arena) {
       final result = _requirePointer(
         native_createSparkAddressOwnershipProof(
@@ -691,6 +715,7 @@ abstract final class LibSpark {
       if (base64Tags.isEmpty) {
         return [];
       }
+      _checkInt32(base64Tags.length, 'base64Tags.length');
       final tags = base64Tags.map(base64Decode).toList();
       for (final tag in tags) {
         _checkBytes(tag, 34, 'tag');
@@ -810,6 +835,11 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkInt32(index, 'index');
+      _checkInt32(privateRecipientsCount, 'privateRecipientsCount');
+      _checkInt32(utxoNum, 'utxoNum');
+      _checkInt32(additionalTxSize, 'additionalTxSize');
+      _checkInt32(serializedCoins.length, 'serializedCoins.length');
       return using((arena) {
         final privateKeyPtr = privateKeyHex
             .to32BytesFromHex()
@@ -890,6 +920,10 @@ abstract final class LibSpark {
     }
 
     try {
+      _checkInt32(sparkNameValidityBlocks, 'sparkNameValidityBlocks');
+      _checkInt32(spendKeyIndex, 'spendKeyIndex');
+      _checkInt32(diversifier, 'diversifier');
+      _checkInt32(hashFailSafe, 'hashFailSafe', signed: true);
       _checkCString(name, 'name');
       _checkCString(additionalInfo, 'additionalInfo');
       return using((arena) {
@@ -971,6 +1005,10 @@ abstract final class LibSpark {
           'must not be empty',
         );
       }
+      _checkInt32(
+        serializedSparkNameData.length,
+        'serializedSparkNameData.length',
+      );
       return using((arena) {
         final result = _requirePointer(
           native_cGetSparkNameCommitment(
@@ -1006,6 +1044,15 @@ abstract final class LibSpark {
     }
   }
 
+  static void _checkInt32(int value, String name, {bool signed = false}) {
+    RangeError.checkValueInInterval(
+      value,
+      signed ? -0x80000000 : 0,
+      0x7fffffff,
+      name,
+    );
+  }
+
   static void _checkBytes(Uint8List bytes, int length, String name) {
     if (bytes.length != length) {
       throw ArgumentError.value(bytes.length, name, 'must be $length bytes');
@@ -1039,8 +1086,12 @@ abstract final class LibSpark {
   ) {
     final pointer = arena<DartSpendCoinData>(coins.length);
     for (int i = 0; i < coins.length; i++) {
+      _checkInt32(coins[i].groupId, 'groupId');
+      _checkInt32(coins[i].height, 'height', signed: true);
       final coin = base64Decode(coins[i].serializedCoin);
       final context = base64Decode(coins[i].serializedCoinContext);
+      _checkInt32(coin.length, 'serializedCoin.length');
+      _checkInt32(context.length, 'serializedCoinContext.length');
       pointer[i].serializedCoin = arena<CCDataStream>();
       pointer[i].serializedCoin.ref.data = coin.unsignedCharPointer(arena);
       pointer[i].serializedCoin.ref.length = coin.length;
@@ -1098,6 +1149,7 @@ abstract final class LibSpark {
     required String privateKeyHex,
     required int index,
   }) {
+    _checkInt32(index, 'index');
     return using((arena) {
       final fullViewKey = _requirePointer(
         native_getFullViewKeyFromPrivateKeyData(
@@ -1125,6 +1177,7 @@ abstract final class LibSpark {
     required String fullViewKeyHex,
   }) {
     final bytes = fullViewKeyHex.to32OrMoreBytesFromHex();
+    _checkInt32(bytes.length, 'fullViewKey.length');
     return using(
       (arena) => _requirePointer(
         native_deserializeFullViewKey(
@@ -1168,6 +1221,7 @@ abstract final class LibSpark {
     required Uint8List context,
     bool isTestNet = false,
   }) {
+    _checkInt32(context.length, 'context.length');
     final fullViewKey = _deserializeFullViewKey(fullViewKeyHex: fullViewKeyHex);
     try {
       return using((arena) {

@@ -53,6 +53,33 @@ void main() {
     });
   });
 
+  group('Fee estimation input validation', () {
+    test('rejects negative group IDs like negative set IDs', () {
+      for (final groupId in [-1, -0x80000000]) {
+        expect(
+          () => LibSpark.estimateSparkFee(
+            privateKeyHex: _privateKey,
+            sendAmount: 1,
+            subtractFeeFromAmount: false,
+            serializedCoins: [
+              (
+                serializedCoin: base64Encode(Uint8List(244)),
+                serializedCoinContext: base64Encode(Uint8List(0)),
+                groupId: groupId,
+                height: 1,
+              ),
+            ],
+            privateRecipientsCount: 1,
+            utxoNum: 0,
+            additionalTxSize: 0,
+            spendVersion: SparkSpendVersion.chaumV2,
+          ),
+          throwsRangeError,
+        );
+      }
+    });
+  });
+
   group('Tag hashing', () {
     test('checks every decoded tag length', () {
       for (final length in [0, 1, 33, 35, 68]) {
@@ -145,6 +172,36 @@ void main() {
             diversifier: 0,
           ),
           throwsA(anyOf(isA<ArgumentError>(), isA<Exception>())),
+        );
+      }
+    });
+
+    test('rejects indices and diversifiers outside signed int32', () async {
+      for (final value in [-1, 0x80000000, 0x100000001]) {
+        for (final index in [true, false]) {
+          await expectLater(
+            LibSpark.getAddress(
+              privateKey: _privateKey.to32BytesFromHex(),
+              index: index ? value : 1,
+              diversifier: index ? 0 : value,
+            ),
+            value < 0 ? throwsException : throwsRangeError,
+          );
+          await expectLater(
+            LibSpark.getAddressFromFullViewKey(
+              fullViewKeyHex: fullViewKey,
+              index: index ? value : 1,
+              diversifier: index ? 0 : value,
+            ),
+            throwsRangeError,
+          );
+        }
+        expect(
+          () => LibSpark.getFullViewKeyHexFromPrivateKeyData(
+            privateKeyHex: _privateKey,
+            index: value,
+          ),
+          throwsRangeError,
         );
       }
     });
