@@ -1329,7 +1329,7 @@ abstract final class LibSpark {
     // Free all native memory
     freeDart(privateKeyDataPtr, debugName: "privateKeyDataPtr");
     freeNative(serializedPtr, debugName: "serializedPtr");
-    freeNative(fullViewKeyPtr, debugName: "fullViewKeyPtr");
+    _deleteFullViewKey(fullViewKeyPtr);
     malloc.free(sizePtr);
     return fullViewKeyHex;
   }

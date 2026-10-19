@@ -8,8 +8,27 @@
 #include "transaction.h"
 #include "deps/sparkmobile/bitcoin/script.h"  // For CScript.
 #include "deps/sparkmobile/bitcoin/serialize.h"
+#include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <iostream> // Just for printing.
+
+namespace {
+
+template<typename T>
+T* allocate(size_t count = 1) {
+    auto* result = static_cast<T*>(calloc(count ? count : 1, sizeof(T)));
+    if (!result) throw std::bad_alloc();
+    return result;
+}
+
+unsigned char* copyBytes(const void* source, size_t length) {
+    auto* result = allocate<unsigned char>(length);
+    if (length) memcpy(result, source, length);
+    return result;
+}
+
+}
 
 using namespace spark;
 
@@ -170,44 +189,35 @@ void* getFullViewKeyFromPrivateKeyData(unsigned char* keyData, int index) {
 
 FFI_PLUGIN_EXPORT
 void* deserializeFullViewKey(unsigned char* keyData, int keyDataLength) {
-    // CDataStream expects a char* for the constructor, but Spark uses unsigned char*.
-    char* keyDataChar = reinterpret_cast<char*>(keyData);
-
-    spark::FullViewKey* fullViewKey = new spark::FullViewKey(spark::Params::get_default());
-
-    size_t serializeSize = GetSerializeSize(*fullViewKey, SER_NETWORK, PROTOCOL_VERSION);
-    if (serializeSize != keyDataLength) {
+    try {
+        if (!keyData || keyDataLength <= 0) return nullptr;
+        auto fullViewKey = std::make_unique<spark::FullViewKey>(spark::Params::get_default());
+        if (GetSerializeSize(*fullViewKey, SER_NETWORK, PROTOCOL_VERSION) != static_cast<size_t>(keyDataLength)) {
+            return nullptr;
+        }
+        CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+        stream.write(reinterpret_cast<char*>(keyData), keyDataLength);
+        stream >> *fullViewKey;
+        return fullViewKey.release();
+    } catch (...) {
         return nullptr;
     }
-
-    CDataStream s(SER_NETWORK, PROTOCOL_VERSION);
-    s.write(keyDataChar, keyDataLength);
-
-    try {
-      s >> *fullViewKey;
-    } catch (const std::exception& e) {
-      return nullptr;
-    }
-
-    return static_cast<void*>(fullViewKey);
 }
 
 FFI_PLUGIN_EXPORT
 unsigned char* serializeFullViewKey(void* fullViewKeyVoid, int* serializedSize) {
-    spark::FullViewKey* fullViewKey = static_cast<spark::FullViewKey*>(fullViewKeyVoid);
-
-    // Serialize the FullViewKey into a CDataStream
-    CDataStream s(SER_NETWORK, PROTOCOL_VERSION);
-    s << *fullViewKey;
-
-    // Allocate a buffer for the serialized data
-    *serializedSize = s.size();
-    unsigned char* result = new unsigned char[*serializedSize];
-
-    // Copy the serialized data into the buffer
-    memcpy(result, s.data(), *serializedSize);
-
-    return result;
+    if (!serializedSize) return nullptr;
+    *serializedSize = 0;
+    try {
+        if (!fullViewKeyVoid) return nullptr;
+        CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+        stream << *static_cast<spark::FullViewKey*>(fullViewKeyVoid);
+        auto* result = copyBytes(stream.data(), stream.size());
+        *serializedSize = stream.size();
+        return result;
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 FFI_PLUGIN_EXPORT
