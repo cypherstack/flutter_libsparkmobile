@@ -34,6 +34,47 @@ char* copyString(const std::string& value) {
     return result;
 }
 
+
+void freeCoinData(AggregateCoinData* data) {
+    if (!data) return;
+    free(data->address);
+    free(data->memo);
+    free(data->lTagHash);
+    free(data->encryptedDiversifier);
+    free(data->nonceHex);
+    free(data->serial);
+    free(data);
+}
+
+void freeRecipients(CCRecipientList* data) {
+    if (!data) return;
+    if (data->list) {
+        for (int i = 0; i < data->length; ++i) free(data->list[i].pubKey);
+    }
+    free(data->list);
+    free(data);
+}
+
+void freeSpendResult(SparkSpendTransactionResult* data) {
+    if (!data) return;
+    if (data->usedCoins) {
+        for (int i = 0; i < data->usedCoinsLength; ++i) {
+            auto& coin = data->usedCoins[i];
+            if (coin.serializedCoin) free(coin.serializedCoin->data);
+            if (coin.serializedCoinContext) free(coin.serializedCoinContext->data);
+            free(coin.serializedCoin);
+            free(coin.serializedCoinContext);
+        }
+    }
+    if (data->outputScripts) {
+        for (int i = 0; i < data->outputScriptsLength; ++i) free(data->outputScripts[i].bytes);
+    }
+    free(data->usedCoins);
+    free(data->outputScripts);
+    free(data->data);
+    free(data);
+}
+
 }
 
 using namespace spark;
@@ -240,10 +281,13 @@ AggregateCoinData* idAndRecoverCoinByFullViewKey(
         int contextLength,
         int isTestNet) {
     try {
+        if (!serializedCoin || serializedCoinLength <= 0 || !fullViewKeyVoid ||
+            contextLength < 0 || (contextLength > 0 && !context)) return nullptr;
         spark::FullViewKey* fullViewKey = static_cast<spark::FullViewKey*>(fullViewKeyVoid);
         spark::Coin coin = deserializeCoin(serializedCoin, serializedCoinLength);
 
-        std::vector<unsigned char> contextVec(context, context + contextLength);
+        std::vector<unsigned char> contextVec;
+        if (contextLength) contextVec.assign(context, context + contextLength);
         coin.setSerialContext(contextVec);
 
         // Derive the incoming view key from the full view key
@@ -256,36 +300,34 @@ AggregateCoinData* idAndRecoverCoinByFullViewKey(
         spark::Address address = getAddress(incomingViewKey, identifiedCoinData.i);
         std::string addressString = address.encode(isTestNet ? spark::ADDRESS_NETWORK_TESTNET : spark::ADDRESS_NETWORK_MAINNET);
 
-        AggregateCoinData* result = (AggregateCoinData*)malloc(sizeof(AggregateCoinData));
+        std::unique_ptr<AggregateCoinData, decltype(&freeCoinData)> result(
+            allocate<AggregateCoinData>(), freeCoinData);
 
         result->type = coin.type;
         result->diversifier = identifiedCoinData.i;
         result->value = identifiedCoinData.v;
 
-        result->address = (char*)malloc((addressString.length() + 1) * sizeof(char));
-        std::strcpy(result->address, addressString.c_str());
+        result->address = copyString(addressString);
 
         result->memoLength = identifiedCoinData.memo.size();
         result->memo = copyString(identifiedCoinData.memo);
 
         uint256 lTagHash = primitives::GetLTagHash(data.T);
-        result->lTagHash = (char*)malloc((lTagHash.GetHex().length() + 1) * sizeof(char));
-        std::strcpy(result->lTagHash, lTagHash.GetHex().c_str());
+        result->lTagHash = copyString(lTagHash.GetHex());
 
-        result->encryptedDiversifier = (unsigned char*)malloc(identifiedCoinData.d.size() * sizeof(unsigned char));
+        result->encryptedDiversifier = copyBytes(identifiedCoinData.d.data(), identifiedCoinData.d.size());
         result->encryptedDiversifierLength = identifiedCoinData.d.size();
-        memcpy(result->encryptedDiversifier,identifiedCoinData.d.data(),identifiedCoinData.d.size() * sizeof(unsigned char));
 
-        result->nonceHexLength = identifiedCoinData.k.GetHex().length();
-        result->nonceHex = (char*)malloc(sizeof(char) * result->nonceHexLength);
-        memcpy(result->nonceHex, identifiedCoinData.k.GetHex().c_str(), sizeof(char) * result->nonceHexLength);
+        std::string nonceHex = identifiedCoinData.k.GetHex();
+        result->nonceHexLength = nonceHex.size();
+        result->nonceHex = copyString(nonceHex);
 
-        result->serial = (unsigned char*)malloc(data.s.GetHex().length() * sizeof(unsigned char));
-        result->serialLength = data.s.GetHex().length();
-        memcpy(result->serial,data.s.GetHex().c_str(),data.s.GetHex().length() * sizeof(unsigned char));
+        std::string serial = data.s.GetHex();
+        result->serial = copyBytes(serial.data(), serial.size());
+        result->serialLength = serial.size();
 
-        return result;
-    } catch (const std::exception& e) {
+        return result.release();
+    } catch (...) {
         return nullptr;
     }
 }
@@ -303,44 +345,39 @@ CCRecipientList* cCreateSparkMintRecipients(
     int serial_contextLength,
     int generate
 ) {
-    // Construct vector of spark::MintedCoinData.
-    std::vector<spark::MintedCoinData> outputs;
-
-    // Copy the data from the array to the vector.
-    for (int i = 0; i < outputsLength; i++) {
-        spark::MintedCoinData data;
-        if (cOutputs[i].memoLength) data.memo.assign(cOutputs[i].memo, cOutputs[i].memoLength);
-        data.address = decodeAddress(cOutputs[i].address);
-        data.v = cOutputs[i].value;
-        outputs.push_back(data);
-    }
-
-    // Construct vector of unsigned chars.
-    std::vector<unsigned char> serialVec(serial_context, serial_context + serial_contextLength);
-
-    // Call spark::createSparkMintRecipients.
-    std::vector<CRecipient> recipients = createSparkMintRecipients(outputs, serialVec, generate);
-
-    // Create a CRecipient* array.
-    CCRecipientList *data = (CCRecipientList*)malloc(sizeof(CCRecipientList));
-    data->length = recipients.size();
-    data->list = (CCRecipient*)malloc(sizeof(CCRecipient) * recipients.size());
-
-    // Copy the data from the vector to the array.
-    for (int i = 0; i < recipients.size(); i++) {
-        data->list[i].cAmount = recipients[i].amount;
-        data->list[i].subtractFee = recipients[i].subtractFeeFromAmount;
-        data->list[i].pubKeyLength = recipients[i].pubKey.size();
-        data->list[i].pubKey = (unsigned char*)malloc(sizeof(unsigned char) * recipients[i].pubKey.size());
-        std::vector<unsigned char> vec(recipients[i].pubKey.begin(), recipients[i].pubKey.end());
-        unsigned char* ptr = vec.data();
-        for (int j = 0; j < data->list[i].pubKeyLength; j++) {
-            data->list[i].pubKey[j] = ptr[j];
+    try {
+        if (outputsLength < 0 || (outputsLength > 0 && !cOutputs) ||
+            serial_contextLength < 0 || (serial_contextLength > 0 && !serial_context)) return nullptr;
+        std::vector<spark::MintedCoinData> outputs;
+        for (int i = 0; i < outputsLength; i++) {
+            if (!cOutputs[i].address || cOutputs[i].memoLength < 0 ||
+                (cOutputs[i].memoLength > 0 && !cOutputs[i].memo)) return nullptr;
+            spark::MintedCoinData data;
+            if (cOutputs[i].memoLength) data.memo.assign(cOutputs[i].memo, cOutputs[i].memoLength);
+            data.address = decodeAddress(cOutputs[i].address);
+            data.v = cOutputs[i].value;
+            outputs.push_back(data);
         }
-    }
 
-    // Return the array.
-    return data;
+        std::vector<unsigned char> serialVec;
+        if (serial_contextLength) serialVec.assign(serial_context, serial_context + serial_contextLength);
+        std::vector<CRecipient> recipients = createSparkMintRecipients(outputs, serialVec, generate);
+
+        std::unique_ptr<CCRecipientList, decltype(&freeRecipients)> data(
+            allocate<CCRecipientList>(), freeRecipients);
+        data->length = recipients.size();
+        data->list = allocate<CCRecipient>(recipients.size());
+        for (int i = 0; i < data->length; i++) {
+            data->list[i].cAmount = recipients[i].amount;
+            data->list[i].subtractFee = recipients[i].subtractFeeFromAmount;
+            data->list[i].pubKeyLength = recipients[i].pubKey.size();
+            data->list[i].pubKey = copyBytes(
+                recipients[i].pubKey.empty() ? nullptr : &recipients[i].pubKey[0], recipients[i].pubKey.size());
+        }
+        return data.release();
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 /*
@@ -454,50 +491,55 @@ SparkSpendTransactionResult* cCreateSparkSpendTransaction(
             spentCoinsOut
         );
 
-        SparkSpendTransactionResult *result = (SparkSpendTransactionResult*)malloc(sizeof(SparkSpendTransactionResult));
+        std::unique_ptr<SparkSpendTransactionResult, decltype(&freeSpendResult)> result(
+            allocate<SparkSpendTransactionResult>(), freeSpendResult);
         result->isError = false;
         result->fee = cppFee;
 
         result->usedCoinsLength = spentCoinsOut.size();
-        result->usedCoins = (UsedCoin*)malloc(sizeof(UsedCoin) * result->usedCoinsLength);
+        result->usedCoins = allocate<UsedCoin>(result->usedCoinsLength);
         for (int i = 0; i < result->usedCoinsLength; i++) {
             result->usedCoins[i].height = spentCoinsOut[i].nHeight;
             result->usedCoins[i].groupId = spentCoinsOut[i].nId;
 
             CDataStream coinStream(SER_NETWORK, PROTOCOL_VERSION);
             coinStream << spentCoinsOut[i].coin;
-            result->usedCoins[i].serializedCoin = (CCDataStream*)malloc(sizeof(CCDataStream));
+            result->usedCoins[i].serializedCoin = allocate<CCDataStream>();
             result->usedCoins[i].serializedCoin->length = coinStream.size();
-            result->usedCoins[i].serializedCoin->data = (unsigned char*)malloc(result->usedCoins[i].serializedCoin->length);
-            memcpy(result->usedCoins[i].serializedCoin->data, coinStream.data(), result->usedCoins[i].serializedCoin->length);
+            result->usedCoins[i].serializedCoin->data = copyBytes(coinStream.data(), coinStream.size());
 
-            result->usedCoins[i].serializedCoinContext = (CCDataStream*)malloc(sizeof(CCDataStream));
+            result->usedCoins[i].serializedCoinContext = allocate<CCDataStream>();
             result->usedCoins[i].serializedCoinContext->length = spentCoinsOut[i].serial_context.size();
-            result->usedCoins[i].serializedCoinContext->data = (unsigned char*)malloc(result->usedCoins[i].serializedCoinContext->length);
-            memcpy(result->usedCoins[i].serializedCoinContext->data, spentCoinsOut[i].serial_context.data(), result->usedCoins[i].serializedCoinContext->length);
+            result->usedCoins[i].serializedCoinContext->data = copyBytes(
+                spentCoinsOut[i].serial_context.data(), spentCoinsOut[i].serial_context.size());
         }
 
         result->outputScriptsLength = cppOutputScripts.size();
-        result->outputScripts = (OutputScript*)malloc(sizeof(OutputScript) * result->outputScriptsLength);
+        result->outputScripts = allocate<OutputScript>(result->outputScriptsLength);
         for (int i = 0; i < result->outputScriptsLength; i++) {
             result->outputScripts[i].length = cppOutputScripts[i].size();
-            result->outputScripts[i].bytes = (unsigned char*)malloc(result->outputScripts[i].length);
-            memcpy(result->outputScripts[i].bytes, cppOutputScripts[i].data(), result->outputScripts[i].length);
+            result->outputScripts[i].bytes = copyBytes(cppOutputScripts[i].data(), cppOutputScripts[i].size());
         }
 
         result->dataLength = cppSerializedSpend.size();
-        result->data = (unsigned char*)malloc(result->dataLength);
-        memcpy(result->data, cppSerializedSpend.data(), result->dataLength);
+        result->data = copyBytes(cppSerializedSpend.data(), cppSerializedSpend.size());
 
-        return result;
+        return result.release();
     } catch (const std::exception& e) {
-        SparkSpendTransactionResult *result = (SparkSpendTransactionResult*)malloc(sizeof(SparkSpendTransactionResult));
+        auto* result = static_cast<SparkSpendTransactionResult*>(calloc(1, sizeof(SparkSpendTransactionResult)));
+        if (!result) return nullptr;
         result->isError = true;
         result->dataLength = strlen(e.what());
         result->data = (unsigned char*)malloc(sizeof(unsigned char) * result->dataLength);
+        if (!result->data) {
+            free(result);
+            return nullptr;
+        }
         memcpy(result->data, e.what(), result->dataLength);
 
         return result;
+    } catch (...) {
+        return nullptr;
     }
 }
 
@@ -506,24 +548,28 @@ SerializedMintContextResult* serializeMintContext(
         DartInputData* inputs,
         int inputsLength
 ) {
-    CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
-    for (int i = 0; i < inputsLength; i++) {
-        std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
-        CTxIn input(
-                uint256(vec),
-                inputs[i].vout,
-                CScript(),
-                std::numeric_limits<unsigned int>::max() - 1);
-        input.scriptSig = CScript();
-        input.scriptWitness.SetNull();
-        serialContextStream << input;
+    try {
+        if (inputsLength < 0 || (inputsLength > 0 && !inputs)) return nullptr;
+        CDataStream serialContextStream(SER_NETWORK, PROTOCOL_VERSION);
+        for (int i = 0; i < inputsLength; i++) {
+            std::vector<unsigned char> vec(inputs[i].txHash, inputs[i].txHash + inputs[i].txHashLength);
+            CTxIn input(
+                    uint256(vec),
+                    inputs[i].vout,
+                    CScript(),
+                    std::numeric_limits<unsigned int>::max() - 1);
+            input.scriptSig = CScript();
+            input.scriptWitness.SetNull();
+            serialContextStream << input;
+        }
+        std::unique_ptr<SerializedMintContextResult, decltype(&free)> result(
+            allocate<SerializedMintContextResult>(), free);
+        result->contextLength = serialContextStream.size();
+        result->context = copyBytes(serialContextStream.data(), serialContextStream.size());
+        return result.release();
+    } catch (...) {
+        return nullptr;
     }
-
-    SerializedMintContextResult* result = (SerializedMintContextResult*)malloc(sizeof(SerializedMintContextResult));
-    result->contextLength = serialContextStream.size();
-    result->context = (unsigned char*) malloc(sizeof(unsigned char) * serialContextStream.size());
-    memcpy(result->context, serialContextStream.data(), sizeof(unsigned char) * serialContextStream.size());
-    return result;
 }
 
 FFI_PLUGIN_EXPORT
